@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: ags_sales_db
+    environment:
+      MYSQL_DATABASE: ags_sales
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  redis:
+    image: redis:7
+    container_name: ags_sales_redis
+    ports:
+      - "6379:6379"
+
+  web:
+    build: .
+    container_name: ags_sales_web
+    command: >
+      bash -c "python manage.py migrate &&
+               python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DB_HOST=db
+      - DB_NAME=ags_sales
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - REDIS_URL=redis://redis:6379/0
+
+  celery:
+    build: .
+    container_name: ags_sales_celery
+    command: celery -A core worker -l info
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DB_HOST=db
+      - DB_NAME=ags_sales
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - REDIS_URL=redis://redis:6379/0
+
+volumes:
+  mysql_data:

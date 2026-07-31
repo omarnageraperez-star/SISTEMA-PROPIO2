@@ -1,0 +1,77 @@
+# ============================================
+# AGS SALES - Mono-repo .gitignore
+# ============================================
+
+# ──────────────────────────────────────────
+# Python / Django (AGS_SALES backend)
+# ──────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+AGS_SALES/venv/
+AGS_SALES/.venv/
+AGS_SALES/*.egg-info/
+AGS_SALES/dist/
+AGS_SALES/build/
+AGS_SALES/.env
+AGS_SALES/.env.*
+AGS_SALES/db.sqlite3
+AGS_SALES/media/
+AGS_SALES/staticfiles/
+AGS_SALES/static/
+*.log
+
+# ──────────────────────────────────────────
+# Node / React / Capacitor (AGS_SALES_MOBILE)
+# ──────────────────────────────────────────
+AGS_SALES_MOBILE/node_modules/
+AGS_SALES_MOBILE/dist/
+AGS_SALES_MOBILE/.env
+AGS_SALES_MOBILE/.env.*
+
+# Android build output (solo archivos compilados, no el código fuente)
+AGS_SALES_MOBILE/android/.gradle/
+AGS_SALES_MOBILE/android/build/
+AGS_SALES_MOBILE/android/app/build/
+AGS_SALES_MOBILE/android/app/release/
+AGS_SALES_MOBILE/android/.idea/
+AGS_SALES_MOBILE/android/local.properties
+AGS_SALES_MOBILE/android/app/google-services.json
+
+# Capacitor assets generados
+AGS_SALES_MOBILE/android/app/src/main/assets/public/
+
+# ──────────────────────────────────────────
+# Node / Astro (AGS_SALES_UI)
+# ──────────────────────────────────────────
+AGS_SALES_UI/node_modules/
+AGS_SALES_UI/dist/
+AGS_SALES_UI/.output/
+AGS_SALES_UI/.env
+AGS_SALES_UI/.env.*
+
+# ──────────────────────────────────────────
+# Sistema operativo
+# ──────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+
+# ──────────────────────────────────────────
+# IDEs
+# ──────────────────────────────────────────
+.idea/
+.vscode/settings.json
+*.suo
+*.user
+
+# ──────────────────────────────────────────
+# Misceláneos
+# ──────────────────────────────────────────
+.qodo/
+*.apk
+*.aab

@@ -1,0 +1,17 @@
+{
+  "appId": "com.agssales.mobile",
+  "appName": "AGS SALES",
+  "webDir": "dist",
+  "plugins": {
+    "StatusBar": {
+      "overlaysWebView": false,
+      "style": "Dark",
+      "backgroundColor": "#0a0c14"
+    }
+  },
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": true
+  }
+}

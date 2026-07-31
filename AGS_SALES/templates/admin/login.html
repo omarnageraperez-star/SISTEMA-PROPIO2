@@ -1,0 +1,189 @@
+{% load i18n static jazzmin %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% get_jazzmin_settings request as jazzmin_settings %}{{ jazzmin_settings.site_title }} | Iniciar Sesión
+    </title>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+
+        .glass-login-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 420px;
+            color: white;
+            box-sizing: border-box;
+            margin: 1.5rem;
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo-container img {
+            max-height: 80px;
+            margin-bottom: 1rem;
+        }
+
+        h2 {
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin: 0 0 0.5rem 0;
+            font-size: 1.8rem;
+        }
+
+        p {
+            margin: 0;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .form-control {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            box-sizing: border-box;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary {
+            background: #4f46e5;
+            border: none;
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            width: 100%;
+            transition: all 0.3s;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary:hover {
+            background: #4338ca;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+        }
+
+        .alert-danger {
+            background: #ef4444;
+            border: none;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mr-2 {
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    {% get_jazzmin_settings request as jazzmin_settings %}
+    <div class="glass-login-card">
+        <div class="logo-container">
+            {% if jazzmin_settings.site_logo %}
+            <img src="{% static jazzmin_settings.site_logo %}" alt="{{ jazzmin_settings.site_header }} Logo">
+            {% else %}
+            <i class="fas fa-boxes fa-3x"
+                style="color: #4f46e5; background: white; padding: 15px; border-radius: 50%;"></i>
+            {% endif %}
+            <h2>{{ jazzmin_settings.site_header }}</h2>
+            <p>Inicia sesión en tu cuenta</p>
+        </div>
+
+        <form action="{{ app_path }}" method="post" id="login-form">
+            {% csrf_token %}
+            {% if form.errors and not form.non_field_errors %}
+            <div class="alert-danger">
+                <i class="fas fa-exclamation-circle mr-2"></i> Usuario o contraseña incorrectos.
+            </div>
+            {% endif %}
+            {% if form.non_field_errors %}
+            <div class="alert-danger">
+                <i class="fas fa-exclamation-circle mr-2"></i> {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <div class="form-group">
+                <label for="id_username"><i class="fas fa-user mr-2"></i>Usuario</label>
+                <input type="text" name="username" class="form-control" placeholder="Ingresa tu usuario" required
+                    id="id_username">
+            </div>
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label for="id_password"><i class="fas fa-lock mr-2"></i>Contraseña</label>
+                <input type="password" name="password" class="form-control" placeholder="Ingresa tu contraseña" required
+                    id="id_password">
+                <input type="hidden" name="next" value="{{ next }}">
+            </div>
+
+            <button type="submit" class="btn-primary">
+                ENTRAR <i class="fas fa-arrow-right"></i>
+            </button>
+        </form>
+    </div>
+</body>
+
+</html>

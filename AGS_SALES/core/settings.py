@@ -1,0 +1,257 @@
+"""
+Django settings for AGS_SALES project.
+"""
+
+import os
+from pathlib import Path
+from datetime import timedelta
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-development-key-for-ags-sales')
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+
+ALLOWED_HOSTS = ['*']
+
+# Application definition
+INSTALLED_APPS = [
+    'jazzmin',
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    
+    # Third party
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'corsheaders',
+    'django_filters',
+    'drf_spectacular',
+    'channels',
+    'db_importer',
+    
+    # Local apps
+    'apps.users',
+    'apps.inventory',
+    'apps.sales',
+    'apps.purchases',
+    'apps.crm',
+    'apps.ecommerce',
+    'apps.accounting',
+    'apps.reports',
+    'apps.billing',
+]
+
+MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+ROOT_URLCONF = 'core.urls'
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION = 'core.wsgi.application'
+ASGI_APPLICATION = 'core.asgi.application'
+
+# Database
+DB_HOST = os.environ.get('DB_HOST', 'db')
+DB_NAME = os.environ.get('DB_NAME', 'ags_sales')
+DB_USER = os.environ.get('DB_USER', 'root')
+DB_PASSWORD = os.environ.get('DB_PASSWORD', 'root')
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': DB_NAME,
+        'USER': DB_USER,
+        'PASSWORD': DB_PASSWORD,
+        'HOST': DB_HOST,
+        'PORT': '3306',
+        'CONN_MAX_AGE': 0,  # Cerrar conexión al finalizar cada request (evita "Server has gone away" en base de datos remota de Hostinger)
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            'charset': 'utf8mb4',
+        }
+    }
+}
+
+# Cache system para acelerar tiempos de carga de plantillas y vistas
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'ags-sales-cache',
+    }
+}
+
+# Password validation
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
+
+# Custom User Model
+AUTH_USER_MODEL = 'users.User'
+
+# Internationalization
+LANGUAGE_CODE = 'es'
+TIME_ZONE = 'America/Bogota'
+USE_I18N = True
+USE_TZ = True
+
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static_root')
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+
+# Configuración para subida de archivos pesados (Instaladores de ~500MB)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 524288000  # 500 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 524288000  # 500 MB
+
+MEDIA_URL = 'media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# REST Framework settings
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_PAGINATION_CLASS': 'core.pagination.CustomPageNumberPagination',
+    'PAGE_SIZE': 20,
+}
+
+# JWT Settings
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
+}
+
+# CORS settings
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = ['*']
+CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+
+# Spectacular Settings
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'AGS_SALES API',
+    'DESCRIPTION': 'API for AGS_SALES ERP/POS and E-commerce system',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
+
+# Celery
+CELERY_BROKER_URL = os.environ.get('REDIS_URL', 'redis://redis:6379/0')
+CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL', 'redis://redis:6379/0')
+
+# Jazzmin settings
+JAZZMIN_SETTINGS = {
+    "site_title": "Assia Group Solutions",
+    "site_header": "AGS SALES",
+    "site_brand": "Assia Group Solutions",
+    "site_logo": "admin_custom/img/logo.png",
+    "welcome_sign": "Bienvenido al Sistema de Assia Group Solutions",
+    "copyright": "Assia Group Solutions",
+    "show_ui_builder": False,
+    "user_avatar": "avatar",
+    "usermenu_links": [
+        {"name": "Editar mi Perfil", "url": "/admin/users/user/", "icon": "fas fa-user-edit"},
+    ],
+    "custom_css": "admin_custom/css/premium.css",
+    "custom_js": "admin_custom/js/premium.js",
+    "topmenu_links": [
+        {"name": "Home",  "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"model": "auth.User"},
+        {"app": "inventory"},
+    ],
+    "custom_links": {
+        "reports": [{
+            "name": "Importador DB Universal", 
+            "url": "import_db", 
+            "icon": "fas fa-database",
+            "permissions": ["auth.view_user"]
+        }]
+    },
+    "show_sidebar": True,
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.Group": "fas fa-users",
+        "users.User": "fas fa-user",
+        "users.Role": "fas fa-id-badge",
+        "inventory.Product": "fas fa-box",
+        "inventory.Warehouse": "fas fa-warehouse",
+        "inventory.Stock": "fas fa-cubes",
+        "inventory.Category": "fas fa-tags",
+        "inventory.Brand": "fas fa-copyright",
+        "crm.Customer": "fas fa-address-book",
+        "crm.CustomerInteraction": "fas fa-comments",
+        "purchases.Supplier": "fas fa-truck",
+        "purchases.PurchaseOrder": "fas fa-file-invoice",
+        "sales.Sale": "fas fa-shopping-cart",
+        "sales.Payment": "fas fa-money-bill-wave",
+        "ecommerce.WebOrder": "fas fa-globe",
+        "ecommerce.Cart": "fas fa-shopping-basket",
+        "accounting.CashRegister": "fas fa-cash-register",
+        "accounting.CashShift": "fas fa-clock",
+        "accounting.CashMovement": "fas fa-exchange-alt",
+    },
+    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_children": "fas fa-circle",
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "navbar": "navbar-dark",
+    "theme": "pulse",
+    "sidebar": "sidebar-dark-primary",
+    "sidebar_nav_child_indent": True,
+}
