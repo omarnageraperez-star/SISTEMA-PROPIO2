@@ -381,7 +381,7 @@ function App() {
   const lastSaleIdRef = useRef(null);
 
   useEffect(() => {
-    if (!token || !apiUrl || !userProfile) return;
+    if (!token || !apiUrl || !userProfile || !config?.default_printer) return;
     const isAdmin = ['SUPERADMIN', 'ADMIN'].includes(userProfile.role);
     if (!isAdmin) return;
 
@@ -449,7 +449,7 @@ function App() {
     };
 
     checkAdminSales();
-    const interval = setInterval(checkAdminSales, 4000);
+    const interval = setInterval(checkAdminSales, 15000);
     return () => clearInterval(interval);
   }, [token, apiUrl, userProfile?.role, userProfile?.username, config?.default_printer, config?.apiUrl, config?.ticket_logo, systemSettings]);
 
