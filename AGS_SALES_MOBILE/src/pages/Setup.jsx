@@ -14,17 +14,24 @@ export default function Setup() {
 
   useEffect(() => {
     storage.get('apiUrl').then(saved => {
-      if (saved) setUrl(saved);
+      if (saved) {
+        // Limpiar el segmento /api/ para mostrar solo la URL base amigable en el input
+        const cleanSaved = saved.replace(/\/api\/?$/i, '');
+        setUrl(cleanSaved);
+      } else {
+        // Pre-cargar por defecto el backend en Vercel
+        setUrl('https://sistema-pos-ags-eosin.vercel.app');
+      }
     });
   }, []);
 
   async function runConnectionCheck() {
     if (!url.trim()) return false;
 
-    // Auto-add http:// if missing
+    // Auto-add https:// if protocol is missing (Android bloquea http:// por defecto en producción)
     let cleanUrl = url.trim();
     if (!/^https?:\/\//i.test(cleanUrl)) {
-      cleanUrl = 'http://' + cleanUrl;
+      cleanUrl = 'https://' + cleanUrl;
       setUrl(cleanUrl);
     }
 
@@ -139,7 +146,7 @@ export default function Setup() {
             Servidor Central
           </h1>
           <p style={{ fontSize: 13, color: '#94a3b8', margin: '6px 0 0' }}>
-            Ingrese la dirección IP del servidor
+            Ingrese la URL de Vercel o la IP local
           </p>
         </div>
 
@@ -165,7 +172,7 @@ export default function Setup() {
                 fontFamily: 'monospace'
               }}
               type="text"
-              placeholder="192.168.1.9:8000"
+              placeholder="ejemplo.vercel.app"
               value={url}
               onChange={e => setUrl(e.target.value)}
               inputMode="text"
