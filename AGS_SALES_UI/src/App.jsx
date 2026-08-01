@@ -541,7 +541,16 @@ function App() {
           setLoading(false);
         }
       } else {
-        setLoading(false); // In browser fallback
+        // In browser fallback (Vercel/Production web)
+        const envApiUrl = import.meta.env.VITE_API_URL || '';
+        if (envApiUrl) {
+          const finalUrl = envApiUrl.endsWith('/') ? envApiUrl : envApiUrl + '/';
+          const apiBaseUrl = finalUrl.endsWith('api/') ? finalUrl : finalUrl + 'api/';
+          setApiUrl(apiBaseUrl);
+          checkAdminExists(apiBaseUrl);
+        } else {
+          setLoading(false);
+        }
       }
     }
     loadConfig();
