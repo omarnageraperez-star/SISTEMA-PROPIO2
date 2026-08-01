@@ -89,21 +89,33 @@ DB_NAME = os.environ.get('DB_NAME', 'ags_sales')
 DB_USER = os.environ.get('DB_USER', 'root')
 DB_PASSWORD = os.environ.get('DB_PASSWORD', 'root')
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': DB_NAME,
-        'USER': DB_USER,
-        'PASSWORD': DB_PASSWORD,
-        'HOST': DB_HOST,
-        'PORT': '3306',
-        'CONN_MAX_AGE': 0,  # Cerrar conexión al finalizar cada request (evita "Server has gone away" en base de datos remota de Hostinger)
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-            'charset': 'utf8mb4',
+# Database configuration - Fallback to SQLite if MySQL host is 127.0.0.1 (localhost) and we are running in Vercel/production
+USE_SQLITE = os.environ.get('VERCEL') == '1' or DB_HOST == '127.0.0.1' or DB_HOST == 'localhost'
+
+if USE_SQLITE:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
         }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': DB_NAME,
+            'USER': DB_USER,
+            'PASSWORD': DB_PASSWORD,
+            'HOST': DB_HOST,
+            'PORT': '3306',
+            'CONN_MAX_AGE': 0,  # Cerrar conexión al finalizar cada request (evita "Server has gone away" en base de datos remota de Hostinger)
+            'OPTIONS': {
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                'charset': 'utf8mb4',
+            }
+        }
+    }
+
 
 # Cache system para acelerar tiempos de carga de plantillas y vistas
 CACHES = {
