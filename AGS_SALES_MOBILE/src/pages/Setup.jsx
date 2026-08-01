@@ -28,12 +28,15 @@ export default function Setup() {
   async function runConnectionCheck() {
     if (!url.trim()) return false;
 
-    // Auto-add https:// if protocol is missing (Android bloquea http:// por defecto en producción)
+    // Auto-add https:// if protocol is missing, or force HTTPS if it is http on a vercel domain
     let cleanUrl = url.trim();
+    if (cleanUrl.toLowerCase().startsWith('http://') && cleanUrl.toLowerCase().includes('.vercel.app')) {
+      cleanUrl = cleanUrl.replace(/^http:\/\//i, 'https://');
+    }
     if (!/^https?:\/\//i.test(cleanUrl)) {
       cleanUrl = 'https://' + cleanUrl;
-      setUrl(cleanUrl);
     }
+    setUrl(cleanUrl);
 
     setStatus('checking');
     setErrMsg('');
