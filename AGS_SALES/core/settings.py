@@ -89,8 +89,9 @@ DB_NAME = os.environ.get('DB_NAME', 'ags_sales')
 DB_USER = os.environ.get('DB_USER', 'root')
 DB_PASSWORD = os.environ.get('DB_PASSWORD', 'root')
 
-# Database configuration - Fallback to SQLite if MySQL host is 127.0.0.1 (localhost) and we are running in Vercel/production
-USE_SQLITE = os.environ.get('VERCEL') == '1' or DB_HOST == '127.0.0.1' or DB_HOST == 'localhost'
+# Database configuration - Fallback to SQLite if MySQL host is local or not defined
+USE_SQLITE = DB_HOST in ('127.0.0.1', 'localhost', 'db', '')
+
 
 if USE_SQLITE:
     DATABASES = {
