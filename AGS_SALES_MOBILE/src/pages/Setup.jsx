@@ -20,7 +20,7 @@ export default function Setup() {
         setUrl(cleanSaved);
       } else {
         // Pre-cargar por defecto el backend en Vercel
-        setUrl('https://sistema-pos-ags-eosin.vercel.app');
+        setUrl('https://sistema-pos-ags.vercel.app');
       }
     });
   }, []);

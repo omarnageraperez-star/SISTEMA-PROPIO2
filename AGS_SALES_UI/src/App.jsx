@@ -539,6 +539,7 @@ function App() {
           }));
         } else {
           setLoading(false);
+          setApiUrl('https://sistema-pos-ags.vercel.app/api/');
         }
       } else {
         // In browser fallback (Vercel/Production web)
