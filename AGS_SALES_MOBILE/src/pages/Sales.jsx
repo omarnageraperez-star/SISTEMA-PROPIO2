@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Receipt, Search, X, ChevronDown, ChevronUp, Clock, Package, DollarSign, Filter, RefreshCw, MessageCircle } from 'lucide-react';
+import { Receipt, Search, X, ChevronDown, ChevronUp, Clock, Package, DollarSign, Filter, RefreshCw, MessageCircle, Trash2, Calendar, User, Tag } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import { apiRequest, apiUrl } from '../lib/api';
 import { DarkSwal, Toast } from '../lib/swal';
@@ -222,70 +222,96 @@ export default function Sales({ auth }) {
     .reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
 
   return (
-    <div className="page-container">
+    <div className="page-container" style={{ background: '#0f172a', minHeight: '100vh' }}>
       <TopBar title="Historial de Ventas" subtitle={`${sales.length} registradas`} />
 
-      <div className="page-content" style={{ padding: '12px 16px 0', paddingBottom: 'calc(140px + env(safe-area-inset-bottom, 16px))' }}>
+      <div className="page-content" style={{ padding: '16px 16px 0', paddingBottom: 'calc(140px + env(safe-area-inset-bottom, 16px))' }}>
         {/* Today summary card (Premium Dashboard style) */}
         <div style={{
-          background: 'linear-gradient(135deg, rgba(34,197,94,0.12), rgba(20,24,36,0.95))',
-          border: '1px solid rgba(34,197,94,0.25)',
-          borderRadius: 16,
-          padding: '16px 18px',
-          marginBottom: 14,
+          background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(15, 23, 42, 0.95) 100%)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(34, 197, 94, 0.25)',
+          borderRadius: 20,
+          padding: '20px 22px',
+          marginBottom: 16,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          boxShadow: '0 4px 20px rgba(34,197,94,0.05)'
+          boxShadow: '0 8px 32px rgba(34, 197, 94, 0.08)'
         }}>
           <div>
-            <span style={{ fontSize: 11, color: '#64748b', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ingresos de Hoy</span>
-            <p style={{ fontSize: 24, fontWeight: 950, color: '#22c55e', margin: '4px 0 0' }}>{fmt(todayTotal)}</p>
+            <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Ingresos de Hoy</span>
+            <p style={{ fontSize: 26, fontWeight: 950, color: '#22c55e', margin: '4px 0 0', letterSpacing: '-0.02em' }}>{fmt(todayTotal)}</p>
           </div>
-          <div style={{ background: 'rgba(34,197,94,0.15)', width: 44, height: 44, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Receipt size={22} color="#22c55e" />
+          <div style={{ 
+            background: 'linear-gradient(135deg, #22c55e, #15803d)', 
+            width: 48, 
+            height: 48, 
+            borderRadius: 14, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            boxShadow: '0 4px 14px rgba(34, 197, 94, 0.4)'
+          }}>
+            <Receipt size={22} color="#ffffff" />
           </div>
         </div>
 
         {/* Filters Group */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
           {/* Search bar */}
-          <div className="search-bar" style={{ margin: 0 }}>
-            <Search size={16} color="#64748b" />
-            <input placeholder="Buscar por cliente, cajero o factura..." value={query} onChange={e => setQuery(e.target.value)} />
-            {query && <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={14} color="#64748b" /></button>}
+          <div className="search-bar" style={{ 
+            margin: 0, 
+            background: 'rgba(30, 41, 59, 0.7)', 
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            borderRadius: 14,
+            padding: '12px 14px'
+          }}>
+            <Search size={18} color="#94a3b8" />
+            <input 
+              placeholder="Buscar por cliente, cajero o factura..." 
+              value={query} 
+              onChange={e => setQuery(e.target.value)} 
+              style={{ color: '#f8fafc', fontWeight: 600, fontSize: 13 }}
+            />
+            {query && (
+              <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                <X size={16} color="#94a3b8" />
+              </button>
+            )}
           </div>
 
           {/* Cashier filter dropdown */}
           {!loading && ['SUPERADMIN', 'ADMIN'].includes(auth.user?.role) && cashiers.length > 0 && (
             <div style={{
-              background: '#1e2435',
-              border: '1px solid #252d42',
-              borderRadius: 12,
-              padding: '8px 12px',
+              background: 'rgba(30, 41, 59, 0.7)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: 14,
+              padding: '10px 14px',
               display: 'flex',
               alignItems: 'center',
-              gap: 8
+              gap: 10
             }}>
-              <Filter size={14} color="#64748b" />
-              <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Filtrar Cajero:</span>
+              <Filter size={16} color="#94a3b8" />
+              <span style={{ fontSize: 12, fontWeight: 800, color: '#94a3b8', whiteSpace: 'nowrap' }}>Filtrar Cajero:</span>
               <select
                 value={selectedCashier}
                 onChange={e => setSelectedCashier(e.target.value)}
                 style={{
                   flex: 1,
                   background: 'transparent',
-                  color: '#f1f5f9',
+                  color: '#f8fafc',
                   border: 'none',
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: 700,
                   outline: 'none',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  paddingLeft: 6
                 }}
               >
-                <option value="" style={{ background: '#1e2435', color: '#f1f5f9' }}>👤 Todos los Cajeros</option>
+                <option value="" style={{ background: '#0f172a', color: '#f8fafc' }}>👤 Todos los Cajeros</option>
                 {cashiers.map(c => (
-                  <option key={c} value={c} style={{ background: '#1e2435', color: '#f1f5f9' }}>
+                  <option key={c} value={c} style={{ background: '#0f172a', color: '#f8fafc' }}>
                     👤 {c}
                   </option>
                 ))}
@@ -298,11 +324,12 @@ export default function Sales({ auth }) {
         {loading ? (
           <SkeletonCard count={5} height={90} />
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {filtered.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '48px 0', color: '#64748b' }}>
-                <Receipt size={40} style={{ marginBottom: 12, opacity: 0.3 }} />
-                <p style={{ fontSize: 14, margin: 0 }}>No hay facturas registradas en esta selección</p>
+              <div style={{ textAlign: 'center', padding: '64px 0', color: '#64748b' }}>
+                <Receipt size={48} style={{ marginBottom: 16, opacity: 0.2, color: '#94a3b8' }} />
+                <p style={{ fontSize: 14, fontWeight: 700, margin: 0, color: '#94a3b8' }}>No hay facturas registradas</p>
+                <p style={{ fontSize: 12, margin: '4px 0 0', color: '#64748b' }}>Intenta cambiando los filtros de búsqueda</p>
               </div>
             )}
 
@@ -313,12 +340,13 @@ export default function Sales({ auth }) {
 
               return (
                 <div key={sale.id} style={{
-                  background: '#1e2435',
-                  border: isOpen ? '1px solid #f97316' : '1px solid #252d42',
-                  borderRadius: 16,
+                  background: 'rgba(30, 41, 59, 0.55)',
+                  backdropFilter: 'blur(8px)',
+                  border: isOpen ? '1px solid #f97316' : '1px solid rgba(255, 255, 255, 0.06)',
+                  borderRadius: 18,
                   overflow: 'hidden',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-                  transition: 'all 0.15s'
+                  boxShadow: isOpen ? '0 8px 24px rgba(249, 115, 22, 0.08)' : '0 4px 16px rgba(0,0,0,0.15)',
+                  transition: 'all 0.25s ease'
                 }}>
                   {/* Header Row */}
                   <button
@@ -328,7 +356,7 @@ export default function Sales({ auth }) {
                       background: 'none',
                       border: 'none',
                       cursor: 'pointer',
-                      padding: '12px 14px',
+                      padding: '14px 16px',
                       display: 'flex',
                       alignItems: 'center',
                       gap: 12,
@@ -336,61 +364,70 @@ export default function Sales({ auth }) {
                   >
                     {/* Status Icon Indicator */}
                     <div style={{
-                      width: 38, height: 38, borderRadius: 10,
+                      width: 42, height: 42, borderRadius: 12,
                       background: status.bg,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       flexShrink: 0,
                     }}>
-                      <Receipt size={16} color={status.color} />
+                      <Receipt size={18} color={status.color} />
                     </div>
 
                     {/* Customer & ID */}
                     <div style={{ flex: 1, textAlign: 'left', minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: '#f1f5f9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontSize: 14, fontWeight: 800, color: '#f8fafc', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {sale.customer_name || 'Consumidor Final'}
                         </span>
                         {parseFloat(sale.discount || 0) > 0 && (
-                          <span style={{ fontSize: 9, background: 'rgba(249,115,22,0.15)', color: '#f97316', padding: '1px 5px', borderRadius: 4, fontWeight: 900 }}>
-                            🎲 {sale.promo_percent > 0 ? `-${sale.promo_percent}%` : 'Desc'}
+                          <span style={{ fontSize: 9, background: 'rgba(249,115,22,0.15)', color: '#f97316', padding: '2px 6px', borderRadius: 6, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                            <Tag size={8} style={{ display: 'inline', marginRight: 2 }} /> {sale.promo_percent > 0 ? `-${sale.promo_percent}%` : 'Desc'}
                           </span>
                         )}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
-                        <span style={{ fontSize: 10, color: '#64748b', fontFamily: 'monospace', fontWeight: 700 }}>#{sale.invoice_number || sale.id}</span>
-                        <span style={{ color: '#252d42', fontSize: 10 }}>•</span>
-                        <span style={{ fontSize: 10, color: '#64748b', fontWeight: 600 }}>
-                          {date.toLocaleDateString('es-CO')} {date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                        <span style={{ fontSize: 10, color: '#64748b', fontFamily: 'monospace', fontWeight: 800 }}>#{sale.invoice_number || String(sale.id).padStart(6, '0')}</span>
+                        <span style={{ color: 'rgba(255,255,255,0.08)', fontSize: 10 }}>|</span>
+                        <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
+                          <Clock size={10} color="#64748b" /> {date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
                     </div>
 
                     {/* Total & Status */}
-                    <div style={{ textAlign: 'right', flexShrink: 0, marginRight: 2 }}>
-                      <p style={{ fontSize: 14, fontWeight: 900, color: '#22c55e', margin: 0 }}>{fmt(sale.total)}</p>
-                      <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 6, background: status.bg, color: status.color, fontWeight: 800, textTransform: 'uppercase', marginTop: 3, display: 'inline-block' }}>
+                    <div style={{ textAlign: 'right', flexShrink: 0, marginRight: 4 }}>
+                      <p style={{ fontSize: 15, fontWeight: 950, color: '#22c55e', margin: 0, letterSpacing: '-0.01em' }}>{fmt(sale.total)}</p>
+                      <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 8, background: status.bg, color: status.color, fontWeight: 800, textTransform: 'uppercase', marginTop: 4, display: 'inline-block', letterSpacing: '0.02em' }}>
                         {status.label}
                       </span>
                     </div>
 
-                    {isOpen ? <ChevronUp size={16} color="#64748b" /> : <ChevronDown size={16} color="#64748b" />}
+                    {isOpen ? <ChevronUp size={18} color="#94a3b8" /> : <ChevronDown size={18} color="#94a3b8" />}
                   </button>
 
                   {/* Expanded Detail Panel */}
                   {isOpen && (
-                    <div style={{ borderTop: '1px solid #252d42', padding: '14px', background: '#141824' }}>
-                      <p style={{ fontSize: 10, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 10px 0' }}>Detalle de Artículos</p>
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '16px', background: 'rgba(15, 23, 42, 0.45)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                        <Package size={12} color="#64748b" />
+                        <p style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Artículos Vendidos</p>
+                      </div>
                       
                       {/* Products List */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
                         {(sale.details || []).map((item, i) => (
                           <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                              <Package size={12} color="#64748b" style={{ flexShrink: 0 }} />
-                              <span style={{ fontSize: 12, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.product_name}</span>
-                              <span style={{ fontSize: 11, color: '#f97316', fontWeight: 800 }}>×{parseInt(item.quantity)}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                              <div style={{
+                                width: 22, height: 22, borderRadius: 6, background: 'rgba(255,255,255,0.04)',
+                                display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center'
+                              }}>
+                                <span style={{ fontSize: 10, color: '#f97316', fontWeight: 900 }}>{parseInt(item.quantity)}</span>
+                              </div>
+                              <span style={{ fontSize: 13, color: '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>
+                                {item.product_name}
+                              </span>
                             </div>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: '#f1f5f9' }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: '#f8fafc' }}>
                               {fmt(item.unit_price * item.quantity)}
                             </span>
                           </div>
@@ -398,75 +435,115 @@ export default function Sales({ auth }) {
                       </div>
 
                       {/* Financial breakdown */}
-                      <div style={{ borderTop: '1px dashed #252d42', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#64748b' }}>
+                      <div style={{ 
+                        borderTop: '1px dashed rgba(255,255,255,0.08)', 
+                        paddingTop: 12, 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        gap: 6 
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>
                           <span>Subtotal</span>
                           <span>{fmt(sale.subtotal)}</span>
                         </div>
                         {parseFloat(sale.discount || 0) > 0 && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#ef4444', fontWeight: 700 }}>
-                            <span>Descuento Dados</span>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#ef4444', fontWeight: 800 }}>
+                            <span>Descuento Aplicado</span>
                             <span>-{fmt(sale.discount)}</span>
                           </div>
                         )}
                         {parseFloat(sale.tax || 0) > 0 && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#64748b' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>
                             <span>Impuesto ({sale.tax_name || 'IVA'})</span>
                             <span>{fmt(sale.tax)}</span>
                           </div>
                         )}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#22c55e', fontWeight: 900, marginTop: 4, borderTop: '1px solid #151b26', paddingTop: 4 }}>
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          fontSize: 14, 
+                          color: '#22c55e', 
+                          fontWeight: 950, 
+                          marginTop: 6, 
+                          borderTop: '1px solid rgba(255,255,255,0.08)', 
+                          paddingTop: 8 
+                        }}>
                           <span>Total Neto</span>
                           <span>{fmt(sale.total)}</span>
                         </div>
                       </div>
 
-                      {/* Cashier & Payment method */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10, borderTop: '1px dashed #252d42', paddingTop: 8 }}>
+                      {/* Cashier & Date Detail */}
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        marginTop: 14, 
+                        borderTop: '1px dashed rgba(255,255,255,0.08)', 
+                        paddingTop: 10 
+                      }}>
                         {sale.user_username && (
-                          <span style={{ fontSize: 11, color: '#64748b', display: 'flex', alignItems: 'center', gap: 4 }}>
-                            👤 Cajero: <strong style={{ color: '#94a3b8' }}>{sale.user_username}</strong>
+                          <span style={{ fontSize: 11, color: '#64748b', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 700 }}>
+                            <User size={12} color="#64748b" /> {sale.user_username}
                           </span>
                         )}
-                        {sale.payments && sale.payments.length > 0 && (
-                          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                            <span style={{ fontSize: 11, color: '#64748b' }}>💳 Medio Pago:</span>
+                        <span style={{ fontSize: 11, color: '#64748b', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 700 }}>
+                          <Calendar size={12} color="#64748b" /> {date.toLocaleDateString('es-CO')}
+                        </span>
+                      </div>
+
+                      {/* Payment method badge lists */}
+                      {sale.payments && sale.payments.length > 0 && (
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 8 }}>
+                          <span style={{ fontSize: 11, color: '#64748b', fontWeight: 700 }}>Método de Pago:</span>
+                          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                             {sale.payments.map((p, pIdx) => (
-                              <span key={pIdx} style={{ fontSize: 9, color: '#f97316', background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.2)', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>
+                              <span key={pIdx} style={{ 
+                                fontSize: 9, 
+                                color: '#f97316', 
+                                background: 'rgba(249,115,22,0.12)', 
+                                border: '1px solid rgba(249,115,22,0.2)', 
+                                padding: '2px 8px', 
+                                borderRadius: 6, 
+                                fontWeight: 800,
+                                textTransform: 'uppercase'
+                              }}>
                                 {p.payment_method_name || 'Otro'}
                               </span>
                             ))}
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
 
-                      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                        {/* Send WhatsApp Button */}
+                      {/* Action buttons */}
+                      <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+                        {/* Send WhatsApp / Share Receipt Button */}
                         <button
                           onClick={() => handleShareReceipt(sale)}
                           disabled={sharingId === sale.id}
                           style={{
-                            flex: 1,
+                            flex: 2,
                             background: sharingId === sale.id ? 'rgba(34, 197, 94, 0.05)' : 'rgba(34, 197, 94, 0.1)',
                             border: '1px solid rgba(34, 197, 94, 0.25)',
-                            borderRadius: 10,
-                            padding: '10px 12px',
+                            borderRadius: 12,
+                            padding: '12px 14px',
                             color: '#22c55e',
-                            fontSize: 12,
+                            fontSize: 13,
                             fontWeight: 800,
                             cursor: sharingId === sale.id ? 'not-allowed' : 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            gap: 6,
+                            gap: 8,
                             opacity: sharingId === sale.id ? 0.7 : 1,
-                            transition: 'opacity 0.2s'
+                            transition: 'all 0.2s ease',
+                            boxShadow: '0 2px 8px rgba(34, 197, 94, 0.05)'
                           }}
                         >
                           {sharingId === sale.id ? (
                             <>
                               <span style={{
-                                width: 12, height: 12, border: '2px solid #22c55e',
+                                width: 14, height: 14, border: '2px solid #22c55e',
                                 borderTopColor: 'transparent', borderRadius: '50%',
                                 display: 'inline-block',
                                 animation: 'spin 0.7s linear infinite'
@@ -474,34 +551,35 @@ export default function Sales({ auth }) {
                               Generando...
                             </>
                           ) : (
-                            <><MessageCircle size={14} /> Compartir Factura</>
+                            <><MessageCircle size={16} /> Compartir Factura</>
                           )}
                         </button>
 
                         {/* Admin Void Invoice Action */}
-                      {sale.status !== 'CANCELLED' && ['SUPERADMIN', 'ADMIN'].includes(auth.user?.role) && (
-                        <button
-                          onClick={() => handleVoidSale(sale)}
-                          style={{
-                            marginTop: 12,
-                            width: '100%',
-                            background: 'rgba(239, 68, 68, 0.08)',
-                            border: '1px solid rgba(239, 68, 68, 0.2)',
-                            borderRadius: 10,
-                            padding: '10px 12px',
-                            color: '#ef4444',
-                            fontSize: 12,
-                            fontWeight: 800,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: 6
-                          }}
-                        >
-                          Anular
-                        </button>
-                      )}
+                        {sale.status !== 'CANCELLED' && ['SUPERADMIN', 'ADMIN'].includes(auth.user?.role) && (
+                          <button
+                            onClick={() => handleVoidSale(sale)}
+                            style={{
+                              flex: 1,
+                              background: 'rgba(239, 68, 68, 0.1)',
+                              border: '1px solid rgba(239, 68, 68, 0.25)',
+                              borderRadius: 12,
+                              padding: '12px 14px',
+                              color: '#ef4444',
+                              fontSize: 13,
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 6,
+                              transition: 'all 0.2s ease',
+                              boxShadow: '0 2px 8px rgba(239, 68, 68, 0.05)'
+                            }}
+                          >
+                            <Trash2 size={16} /> Anular
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}
@@ -514,9 +592,19 @@ export default function Sales({ auth }) {
               <button
                 className="btn-secondary"
                 onClick={() => fetchSales(page + 1)}
-                style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 44, borderRadius: 12 }}
+                style={{ 
+                  marginTop: 12, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  gap: 8, 
+                  height: 48, 
+                  borderRadius: 14,
+                  fontWeight: 800,
+                  fontSize: 13
+                }}
               >
-                <RefreshCw size={14} /> Cargar más facturas
+                <RefreshCw size={16} className="animate-spin-slow" /> Cargar más facturas
               </button>
             )}
           </div>
