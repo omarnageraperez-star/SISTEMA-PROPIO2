@@ -142,11 +142,11 @@ export default function App() {
     };
 
     syncProfileMobile();
-    const interval = setInterval(syncProfileMobile, 3000);
+    const interval = setInterval(syncProfileMobile, 120000);
     return () => clearInterval(interval);
   }, [auth.token, auth.apiUrl, auth.user, auth.settings]);
 
-  // Monitor Real-time Sales for Admin Push Notifications (every 4 seconds)
+  // Monitor Real-time Sales for Admin Push Notifications (every 60 seconds)
   useEffect(() => {
     if (!auth.token || !auth.apiUrl) return;
     const isAdmin = ['SUPERADMIN', 'ADMIN'].includes(auth.user?.role);
@@ -177,7 +177,7 @@ export default function App() {
     };
 
     checkAdminSales();
-    const interval = setInterval(checkAdminSales, 4000);
+    const interval = setInterval(checkAdminSales, 60000);
     return () => clearInterval(interval);
   }, [auth.token, auth.apiUrl, auth.user?.role, auth.settings]);
 
@@ -223,7 +223,7 @@ export default function App() {
     };
 
     checkLowStockMobile();
-    const interval = setInterval(checkLowStockMobile, 15000);
+    const interval = setInterval(checkLowStockMobile, 180000);
     return () => clearInterval(interval);
   }, [auth.token, auth.apiUrl]);
 

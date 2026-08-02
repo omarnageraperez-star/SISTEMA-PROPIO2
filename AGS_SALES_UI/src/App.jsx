@@ -980,7 +980,7 @@ function App() {
     };
 
     syncProfile();
-    const interval = setInterval(syncProfile, 3000); // Polling every 3s for instantaneous permission updates
+    const interval = setInterval(syncProfile, 120000); // Polling every 2m for permission updates
     const handlePermUpdated = () => syncProfile();
     window.addEventListener('permissions-updated', handlePermUpdated);
 
@@ -1035,7 +1035,7 @@ function App() {
       } catch (e) {
         // Silently ignore network errors to not interrupt the user
       }
-    }, 3000); // Check every 3 seconds for real-time response
+    }, 60000); // Check every 60 seconds for real-time response
 
     return () => clearInterval(interval);
   }, [token, appState, userProfile, config?.apiUrl]);
@@ -1105,7 +1105,7 @@ function App() {
       } catch (e) {
         // Silently ignore network errors
       }
-    }, 3000);
+    }, 180000); // Check every 3 minutes for updates
 
     return () => {
       clearInterval(interval);
