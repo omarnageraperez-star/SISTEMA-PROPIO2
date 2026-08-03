@@ -88,7 +88,7 @@ export default function Dashboard({ auth }) {
     fetchDashboard();
     const interval = setInterval(() => {
       fetchDashboard(true);
-    }, 15000);
+    }, 120000);
     return () => clearInterval(interval);
   }, []);
 

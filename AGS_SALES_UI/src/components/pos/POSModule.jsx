@@ -692,8 +692,16 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
       {/* Messages */}
       {(successMsg || errorMsg) && (
         <div className="absolute top-0 left-1/2 -translate-x-1/2 z-50 mt-4 flex flex-col gap-2">
-          {successMsg && <div className="bg-green-100 border border-green-400 text-green-700 px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-fade-in"><CheckCircle size={18}/> {successMsg}</div>}
-          {errorMsg && <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-fade-in">{errorMsg}</div>}
+          {successMsg && (
+            <div className="bg-green-100 border border-green-400 text-green-700 px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-fade-in">
+              <CheckCircle size={18}/> {typeof successMsg === 'object' ? (successMsg.message || JSON.stringify(successMsg)) : String(successMsg)}
+            </div>
+          )}
+          {errorMsg && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-fade-in">
+              {typeof errorMsg === 'object' ? (errorMsg.message || errorMsg.error || JSON.stringify(errorMsg)) : String(errorMsg)}
+            </div>
+          )}
         </div>
       )}
 
@@ -1162,7 +1170,7 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
 
               {errorMsg && (
                 <div className="text-sm font-semibold text-white bg-red-600 p-4 rounded-xl shadow-sm text-center">
-                  {errorMsg}
+                  {typeof errorMsg === 'object' ? (errorMsg.message || errorMsg.error || JSON.stringify(errorMsg)) : String(errorMsg)}
                 </div>
               )}
 

@@ -449,7 +449,7 @@ function App() {
     };
 
     checkAdminSales();
-    const interval = setInterval(checkAdminSales, 15000);
+    const interval = setInterval(checkAdminSales, 45000);
     return () => clearInterval(interval);
   }, [token, apiUrl, userProfile?.role, userProfile?.username, config?.default_printer, config?.apiUrl, config?.ticket_logo, systemSettings]);
 
@@ -2443,8 +2443,29 @@ function App() {
     );
   }
 
-  const renderError = () => errorMsg && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm shadow-sm flex items-center gap-2"><Lock size={16}/> {errorMsg}</div>;
-  const renderSuccess = () => successMsg && <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm shadow-sm flex items-center gap-2"><CheckCircle size={16}/> {successMsg}</div>;
+  const renderError = () => {
+    if (!errorMsg) return null;
+    const msgString = typeof errorMsg === 'object' 
+      ? (errorMsg.message || errorMsg.error || JSON.stringify(errorMsg)) 
+      : String(errorMsg);
+    return (
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm shadow-sm flex items-center gap-2">
+        <Lock size={16}/> {msgString}
+      </div>
+    );
+  };
+
+  const renderSuccess = () => {
+    if (!successMsg) return null;
+    const msgString = typeof successMsg === 'object'
+      ? (successMsg.message || JSON.stringify(successMsg))
+      : String(successMsg);
+    return (
+      <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm shadow-sm flex items-center gap-2">
+        <CheckCircle size={16}/> {msgString}
+      </div>
+    );
+  };
 
   if (appState === 'SETUP_API') {
     return (

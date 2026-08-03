@@ -217,8 +217,16 @@ export default function AssetsModule({ config, token }) {
 
       {(errorMsg || successMsg) && (
         <div className="px-2">
-          {errorMsg && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl text-sm shadow-sm flex items-center gap-2"><ShieldAlert size={16}/> {errorMsg}</div>}
-          {successMsg && <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl text-sm shadow-sm flex items-center gap-2"><CheckCircle size={16}/> {successMsg}</div>}
+          {errorMsg && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl text-sm shadow-sm flex items-center gap-2">
+              <ShieldAlert size={16}/> {typeof errorMsg === 'object' ? (errorMsg.message || errorMsg.error || JSON.stringify(errorMsg)) : String(errorMsg)}
+            </div>
+          )}
+          {successMsg && (
+            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl text-sm shadow-sm flex items-center gap-2">
+              <CheckCircle size={16}/> {typeof successMsg === 'object' ? (successMsg.message || JSON.stringify(successMsg)) : String(successMsg)}
+            </div>
+          )}
         </div>
       )}
 

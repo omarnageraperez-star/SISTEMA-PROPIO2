@@ -60,7 +60,7 @@ export default function CashControl({ auth }) {
       if (fetchRef.current) {
         fetchRef.current(true);
       }
-    }, 15000); // Poll every 15s
+    }, 120000); // Poll every 120s
     return () => clearInterval(interval);
   }, []);
 
