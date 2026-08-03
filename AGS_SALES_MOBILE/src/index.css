@@ -64,7 +64,23 @@ html, body, #root {
 .safe-top    { padding-top: calc(max(env(safe-area-inset-top, 0px), 36px) + 8px) !important; }
 .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px) !important; }
 
-/* Scrollable content areas */
+/* Page containers & Scroll areas */
+.page-container {
+  width: 100%;
+  min-height: 100%;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(110px + env(safe-area-inset-bottom, 20px)) !important;
+}
+
+.page-content {
+  flex: 1;
+  padding-bottom: calc(110px + env(safe-area-inset-bottom, 20px)) !important;
+}
+
 .scroll-area {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -477,4 +493,56 @@ html, body, #root {
 @keyframes progressSweep {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
+}
+
+/* Shimmer Satin Wave for Skeleton Loaders (Apple / Vercel Style) */
+.skeleton-box {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.02) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.02) 100%
+  ) !important;
+  background-size: 200% 100% !important;
+  animation: shimmerWave 1.6s infinite ease-in-out !important;
+}
+
+@keyframes shimmerWave {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Premium Dark Mode & Notch Safety Styling for Sileo Toasts */
+[data-sileo-toaster],
+[class*="sileo-toaster"],
+.sileo-container {
+  padding-top: max(env(safe-area-inset-top, 0px), 42px) !important;
+  margin-top: 10px !important;
+  z-index: 99999 !important;
+}
+
+[data-sileo-toaster] *,
+[data-sileo-toast],
+[data-sileo-toast] *,
+.sileo-toast,
+.sileo-toast *,
+[class*="sileo"],
+[class*="sileo"] * {
+  background-color: #1e2435 !important;
+  background: #1e2435 !important;
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-sileo-toast] p,
+[data-sileo-toast] span,
+[data-sileo-toast] div,
+[data-sileo-toast] h1,
+[data-sileo-toast] h2,
+[data-sileo-toast] h3,
+[class*="sileo"] p,
+[class*="sileo"] span,
+[class*="sileo"] div {
+  color: #ffffff !important;
 }

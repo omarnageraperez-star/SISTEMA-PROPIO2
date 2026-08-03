@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Send, Search, Plus, Minus, X, ShoppingCart, ChevronRight, Check, Trash2, Package, Tag, CreditCard, ScanLine } from 'lucide-react';
+import { Send, Search, Plus, Minus, X, ShoppingCart, ChevronRight, Check, CheckCircle2, Trash2, Package, Tag, CreditCard, ScanLine } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import { apiRequest, apiUrl, parseError } from '../lib/api';
 import { DarkSwal, Toast } from '../lib/swal';
@@ -10,6 +10,7 @@ import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Capacitor } from '@capacitor/core';
 import WebScannerModal from '../components/WebScannerModal';
 import { saveSaleOffline, getOfflineSales, syncOfflineSales } from '../lib/offlineQueue';
+import { sileo } from 'sileo';
 
 const formatWithSettings = (n, settings) => {
   const num = parseFloat(n) || 0;
@@ -136,9 +137,18 @@ export default function POS({ auth }) {
       if (mRes.ok) {
         const d = await mRes.json();
         const methodsList = Array.isArray(d) ? d : d.results || [];
-        setMethods(methodsList);
-        if (methodsList.length > 0) {
-          setSelectedMethod(methodsList[0].id); // Auto-select first method (usually Cash/Efectivo)
+        const uniqueMethods = [];
+        const seenNames = new Set();
+        for (const m of methodsList) {
+          const norm = m.name ? m.name.toLowerCase().trim() : '';
+          if (norm && !seenNames.has(norm)) {
+            seenNames.add(norm);
+            uniqueMethods.push(m);
+          }
+        }
+        setMethods(uniqueMethods);
+        if (uniqueMethods.length > 0) {
+          setSelectedMethod(uniqueMethods[0].id); // Auto-select first method (usually Cash/Efectivo)
         }
       }
     } finally {
@@ -157,13 +167,16 @@ export default function POS({ auth }) {
       const existing = prev.find(i => i.product_id === p.id);
       if (existing) {
         if (p.has_inventory_control !== false && existing.quantity + 1 > parseFloat(p.stock || 0)) {
+          sileo.warning(`Solo quedan ${p.stock} unidades de ${p.name}`);
           DarkSwal.fire({ icon: 'warning', title: 'Stock Máximo', text: `Solo quedan ${p.stock} unidades de este producto.`, confirmButtonText: 'Entendido' });
           triggerHaptic('error');
           return prev;
         }
+        sileo.info(`🛒 +1 ${p.name}`);
         return prev.map(i => i.product_id === p.id ? { ...i, quantity: i.quantity + 1 } : i);
       }
       const pr = parseFloat(p.price_sell || p.price || 0);
+      sileo.info(`🛒 Agregado: ${p.name}`);
       return [...prev, { product_id: p.id, product_name: p.name, price: pr, quantity: 1, stock: p.stock, has_inventory_control: p.has_inventory_control }];
     });
   };
@@ -288,7 +301,6 @@ export default function POS({ auth }) {
         const resData = await res.json().catch(() => ({}));
         triggerHaptic('success');
         playSuccessSound(); 
-        setSuccess(true); // Activa el avión
         
         setCart([]);
         setGlobalDiscountPercent(0);
@@ -302,22 +314,18 @@ export default function POS({ auth }) {
         // Fetch latest inventory to avoid stale stock issues
         fetchData();
 
-        setTimeout(() => {
-          setSuccess(false); // Oculta el avión
-          sendNativeNotification({
-            title: '🎉 Venta Registrada',
-            body: `Factura ${resData?.invoice_number || 'procesada'} por ${fmt(total)}.`
-          });
-          DarkSwal.fire({
-            icon: 'success',
-            title: '¡Venta Exitosa!',
-            text: `Factura ${resData?.invoice_number || 'procesada'} por ${fmt(total)}.`,
-            timer: 2500,
-            showConfirmButton: false
-          });
-        }, 1500);
+        sendNativeNotification({
+          title: '🎉 Venta Registrada',
+          body: `Factura ${resData?.invoice_number || 'procesada'} por ${fmt(total)}.`
+        });
+        sileo.success({
+          title: '🎉 ¡Venta Exitosa!',
+          description: `Factura ${resData?.invoice_number || 'procesada'} por ${fmt(total)}`
+        });
       } else {
-        setErrMsg(await parseError(res));
+        const errorText = await parseError(res);
+        setErrMsg(errorText);
+        sileo.error(errorText || 'Error al registrar la venta');
       }
     } catch (err) {
       if (!navigator.onLine || err.message.includes('network') || err.message.includes('fetch')) {
@@ -392,17 +400,6 @@ export default function POS({ auth }) {
         }
       />
 
-      {/* Success Animation */}
-      {success && (
-        <div className="plane-animation-container">
-          <div className="plane-glow-backdrop" />
-          <div className="plane-wrapper">
-            <div className="plane-trail" />
-            <Send size={110} className="plane-icon-fly" />
-          </div>
-        </div>
-      )}
-
       <div className="page-content" style={{ padding: '12px 16px 0' }}>
         {/* Search */}
         <div className="search-bar" style={{ marginBottom: 12, display: 'flex', alignItems: 'center' }}>
@@ -414,48 +411,58 @@ export default function POS({ auth }) {
           </button>
         </div>
 
-        {/* Dynamic Category Tabs */}
+        {/* Dynamic Category Tabs (iOS 18 Liquid Segmented Pills) */}
         {products.length > 0 && (
-          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 10, marginBottom: 12, scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+          <div style={{
+            display: 'flex', gap: 6, overflowX: 'auto', padding: '6px 8px', marginBottom: 14,
+            scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch',
+            background: 'rgba(16, 20, 32, 0.65)', borderRadius: 99,
+            border: '1px solid rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(16px)'
+          }}>
             <button
               type="button"
               onClick={() => setSelectedCategory('')}
               style={{
-                padding: '6px 14px',
-                borderRadius: 20,
-                fontWeight: 700,
+                padding: '7px 16px',
+                borderRadius: 99,
+                fontWeight: 800,
                 fontSize: 12,
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
-                background: selectedCategory === '' ? 'linear-gradient(135deg, #f97316, #ea580c)' : '#1e2435',
-                color: selectedCategory === '' ? 'white' : '#94a3b8',
-                border: `1px solid ${selectedCategory === '' ? 'transparent' : '#252d42'}`,
-                transition: 'all 0.2s'
+                background: selectedCategory === '' ? 'linear-gradient(135deg, #f97316, #ea580c)' : 'transparent',
+                color: selectedCategory === '' ? '#ffffff' : '#94a3b8',
+                border: 'none',
+                boxShadow: selectedCategory === '' ? '0 4px 14px rgba(249,115,22,0.4)' : 'none',
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
               }}
             >
               🏷️ Todos
             </button>
-            {categories.map(cat => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setSelectedCategory(cat.id)}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: 20,
-                  fontWeight: 700,
-                  fontSize: 12,
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  background: String(selectedCategory) === String(cat.id) ? 'linear-gradient(135deg, #f97316, #ea580c)' : '#1e2435',
-                  color: String(selectedCategory) === String(cat.id) ? 'white' : '#94a3b8',
-                  border: `1px solid ${String(selectedCategory) === String(cat.id) ? 'transparent' : '#252d42'}`,
-                  transition: 'all 0.2s'
-                }}
-              >
-                📦 {cat.name}
-              </button>
-            ))}
+            {categories.map(cat => {
+              const isSel = String(selectedCategory) === String(cat.id);
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat.id)}
+                  style={{
+                    padding: '7px 16px',
+                    borderRadius: 99,
+                    fontWeight: 800,
+                    fontSize: 12,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    background: isSel ? 'linear-gradient(135deg, #f97316, #ea580c)' : 'transparent',
+                    color: isSel ? '#ffffff' : '#94a3b8',
+                    border: 'none',
+                    boxShadow: isSel ? '0 4px 14px rgba(249,115,22,0.4)' : 'none',
+                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+                  }}
+                >
+                  📦 {cat.name}
+                </button>
+              );
+            })}
           </div>
         )}
 
@@ -473,7 +480,7 @@ export default function POS({ auth }) {
             {filtered.map(p => {
               const inCart = cart.find(i => i.product_id === p.id);
               const stockNum = p.stock ?? 0;
-              const isLowStock = stockNum <= 5;
+              const isLowStock = stockNum <= 5 && stockNum > 0;
               const isOut = stockNum <= 0;
               const imgUrl = p.image ? (p.image.startsWith('http') ? p.image : `${auth.apiUrl.replace('/api/', '').replace(/\/$/, '')}/${p.image.startsWith('/') ? p.image.slice(1) : p.image}`) : null;
               
@@ -482,10 +489,10 @@ export default function POS({ auth }) {
                   key={p.id}
                   onClick={() => addToCart(p)}
                   style={{
-                    background: inCart ? 'rgba(249, 115, 22, 0.15)' : 'rgba(20, 24, 36, 0.75)',
+                    background: inCart ? 'rgba(249, 115, 22, 0.15)' : 'linear-gradient(145deg, rgba(20, 24, 36, 0.85) 0%, rgba(30, 36, 53, 0.6) 100%)',
                     backdropFilter: 'blur(20px)',
                     WebkitBackdropFilter: 'blur(20px)',
-                    border: inCart ? '1.5px solid #f97316' : (isOut ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(255, 255, 255, 0.08)'),
+                    border: inCart ? '1.5px solid #f97316' : (isOut ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(255, 255, 255, 0.1)'),
                     borderRadius: 20,
                     padding: 12,
                     textAlign: 'left',
@@ -496,7 +503,7 @@ export default function POS({ auth }) {
                     justifyContent: 'space-between',
                     minHeight: 125,
                     position: 'relative',
-                    boxShadow: inCart ? '0 8px 24px rgba(249, 115, 22, 0.25)' : '0 6px 20px rgba(0, 0, 0, 0.35)',
+                    boxShadow: inCart ? '0 8px 24px rgba(249, 115, 22, 0.3)' : '0 6px 20px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255,255,255,0.08)',
                     transform: inCart ? 'scale(1.02)' : 'none',
                     overflow: 'hidden'
                   }}
@@ -539,8 +546,17 @@ export default function POS({ auth }) {
                       <span style={{ fontSize: 15, fontWeight: 950, color: '#22c55e' }}>
                         {fmt(p.price_sell || p.price || 0)}
                       </span>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: isOut ? '#ef4444' : (isLowStock ? '#f59e0b' : '#64748b'), marginTop: 2 }}>
-                        Stock: {stockNum} {isLowStock && '⚠️'}
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        fontSize: 10, fontWeight: 800,
+                        color: isOut ? '#ef4444' : (isLowStock ? '#f59e0b' : '#64748b'), marginTop: 2
+                      }}>
+                        <span style={{
+                          width: 6, height: 6, borderRadius: '50%',
+                          background: isOut ? '#ef4444' : (isLowStock ? '#f59e0b' : '#22c55e'),
+                          boxShadow: `0 0 8px ${isOut ? '#ef4444' : (isLowStock ? '#f59e0b' : '#22c55e')}`
+                        }} />
+                        Stock: {stockNum}
                       </span>
                     </div>
                     
@@ -577,37 +593,39 @@ export default function POS({ auth }) {
         )}
       </div>
 
-      {/* Floating Bottom Cart Bar */}
-      {cart.length > 0 && !showCartModal && (
+      {/* Floating Bottom Cart Bar (Teleported to document.body for fixed viewport anchoring) */}
+      {cart.length > 0 && !showCartModal && createPortal(
         <div style={{
           position: 'fixed',
-          bottom: 'calc(82px + env(safe-area-inset-bottom, 8px))',
+          bottom: 'calc(74px + env(safe-area-inset-bottom, 10px))',
           left: 16,
           right: 16,
-          zIndex: 110, // Sits safely above bottom navigation bar
+          zIndex: 150, // Floating cleanly above bottom navigation bar
           background: 'linear-gradient(135deg, #f97316, #ea580c)',
-          borderRadius: 16,
+          borderRadius: 18,
           padding: '12px 18px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          boxShadow: '0 8px 30px rgba(249,115,22,0.45)',
+          boxShadow: '0 10px 32px rgba(249,115,22,0.5), 0 4px 12px rgba(0,0,0,0.4)',
+          border: '1px solid rgba(255, 255, 255, 0.25)',
           cursor: 'pointer',
         }} onClick={() => { setShowCartModal(true); setErrMsg(''); }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ background: 'rgba(255, 255, 255, 0.2)', width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <ShoppingCart size={16} color="white" />
+            <div style={{ background: 'rgba(255, 255, 255, 0.2)', width: 32, height: 32, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <ShoppingCart size={18} color="white" />
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 900, color: 'white' }}>Ver Compra</p>
-              <p style={{ margin: 0, fontSize: 11, color: 'rgba(255, 255, 255, 0.85)' }}>{itemCount} artículo{itemCount > 1 ? 's' : ''}</p>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 900, color: 'white' }}>Ver Compra</p>
+              <p style={{ margin: 0, fontSize: 11, color: 'rgba(255, 255, 255, 0.9)', fontWeight: 600 }}>{itemCount} artículo{itemCount > 1 ? 's' : ''}</p>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 16, fontWeight: 950, color: 'white', marginRight: 4 }}>{fmt(total)}</span>
+            <span style={{ fontSize: 17, fontWeight: 950, color: 'white', marginRight: 4 }}>{fmt(total)}</span>
             <ChevronRight size={18} color="white" />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Slide-Up Cart Bottom Sheet (iOS 26 Liquid Glass) */}

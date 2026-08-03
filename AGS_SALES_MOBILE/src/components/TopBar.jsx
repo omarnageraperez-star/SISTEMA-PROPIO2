@@ -9,18 +9,19 @@ export default function TopBar({ title, subtitle, showBack = false, rightAction 
     <div
       className="safe-top"
       style={{
-        background: 'linear-gradient(180deg, #141824 0%, rgba(20,24,36,0.95) 100%)',
-        borderBottom: '1px solid #1e2435',
-        backdropFilter: 'blur(12px)',
+        background: 'linear-gradient(180deg, rgba(20,24,36,0.98) 0%, rgba(10,12,20,0.92) 100%)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+        backdropFilter: 'blur(20px)',
         position: 'sticky',
         top: 0,
         zIndex: 50,
+        boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
       }}
     >
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        padding: '12px 20px',
+        padding: '12px 18px',
         gap: 12,
         minHeight: 56,
       }}>

@@ -1,1 +1,32 @@
-/* App.css cleared for Tailwind */
+/* Custom Sileo Toast Styling for Dark Mode */
+[data-sileo-toaster],
+[class*="sileo-toaster"],
+.sileo-container {
+  z-index: 99999 !important;
+}
+
+[data-sileo-toaster] *,
+[data-sileo-toast],
+[data-sileo-toast] *,
+.sileo-toast,
+.sileo-toast *,
+[class*="sileo"],
+[class*="sileo"] * {
+  background-color: #1e2435 !important;
+  background: #1e2435 !important;
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-sileo-toast] p,
+[data-sileo-toast] span,
+[data-sileo-toast] div,
+[data-sileo-toast] h1,
+[data-sileo-toast] h2,
+[data-sileo-toast] h3,
+[class*="sileo"] p,
+[class*="sileo"] span,
+[class*="sileo"] div {
+  color: #ffffff !important;
+}

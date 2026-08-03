@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Landmark, ArrowUpRight, ArrowDownRight, Scale, AlertTriangle, Plus, X, Save, Clock, ArrowRight, ShieldCheck, DollarSign } from 'lucide-react';
+import { Landmark, ArrowUpRight, ArrowDownRight, Scale, AlertTriangle, Plus, X, Save, Clock, ArrowRight, ShieldCheck, DollarSign, Users } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import { apiRequest, apiUrl, parseError } from '../lib/api';
 import { DarkSwal, Toast } from '../lib/swal';
@@ -22,7 +22,8 @@ export default function CashControl({ auth }) {
   const [selectedShiftId, setSelectedShiftId] = useState('');
 
   // Opening Shift form state
-  const [openForm, setOpenForm]     = useState({ register_id: '', initial_balance: '0' });
+  const [openForm, setOpenForm]     = useState({ register_id: '', initial_balance: '0', user_id: '' });
+  const [usersList, setUsersList]   = useState([]);
   const [opening, setOpening]       = useState(false);
 
   // Closing Shift form state
@@ -89,6 +90,20 @@ export default function CashControl({ auth }) {
             setOpenForm(p => ({ ...p, register_id: String(mobileReg.id) }));
           } else {
             setOpenForm(p => ({ ...p, register_id: 'CREATE_MOBILE' }));
+          }
+        }
+
+        // Fetch users list for admin assignment (only admins see this)
+        const isAdmin = ['SUPERADMIN', 'ADMIN'].includes(auth.user?.role);
+        if (isAdmin) {
+          try {
+            const usersRes = await apiRequest(apiUrl(auth.apiUrl, 'users/admin-users/'), {}, auth.token);
+            if (usersRes.ok) {
+              const ud = await usersRes.json();
+              setUsersList(Array.isArray(ud) ? ud : ud.results || []);
+            }
+          } catch (e) {
+            console.warn('Could not fetch users list:', e);
           }
         }
       }
@@ -239,12 +254,17 @@ export default function CashControl({ auth }) {
         }
       }
 
+      const payload = {
+        register_id: parseInt(finalRegisterId),
+        initial_balance: parseFloat(openForm.initial_balance || 0)
+      };
+      // If admin selected a specific user, include user_id
+      if (openForm.user_id) {
+        payload.user_id = parseInt(openForm.user_id);
+      }
       const res = await apiRequest(apiUrl(auth.apiUrl, 'accounting/cash-shifts/open/'), {
         method: 'POST',
-        body: JSON.stringify({
-          register_id: parseInt(finalRegisterId),
-          initial_balance: parseFloat(openForm.initial_balance || 0)
-        })
+        body: JSON.stringify(payload)
       }, auth.token);
 
       if (res.ok) {
@@ -525,6 +545,34 @@ export default function CashControl({ auth }) {
                   )}
                 </select>
               </div>
+
+              {/* User Assignment Selector (Admin Only) */}
+              {['SUPERADMIN', 'ADMIN'].includes(auth.user?.role) && usersList.length > 0 && (
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#64748b', display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+                    <Users size={13} color="#3b82f6" /> Asignar Cajero Responsable
+                  </label>
+                  <select
+                    className="input-field"
+                    value={openForm.user_id}
+                    onChange={e => setOpenForm({ ...openForm, user_id: e.target.value })}
+                    style={{ background: '#252d42', color: openForm.user_id ? '#f1f5f9' : '#64748b' }}
+                  >
+                    <option value="">Yo mismo ({auth.user?.username})</option>
+                    {usersList.filter(u => u.is_active !== false).map(u => (
+                      <option key={u.id} value={u.id}>
+                        {u.first_name && u.last_name
+                          ? `${u.first_name} ${u.last_name} (${u.username})`
+                          : u.username
+                        } — {u.role || 'CAJERO'}
+                      </option>
+                    ))}
+                  </select>
+                  <span style={{ fontSize: 10, color: '#475569', marginTop: 2, display: 'block' }}>
+                    Selecciona qué usuario operará este turno de caja.
+                  </span>
+                </div>
+              )}
 
               <div>
                 <label style={{ fontSize: 12, fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 6 }}>Fondo Inicial de Efectivo (Base)</label>

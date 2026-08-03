@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Sparkles, ShoppingCart, ShoppingBag, CreditCard, Receipt, ScanLine, Tag, CheckCircle2 } from 'lucide-react';
+import { Toaster } from 'sileo';
 import defaultLogo from './default_logo.png';
 import Dashboard from './pages/Dashboard';
 import Inventory from './pages/Inventory';
@@ -504,6 +505,7 @@ export default function App() {
             }
           />
         </Routes>
+        <Toaster position="top-center" />
       </div>
     </BrowserRouter>
   );

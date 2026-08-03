@@ -10,6 +10,7 @@ import { SkeletonCard } from '../components/SkeletonLoader';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Capacitor } from '@capacitor/core';
 import WebScannerModal from '../components/WebScannerModal';
+import { sileo } from 'sileo';
 
 const BASE_FIELDS = { name: '', sku: '', internal_code: '', price: '', cost: '', stock: '', category: '', description: '' };
 
@@ -366,19 +367,30 @@ export default function Inventory({ auth }) {
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b'
     });
     if (!confirmRes.isConfirmed) return;
     try {
       const res = await apiRequest(apiUrl(auth.apiUrl, `inventory/products/${p.id}/`), { method: 'DELETE' }, auth.token);
       if (res.ok) {
+        sileo.success({ title: '¡Eliminado!', description: `El producto "${p.name}" fue eliminado.` });
         Toast.fire({ icon: 'success', title: 'Producto eliminado del inventario' });
         fetchAll();
       } else {
-        DarkSwal.fire('Error', 'No se pudo eliminar el producto.', 'error');
+        const errorMsg = await parseError(res);
+        sileo.error(errorMsg || 'No se pudo eliminar el producto.');
+        DarkSwal.fire({
+          icon: 'error',
+          title: 'No se pudo eliminar',
+          text: errorMsg || 'Este producto tiene ventas asociadas o no dispones de permisos suficientes para eliminarlo.'
+        });
       }
-    } catch {
-      DarkSwal.fire('Error', 'Error de conexión.', 'error');
+    } catch (e) {
+      console.error(e);
+      sileo.error('Error de conexión al eliminar producto.');
+      DarkSwal.fire('Error', 'Error de conexión con el servidor.', 'error');
     }
   }
 
@@ -996,28 +1008,44 @@ export default function Inventory({ auth }) {
                           </span>
                         </div>
 
-                        {/* Quick Edit Action Top Right */}
+                        {/* Quick Edit & Delete Actions Top Right */}
                         {canEdit && (
-                          <button
-                            onClick={() => openEdit(p)}
-                            style={{
-                              position: 'absolute',
-                              top: 8,
-                              right: 8,
-                              width: 28,
-                              height: 28,
-                              borderRadius: '50%',
-                              background: 'rgba(10, 12, 20, 0.85)',
-                              backdropFilter: 'blur(8px)',
-                              border: '1px solid rgba(255, 255, 255, 0.15)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            <Edit2 size={12} color="#f97316" />
-                          </button>
+                          <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 4 }}>
+                            <button
+                              onClick={() => openEdit(p)}
+                              style={{
+                                width: 28,
+                                height: 28,
+                                borderRadius: '50%',
+                                background: 'rgba(10, 12, 20, 0.85)',
+                                backdropFilter: 'blur(8px)',
+                                border: '1px solid rgba(249, 115, 22, 0.3)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <Edit2 size={12} color="#f97316" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(p)}
+                              style={{
+                                width: 28,
+                                height: 28,
+                                borderRadius: '50%',
+                                background: 'rgba(10, 12, 20, 0.85)',
+                                backdropFilter: 'blur(8px)',
+                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <Trash2 size={12} color="#ef4444" />
+                            </button>
+                          </div>
                         )}
                       </div>
 
