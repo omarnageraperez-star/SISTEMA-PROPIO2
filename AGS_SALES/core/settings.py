@@ -88,6 +88,7 @@ DB_HOST = os.environ.get('DB_HOST', 'db')
 DB_NAME = os.environ.get('DB_NAME', 'ags_sales')
 DB_USER = os.environ.get('DB_USER', 'root')
 DB_PASSWORD = os.environ.get('DB_PASSWORD', 'root')
+DB_PORT = os.environ.get('DB_PORT', '3306')
 
 # Database configuration - Fallback to SQLite if MySQL host is local or not defined
 USE_SQLITE = DB_HOST in ('127.0.0.1', 'localhost', 'db', '')
@@ -101,16 +102,18 @@ if USE_SQLITE:
         }
     }
 else:
+    # Detectar si es Supabase (PostgreSQL) o Hostinger (MySQL)
+    db_engine = 'django.db.backends.postgresql' if DB_PORT == '5432' or os.environ.get('DB_ENGINE') == 'postgresql' else 'django.db.backends.mysql'
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.mysql',
+            'ENGINE': db_engine,
             'NAME': DB_NAME,
             'USER': DB_USER,
             'PASSWORD': DB_PASSWORD,
             'HOST': DB_HOST,
-            'PORT': '3306',
-            'CONN_MAX_AGE': 0,  # Cerrar conexión al finalizar cada request (evita "Server has gone away" en base de datos remota de Hostinger)
-            'OPTIONS': {
+            'PORT': DB_PORT,
+            'CONN_MAX_AGE': 0,  # Cerrar conexión al finalizar cada request
+            'OPTIONS': {} if db_engine == 'django.db.backends.postgresql' else {
                 'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
                 'charset': 'utf8mb4',
             }
