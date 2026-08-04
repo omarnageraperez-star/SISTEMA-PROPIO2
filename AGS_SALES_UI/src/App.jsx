@@ -2495,12 +2495,26 @@ function App() {
     return (
       <div className="flex items-center justify-center min-h-screen py-8 px-4 overflow-y-auto w-full">
         <div className="glass-panel p-8 w-full max-w-6xl shadow-2xl rounded-3xl animate-in fade-in duration-300">
-          <div className="flex items-center gap-3 mb-6 border-b border-gray-150 pb-4">
-            <img src="./icon.png" alt="Logo" className="w-12 drop-shadow-md animate-pulse" />
-            <div className="text-left">
-              <h1 className="text-2xl font-bold text-slate-800">Asistente de Configuración Inicial</h1>
-              <p className="text-xs text-gray-500 font-medium">Inicializa los parámetros del Punto de Venta locales y en la nube</p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-gray-150 pb-4">
+            <div className="flex items-center gap-3">
+              <img src="./icon.png" alt="Logo" className="w-12 drop-shadow-md" />
+              <div className="text-left">
+                <h1 className="text-2xl font-bold text-slate-800">Asistente de Configuración Inicial</h1>
+                <p className="text-xs text-gray-500 font-medium">Inicializa los parámetros del Punto de Venta locales y en la nube</p>
+              </div>
             </div>
+            <button 
+              type="button" 
+              onClick={() => {
+                setErrorMsg('');
+                setSuccessMsg('');
+                setAppState('SETUP_API');
+              }}
+              className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition-all shadow-sm w-fit self-end sm:self-center"
+            >
+              <Server size={14} className="text-slate-500" />
+              <span>🔌 Cambiar Servidor/API</span>
+            </button>
           </div>
           
           {renderError()}
