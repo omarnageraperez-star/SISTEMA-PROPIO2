@@ -90,7 +90,6 @@ export default function Inventory({ auth }) {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   
   // Modal states
   const [showCatModal, setShowCatModal] = useState(false);
