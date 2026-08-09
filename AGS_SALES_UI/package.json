@@ -64,7 +64,7 @@
     "appId": "com.agssales.erp",
     "productName": "AGS SALES ERP",
     "directories": {
-      "output": "C:/Users/USUARIO/ags-sales-build"
+      "output": "dist-electron"
     },
     "files": [
       "dist/**/*",

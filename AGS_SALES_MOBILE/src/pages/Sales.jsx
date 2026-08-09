@@ -9,6 +9,7 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { generateTicketHTML } from '../lib/print';
+import { hasPermission } from '../lib/permissionsConfig';
 
 const formatWithSettings = (n, settings) => {
   const num = parseFloat(n) || 0;
@@ -198,7 +199,7 @@ export default function Sales({ auth }) {
     }
   };
 
-  const isAdminUser = ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(auth.user?.role);
+  const isAdminUser = hasPermission(auth.user, 'settings.user_management') || ['SUPERADMIN', 'ADMIN'].includes(auth.user?.role);
   const cashiers = [...new Set(sales.map(s => s.user_username).filter(Boolean))];
 
   const filtered = sales.filter(s => {

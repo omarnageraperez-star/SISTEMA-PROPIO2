@@ -4,6 +4,7 @@ import { Landmark, ArrowUpRight, ArrowDownRight, Scale, AlertTriangle, Plus, X, 
 import TopBar from '../components/TopBar';
 import { apiRequest, apiUrl, parseError } from '../lib/api';
 import { DarkSwal, Toast } from '../lib/swal';
+import { hasPermission } from '../lib/permissionsConfig';
 const formatWithSettings = (n, settings) => {
   const num = parseFloat(n) || 0;
   const symbol = settings?.currency_symbol || '$';
@@ -94,7 +95,7 @@ export default function CashControl({ auth }) {
         }
 
         // Fetch users list for admin assignment (only admins see this)
-        const isAdmin = ['SUPERADMIN', 'ADMIN'].includes(auth.user?.role);
+        const isAdmin = hasPermission(auth.user, 'settings.user_management') || ['SUPERADMIN', 'ADMIN'].includes(auth.user?.role);
         if (isAdmin) {
           try {
             const usersRes = await apiRequest(apiUrl(auth.apiUrl, 'users/admin-users/'), {}, auth.token);
@@ -126,7 +127,7 @@ export default function CashControl({ auth }) {
       }
 
       // 4. Determine which shift is active for display
-      const isAdmin = ['SUPERADMIN', 'ADMIN'].includes(auth.user?.role);
+      const isAdmin = hasPermission(auth.user, 'settings.user_management') || ['SUPERADMIN', 'ADMIN'].includes(auth.user?.role);
       if (isAdmin) {
         if (openShiftsList.length > 0) {
           let target = null;

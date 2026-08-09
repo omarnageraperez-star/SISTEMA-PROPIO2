@@ -11,6 +11,7 @@ import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Capacitor } from '@capacitor/core';
 import WebScannerModal from '../components/WebScannerModal';
 import { sileo } from 'sileo';
+import { hasPermission } from '../lib/permissionsConfig';
 
 const BASE_FIELDS = { name: '', sku: '', internal_code: '', price: '', cost: '', stock: '', category: '', description: '' };
 
@@ -86,26 +87,21 @@ export default function Inventory({ auth }) {
   const [products, setProducts]   = useState([]);
   const [categories, setCategories] = useState([]);
   const [query, setQuery]         = useState('');
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [loading, setLoading]     = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing]     = useState(null); // null = new
-  const [form, setForm]           = useState(BASE_FIELDS);
-  const [saving, setSaving]       = useState(false);
-  const [errMsg, setErrMsg]       = useState('');
-  const [imgPreview, setImgPreview] = useState(null);
-  const [imgFile, setImgFile]     = useState(null);
-
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  
+  // Modal states
+  const [showCatModal, setShowCatModal] = useState(false);
   const [newCatName, setNewCatName] = useState('');
   const [savingCat, setSavingCat] = useState(false);
   const [catErrMsg, setCatErrMsg] = useState('');
   const [showCatalogQR, setShowCatalogQR] = useState(false);
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
 
-  const userRole = (auth.user?.role || 'ADMIN').toUpperCase();
-  const isAdmin = ['SUPERADMIN', 'ADMIN'].includes(userRole);
-  const canEdit = ['SUPERADMIN', 'ADMIN', 'WAREHOUSE', 'CASHIER', 'SELLER'].includes(userRole) || true;
+  const isAdmin = hasPermission(auth.user, 'settings.user_management');
+  const canEdit = hasPermission(auth.user, 'inventory.manage_products');
 
   useEffect(() => { fetchAll(); }, []);
 
