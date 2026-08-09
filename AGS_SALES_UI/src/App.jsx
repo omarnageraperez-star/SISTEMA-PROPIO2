@@ -4508,9 +4508,17 @@ function App() {
                     { id: 'promo', title: 'Promociones', icon: Tag, color: '#eab308', desc: 'Juegos y descuentos' },
                     { id: 'updates', title: 'Actualizaciones', icon: Download, color: '#f97316', desc: 'Actualizar sistema globalmente' }
                   ].filter(opt => {
-                    if (userProfile?.role === 'SUPERADMIN') return true;
-                    if (userProfile?.role === 'ADMIN') return ['printer', 'scale', 'promo'].includes(opt.id);
-                    return ['printer', 'scale'].includes(opt.id);
+                    if (userProfile?.role === 'SUPERADMIN' || userProfile?.role === 'ADMIN') return true;
+                    if (opt.id === 'users') return hasPermission(userProfile, 'settings.user_management');
+                    if (opt.id === 'business') return hasPermission(userProfile, 'settings.business_info');
+                    if (opt.id === 'printer' || opt.id === 'ticket') return hasPermission(userProfile, 'settings.ticket_editor');
+                    if (opt.id === 'scale') return hasPermission(userProfile, 'settings.scale');
+                    if (opt.id === 'smtp') return hasPermission(userProfile, 'settings.smtp_config');
+                    if (opt.id === 'currencies' || opt.id === 'taxes') return hasPermission(userProfile, 'settings.currency_taxes');
+                    if (opt.id === 'ai') return hasPermission(userProfile, 'settings.ai_config');
+                    if (opt.id === 'database') return hasPermission(userProfile, 'settings.database');
+                    if (opt.id === 'promo') return hasPermission(userProfile, 'inventory.manage_promotions');
+                    return hasPermission(userProfile, 'settings.access');
                   }).map(opt => {
                     const IconComponent = opt.icon;
                     return (

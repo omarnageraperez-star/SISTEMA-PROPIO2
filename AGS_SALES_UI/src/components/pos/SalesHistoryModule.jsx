@@ -5,6 +5,7 @@ import {
 import Swal from 'sweetalert2';
 import { apiRequest } from '../../lib/api';
 import { printTicket, printCashCut } from '../../lib/print';
+import { hasPermission } from '../../lib/permissionsConfig';
 
 export default function SalesHistoryModule({ config, token, systemSettings, userProfile, initialTab, onTabChange }) {
   const [activeTab, setActiveTab] = useState(initialTab || 'sales'); // 'sales', 'movements', 'shifts'
@@ -50,7 +51,7 @@ export default function SalesHistoryModule({ config, token, systemSettings, user
     return `${symbol}${num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
   };
 
-  const canVoid = userProfile?.role === 'SUPERADMIN' || userProfile?.role === 'ADMIN';
+  const canVoid = hasPermission(userProfile, 'pos.void_sale');
 
   useEffect(() => {
     if (activeTab === 'sales') {
