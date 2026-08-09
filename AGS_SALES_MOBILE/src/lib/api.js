@@ -14,7 +14,7 @@ export async function apiRequest(url, options = {}, token = null) {
 
   headers['ngrok-skip-browser-warning'] = 'true';
 
-  if (!headers['Content-Type'] && !(options.body instanceof FormData)) {
+  if (!headers['Content-Type'] && !(options.body instanceof FormData) && options.body) {
     headers['Content-Type'] = 'application/json';
   }
 

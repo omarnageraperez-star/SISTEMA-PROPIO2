@@ -18,6 +18,7 @@ import { loadAndApplyTheme } from './lib/theme';
 import { register401Callback } from './lib/api';
 import { checkForOtaUpdate } from './lib/ota';
 import { requestNotificationPermissions, sendNativeNotification, triggerHaptic } from './lib/notifications';
+import { hasPermission } from './lib/permissionsConfig';
 
 function Protected({ auth, children }) {
   if (!auth?.token) return <Navigate to="/login" replace />;
@@ -143,7 +144,7 @@ export default function App() {
     };
 
     syncProfileMobile();
-    const interval = setInterval(syncProfileMobile, 120000);
+    const interval = setInterval(syncProfileMobile, 5000);
     return () => clearInterval(interval);
   }, [auth.token, auth.apiUrl, auth.user, auth.settings]);
 
@@ -512,25 +513,27 @@ export default function App() {
 }
 
 function AppRoutes({ auth, onLogout, onSettingsUpdate }) {
-  const role = auth.user?.role || 'CLIENT';
-  const canAccessInventory = ['SUPERADMIN', 'ADMIN', 'WAREHOUSE'].includes(role);
-  const canAccessReports   = ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(role);
-  const canAccessCash      = ['SUPERADMIN', 'ADMIN', 'SUPERVISOR', 'CASHIER'].includes(role);
+  const user = auth.user;
+  const canAccessInventory = hasPermission(user, 'inventory.access');
+  const canAccessReports   = hasPermission(user, 'reports.access');
+  const canAccessCash      = hasPermission(user, 'cash.access');
+  const canAccessPOS       = hasPermission(user, 'pos.access');
+  const canAccessSales     = hasPermission(user, 'sales.view_history');
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <Routes>
         <Route path="/" element={<Dashboard auth={auth} />} />
-        <Route path="/inventory" element={canAccessInventory ? <Inventory auth={auth} /> : <Navigate to="/pos" replace />} />
-        <Route path="/pos" element={<POS auth={auth} />} />
-        <Route path="/sales" element={<Sales auth={auth} />} />
-        <Route path="/reports" element={canAccessReports ? <Reports auth={auth} /> : <Navigate to="/pos" replace />} />
-        <Route path="/cash-control" element={canAccessCash ? <CashControl auth={auth} /> : <Navigate to="/pos" replace />} />
+        <Route path="/inventory" element={canAccessInventory ? <Inventory auth={auth} /> : <Navigate to="/" replace />} />
+        <Route path="/pos" element={canAccessPOS ? <POS auth={auth} /> : <Navigate to="/" replace />} />
+        <Route path="/sales" element={canAccessSales ? <Sales auth={auth} /> : <Navigate to="/" replace />} />
+        <Route path="/reports" element={canAccessReports ? <Reports auth={auth} /> : <Navigate to="/" replace />} />
+        <Route path="/cash-control" element={canAccessCash ? <CashControl auth={auth} /> : <Navigate to="/" replace />} />
         <Route path="/more" element={<More auth={auth} onLogout={onLogout} onSettingsUpdate={onSettingsUpdate} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      <BottomNav userRole={auth.user?.role} />
+      <BottomNav user={auth.user} />
     </div>
   );
 }

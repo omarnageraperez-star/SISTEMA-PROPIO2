@@ -10,7 +10,7 @@ export async function apiRequest(url, options = {}, token = null) {
   };
 
   // Do not override Content-Type if it is already set (e.g. FormData) or if body is not JSON
-  if (!headers['Content-Type'] && !(options.body instanceof FormData)) {
+  if (!headers['Content-Type'] && !(options.body instanceof FormData) && options.body) {
     headers['Content-Type'] = 'application/json';
   }
 

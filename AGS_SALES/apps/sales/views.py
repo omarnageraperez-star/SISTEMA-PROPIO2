@@ -11,7 +11,11 @@ class PaymentMethodViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
 class SaleViewSet(viewsets.ModelViewSet):
-    queryset = Sale.objects.all().order_by('-created_at')
+    queryset = Sale.objects.all().order_by('-created_at').select_related(
+        'customer', 'user', 'warehouse'
+    ).prefetch_related(
+        'details', 'payments', 'details__product', 'payments__payment_method'
+    )
     serializer_class = SaleSerializer
     permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['status', 'customer', 'warehouse']

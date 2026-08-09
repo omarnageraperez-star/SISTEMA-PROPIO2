@@ -29,6 +29,10 @@ class SaleSerializer(serializers.ModelSerializer):
     payments = PaymentSerializer(many=True, required=False)
     customer_name = serializers.SerializerMethodField()
     user_username = serializers.ReadOnlyField(source='user.username')
+    
+    customer_name_input = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    customer_email_input = serializers.EmailField(write_only=True, required=False, allow_blank=True)
+    customer_doc_input = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
     class Meta:
         model = Sale
@@ -53,12 +57,34 @@ class SaleSerializer(serializers.ModelSerializer):
         details_data = validated_data.pop('details', [])
         payments_data = validated_data.pop('payments', [])
         
+        customer_name_val = validated_data.pop('customer_name_input', '').strip()
+        customer_email_val = validated_data.pop('customer_email_input', '').strip()
+        customer_doc_val = validated_data.pop('customer_doc_input', '').strip()
+        
         # Auto-assign the logged-in user to the sale
         request = self.context.get('request')
         if request and request.user and request.user.is_authenticated:
             validated_data['user'] = request.user
             
         with transaction.atomic():
+            # Handle Customer Creation/Link
+            if customer_email_val or customer_doc_val:
+                from apps.crm.models import Customer
+                customer = None
+                if customer_email_val:
+                    customer = Customer.objects.filter(email=customer_email_val).first()
+                if not customer and customer_doc_val:
+                    customer = Customer.objects.filter(document_number=customer_doc_val).first()
+                
+                if not customer:
+                    customer = Customer.objects.create(
+                        first_name=customer_name_val or 'Cliente',
+                        last_name='Final',
+                        email=customer_email_val if customer_email_val else None,
+                        document_number=customer_doc_val if customer_doc_val else None
+                    )
+                validated_data['customer'] = customer
+
             # Create Sale
             sale = Sale.objects.create(**validated_data)
             
@@ -149,6 +175,7 @@ class SaleSerializer(serializers.ModelSerializer):
             
             # Create Payments & cash shift movements
             total_paid = 0
+            has_credit_payment = False
             
             if not payments_data:
                 from .models import PaymentMethod
@@ -164,8 +191,16 @@ class SaleSerializer(serializers.ModelSerializer):
                     amount=amt,
                     reference=payment.get('reference', '')
                 )
-                total_paid += amt
+                if pm.name and pm.name.lower() in ('crédito', 'credito', 'fiar'):
+                    has_credit_payment = True
+                else:
+                    total_paid += amt
                 
+            if has_credit_payment and not sale.customer:
+                raise serializers.ValidationError(
+                    "Se requiere registrar un cliente para poder realizar una venta a crédito (financiado)."
+                )
+
             # Create CashMovement record in the active shift of the user
             from apps.accounting.models import CashShift, CashMovement
             active_shift = CashShift.objects.filter(user=sale.user, is_open=True).first()

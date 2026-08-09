@@ -10,13 +10,15 @@ class ProviderViewSet(viewsets.ModelViewSet):
     filterset_fields = ['is_active']
 
 class PurchaseOrderViewSet(viewsets.ModelViewSet):
-    queryset = PurchaseOrder.objects.all()
+    queryset = PurchaseOrder.objects.all().select_related('provider').prefetch_related(
+        'details', 'details__product'
+    )
     serializer_class = PurchaseOrderSerializer
     permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['status', 'provider']
 
 class PurchaseOrderDetailViewSet(viewsets.ModelViewSet):
-    queryset = PurchaseOrderDetail.objects.all()
+    queryset = PurchaseOrderDetail.objects.all().select_related('product', 'order')
     serializer_class = PurchaseOrderDetailSerializer
     permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['order', 'product']

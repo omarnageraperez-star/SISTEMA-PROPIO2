@@ -31,7 +31,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 class ProductViewSet(viewsets.ModelViewSet):
-    queryset = Product.objects.all()
+    queryset = Product.objects.all().select_related('category', 'brand', 'provider')
     serializer_class = ProductSerializer
     permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['category', 'brand', 'is_active']
@@ -159,13 +159,13 @@ class WarehouseViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
 class StockViewSet(viewsets.ModelViewSet):
-    queryset = Stock.objects.all()
+    queryset = Stock.objects.all().select_related('product', 'warehouse')
     serializer_class = StockSerializer
     permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['product', 'warehouse']
 
 class KardexViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Kardex.objects.all().order_by('-date')
+    queryset = Kardex.objects.all().order_by('-date').select_related('product', 'warehouse')
     serializer_class = KardexSerializer
     permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['product', 'warehouse', 'movement_type']

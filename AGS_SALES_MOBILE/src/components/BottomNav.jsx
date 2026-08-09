@@ -5,6 +5,8 @@ import {
 } from 'lucide-react';
 import { triggerHaptic } from '../lib/notifications';
 
+import { hasPermission } from '../lib/permissionsConfig';
+
 const NAV_ITEMS = [
   { path: '/',          icon: Home,         label: 'Inicio'      },
   { path: '/inventory', icon: Package,      label: 'Productos'   },
@@ -13,22 +15,18 @@ const NAV_ITEMS = [
   { path: '/reports',   icon: BarChart3,    label: 'Estadísticas'},
 ];
 
-export default function BottomNav({ userRole }) {
+export default function BottomNav({ user }) {
   const navigate  = useNavigate();
   const { pathname } = useLocation();
 
   // Roles that can see each tab
   const canAccess = (path) => {
-    const restricted = {
-      '/pos':        ['SUPERADMIN','ADMIN','CASHIER','SELLER','CLIENT'],
-      '/inventory':  ['SUPERADMIN','ADMIN','WAREHOUSE'],
-      '/sales':      ['SUPERADMIN','ADMIN','CASHIER','SELLER','SUPERVISOR','CLIENT'],
-      '/reports':    ['SUPERADMIN','ADMIN','SUPERVISOR'],
-      '/':           true, // always
-    };
-    const rule = restricted[path];
-    if (!rule || rule === true) return true;
-    return rule.includes(userRole);
+    if (path === '/') return true;
+    if (path === '/inventory') return hasPermission(user, 'inventory.access');
+    if (path === '/pos') return hasPermission(user, 'pos.access');
+    if (path === '/sales') return hasPermission(user, 'sales.view_history');
+    if (path === '/reports') return hasPermission(user, 'reports.access');
+    return true;
   };
 
   const handleNavClick = (path) => {

@@ -37,11 +37,27 @@ class SystemSettingsView(APIView):
         if not isinstance(data, dict):
             return Response({'error': 'El formato de datos debe ser un objeto JSON'}, status=400)
         
-        for key, value in data.items():
-            SystemSetting.objects.update_or_create(
-                key=key,
-                defaults={'value': str(value) if value is not None else ''}
-            )
+        from django.db import transaction
+        
+        with transaction.atomic():
+            existing = {s.key: s for s in SystemSetting.objects.all()}
+            to_create = []
+            to_update = []
+            
+            for key, value in data.items():
+                val_str = str(value) if value is not None else ''
+                if key in existing:
+                    setting = existing[key]
+                    if setting.value != val_str:
+                        setting.value = val_str
+                        to_update.append(setting)
+                else:
+                    to_create.append(SystemSetting(key=key, value=val_str))
+                    
+            if to_create:
+                SystemSetting.objects.bulk_create(to_create)
+            if to_update:
+                SystemSetting.objects.bulk_update(to_update, ['value'])
             
         settings = SystemSetting.objects.all()
         response_data = {s.key: s.value for s in settings}
@@ -77,11 +93,15 @@ class UploadUpdateView(APIView):
 
 class IsSuperAdmin(BasePermission):
     """
-    Allows access only to users with SUPERADMIN role or is_superuser.
+    Allows access only to users with SUPERADMIN role, is_superuser, or settings.user_management custom permission.
     """
     def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated and 
-                    (request.user.role == 'SUPERADMIN' or request.user.is_superuser))
+        if not (request.user and request.user.is_authenticated):
+            return False
+        if request.user.role == 'SUPERADMIN' or request.user.is_superuser:
+            return True
+        custom_perms = request.user.custom_permissions or {}
+        return bool(custom_perms.get('settings.user_management'))
 
 class AdminUserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all().order_by('-date_joined')

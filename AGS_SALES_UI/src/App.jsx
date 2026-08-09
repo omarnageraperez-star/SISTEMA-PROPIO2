@@ -981,7 +981,7 @@ function App() {
     };
 
     syncProfile();
-    const interval = setInterval(syncProfile, 120000); // Polling every 2m for permission updates
+    const interval = setInterval(syncProfile, 5000); // Polling every 5s for permission updates
     const handlePermUpdated = () => syncProfile();
     window.addEventListener('permissions-updated', handlePermUpdated);
 

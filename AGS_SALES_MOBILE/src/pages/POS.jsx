@@ -42,6 +42,10 @@ export default function POS({ auth }) {
   const [success, setSuccess]     = useState(false);
   const [errMsg, setErrMsg]       = useState('');
   const [cashReceived, setCashReceived] = useState('');
+  
+  const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerDoc, setCustomerDoc] = useState('');
 
   // Dice promo states
   const [globalDiscountPercent, setGlobalDiscountPercent] = useState(0);
@@ -244,6 +248,24 @@ export default function POS({ auth }) {
   async function confirmCheckout() {
     if (!selectedMethod) { setErrMsg('Selecciona un método de pago.'); return; }
     
+    // Check if it is a credit sale
+    const selMethodObj = methods.find(m => m.id === selectedMethod);
+    const selMethodName = (selMethodObj?.name || '').toLowerCase();
+    const isCredit = selMethodName.includes('crédit') || selMethodName.includes('credit') || selMethodName.includes('fiar');
+    
+    if (isCredit) {
+      if (!customerName.trim() || (!customerEmail.trim() && !customerDoc.trim())) {
+        setErrMsg('Para ventas a crédito, se requiere ingresar el Nombre y (Correo o Documento) del cliente.');
+        DarkSwal.fire({
+          icon: 'warning',
+          title: 'Cliente Requerido',
+          text: 'Las ventas a crédito (financiadas) deben asociarse obligatoriamente a un cliente. Rellena los datos de cliente al final del formulario.',
+          confirmButtonText: 'Entendido'
+        });
+        return;
+      }
+    }
+
     const result = await DarkSwal.fire({
       title: '¿Imprimir Recibo?',
       text: '¿Deseas que la computadora principal imprima el recibo de esta venta?',
@@ -278,6 +300,9 @@ export default function POS({ auth }) {
       const saleBody = {
         status: 'COMPLETED',
         promo_percent: globalDiscountPercent || 0,
+        customer_name_input: customerName,
+        customer_email_input: customerEmail,
+        customer_doc_input: customerDoc,
         details: cart.map(i => {
           let extraDiscount = 0;
           if (globalDiscountPercent > 0) {
@@ -306,6 +331,9 @@ export default function POS({ auth }) {
         setGlobalDiscountPercent(0);
         setDiceResult(null);
         setCashReceived('');
+        setCustomerName('');
+        setCustomerEmail('');
+        setCustomerDoc('');
         setShowCartModal(false);
         if (methods.length > 0) {
           setSelectedMethod(methods[0].id);
@@ -346,6 +374,9 @@ export default function POS({ auth }) {
           setGlobalDiscountPercent(0);
           setDiceResult(null);
           setCashReceived('');
+          setCustomerName('');
+          setCustomerEmail('');
+          setCustomerDoc('');
           setShowCartModal(false);
           if (methods.length > 0) setSelectedMethod(methods[0].id);
           
@@ -928,7 +959,7 @@ export default function POS({ auth }) {
               {/* Holographic QR Code Portal for Transfer Payments */}
               {(() => {
                 const selMethodName = (methods.find(m => m.id === selectedMethod)?.name || '').toLowerCase();
-                const isTransfer = selMethodName.includes('transfer') || selMethodName.includes('nequi') || selMethodName.includes('daviplata') || selMethodName.includes('qr') || selMethodName.includes('banco') || (selMethodName !== '' && selMethodName !== 'efectivo' && selMethodName !== 'tarjeta');
+                const isTransfer = (selMethodName.includes('transfer') || selMethodName.includes('nequi') || selMethodName.includes('daviplata') || selMethodName.includes('qr') || selMethodName.includes('banco')) && !selMethodName.includes('credit') && !selMethodName.includes('crédit') && !selMethodName.includes('fiar');
                 if (!isTransfer) return null;
 
                 return (
@@ -995,6 +1026,72 @@ export default function POS({ auth }) {
                   </div>
                 );
               })()}
+
+              {/* Informational Panel for Credit Payments */}
+              {(() => {
+                const selMethodName = (methods.find(m => m.id === selectedMethod)?.name || '').toLowerCase();
+                const isCredit = selMethodName.includes('crédit') || selMethodName.includes('credit') || selMethodName.includes('fiar');
+                if (!isCredit) return null;
+
+                return (
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(139,92,246,0.12) 0%, rgba(18, 24, 38, 0.85) 100%)',
+                    border: '2px solid rgba(139,92,246,0.4)',
+                    borderRadius: 22,
+                    padding: 16,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 10,
+                    boxShadow: '0 12px 32px rgba(139,92,246,0.15)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(139,92,246,0.2)', padding: '6px 14px', borderRadius: 99, border: '1px solid rgba(139,92,246,0.3)', width: 'fit-content' }}>
+                      <span style={{ fontSize: 16 }}>💳</span>
+                      <span style={{ fontSize: 11, fontWeight: 900, color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        Venta a Crédito Interno
+                      </span>
+                    </div>
+                    <p style={{ fontSize: 13, color: '#94a3b8', margin: 0, lineHeight: 1.45 }}>
+                      Esta venta se guardará como saldo pendiente (deuda) para el cliente ingresado. Asegúrate de rellenar los <b>Datos del Cliente</b> abajo.
+                    </p>
+                  </div>
+                );
+              })()}
+
+              {/* Customer Details Block */}
+              <div style={{
+                background: 'rgba(20, 26, 40, 0.7)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 18,
+                padding: 14,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 10,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.3)'
+              }}>
+                <p style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Datos del Cliente (Opcional)</p>
+                
+                <input
+                  type="text"
+                  placeholder="Nombre del Cliente"
+                  value={customerName}
+                  onChange={e => setCustomerName(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', fontSize: 13, background: '#090c14', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', color: 'white', boxSizing: 'border-box' }}
+                />
+                <input
+                  type="email"
+                  placeholder="Correo Electrónico (Para recibo)"
+                  value={customerEmail}
+                  onChange={e => setCustomerEmail(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', fontSize: 13, background: '#090c14', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', color: 'white', boxSizing: 'border-box' }}
+                />
+                <input
+                  type="text"
+                  placeholder="Documento / NIT"
+                  value={customerDoc}
+                  onChange={e => setCustomerDoc(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', fontSize: 13, background: '#090c14', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', color: 'white', boxSizing: 'border-box' }}
+                />
+              </div>
 
               {/* Error display */}
               {errMsg && (
