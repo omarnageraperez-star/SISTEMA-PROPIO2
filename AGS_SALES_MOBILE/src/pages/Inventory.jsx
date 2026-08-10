@@ -90,8 +90,15 @@ export default function Inventory({ auth }) {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  
-  // Modal states
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing]     = useState(null); // null = new
+  const [form, setForm]           = useState(BASE_FIELDS);
+  const [saving, setSaving]       = useState(false);
+  const [errMsg, setErrMsg]       = useState('');
+  const [imgPreview, setImgPreview] = useState(null);
+  const [imgFile, setImgFile]     = useState(null);
+
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showCatModal, setShowCatModal] = useState(false);
   const [newCatName, setNewCatName] = useState('');
   const [savingCat, setSavingCat] = useState(false);
