@@ -182,7 +182,20 @@ class SaleSerializer(serializers.ModelSerializer):
             sale.subtotal = subtotal
             sale.discount = total_discount
             sale.tax = tax
-            sale.total = subtotal - total_discount + tax
+            
+            interest_percent = float(validated_data.get('interest_percent', 0) or 0)
+            interest_amount = float(validated_data.get('interest_amount', 0) or 0)
+            
+            calculated_interest = 0
+            if interest_percent > 0:
+                base_val = float(subtotal - total_discount + tax)
+                calculated_interest = base_val * (interest_percent / 100.0)
+                
+            final_interest = interest_amount if interest_amount > 0 else calculated_interest
+            
+            sale.interest_percent = interest_percent
+            sale.interest_amount = final_interest
+            sale.total = float(subtotal - total_discount + tax) + final_interest
             sale.save()
             
             # Create Payments & cash shift movements
