@@ -65,6 +65,8 @@ class Sale(models.Model):
     amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     due_date = models.DateField(null=True, blank=True)
     credit_notes = models.TextField(blank=True, default='')
+    interest_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    interest_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
