@@ -43,20 +43,3 @@ class SetupAdminView(APIView):
             return Response({"message": "Administrator created successfully!"}, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-class DebugDBView(APIView):
-    authentication_classes = []
-    permission_classes = []
-    
-    def get(self, request):
-        from django.conf import settings
-        from apps.sales.models import Sale
-        import os
-        db_conf = settings.DATABASES['default']
-        safe_conf = {k: v for k, v in db_conf.items() if k != 'PASSWORD'}
-        return Response({
-            "database_config": safe_conf,
-            "sales_count": Sale.objects.all().count(),
-            "credits_count": Sale.objects.filter(is_credit=True).count(),
-            "environment_keys": list(os.environ.keys())
-        })

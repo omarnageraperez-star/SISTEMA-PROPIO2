@@ -2,13 +2,12 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import RegisterView, UserProfileView, SystemSettingsView, AdminUserViewSet, UploadUpdateView
-from .api_views import CheckAdminView, SetupAdminView, DebugDBView
+from .api_views import CheckAdminView, SetupAdminView
 
 router = DefaultRouter()
 router.register(r'admin-users', AdminUserViewSet, basename='admin-users')
 
 urlpatterns = [
-    path('debug-db/', DebugDBView.as_view(), name='debug_db'),
     path('check-admin/', CheckAdminView.as_view(), name='check_admin'),
     path('setup-admin/', SetupAdminView.as_view(), name='setup_admin'),
     path('register/', RegisterView.as_view(), name='register'),
