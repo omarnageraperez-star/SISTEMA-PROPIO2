@@ -78,13 +78,15 @@ class SaleSerializer(serializers.ModelSerializer):
             
         with transaction.atomic():
             # Handle Customer Creation/Link
-            if customer_email_val or customer_doc_val:
+            if customer_email_val or customer_doc_val or customer_name_val:
                 from apps.crm.models import Customer
                 customer = None
                 if customer_email_val:
                     customer = Customer.objects.filter(email=customer_email_val).first()
                 if not customer and customer_doc_val:
                     customer = Customer.objects.filter(document_number=customer_doc_val).first()
+                if not customer and customer_name_val:
+                    customer = Customer.objects.filter(first_name=customer_name_val).first()
                 
                 if not customer:
                     customer = Customer.objects.create(
