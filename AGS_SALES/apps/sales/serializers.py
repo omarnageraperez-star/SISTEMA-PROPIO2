@@ -24,9 +24,19 @@ class PaymentSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('sale',)
 
+from .models import CreditPayment
+
+class CreditPaymentSerializer(serializers.ModelSerializer):
+    registered_by_username = serializers.ReadOnlyField(source='registered_by.username')
+
+    class Meta:
+        model = CreditPayment
+        fields = '__all__'
+
 class SaleSerializer(serializers.ModelSerializer):
     details = SaleDetailSerializer(many=True)
     payments = PaymentSerializer(many=True, required=False)
+    credit_payments = CreditPaymentSerializer(many=True, read_only=True)
     customer_name = serializers.SerializerMethodField()
     user_username = serializers.ReadOnlyField(source='user.username')
     
@@ -196,10 +206,20 @@ class SaleSerializer(serializers.ModelSerializer):
                 else:
                     total_paid += amt
                 
-            if has_credit_payment and not sale.customer:
-                raise serializers.ValidationError(
-                    "Se requiere registrar un cliente para poder realizar una venta a crédito (financiado)."
-                )
+            if has_credit_payment:
+                if not sale.customer:
+                    raise serializers.ValidationError(
+                        "Se requiere registrar un cliente para poder realizar una venta a crédito (financiado)."
+                    )
+                sale.is_credit = True
+                sale.amount_paid = total_paid
+                if total_paid == 0:
+                    sale.credit_status = 'PENDING'
+                elif total_paid < sale.total:
+                    sale.credit_status = 'PARTIAL'
+                else:
+                    sale.credit_status = 'PAID'
+                sale.save()
 
             # Create CashMovement record in the active shift of the user
             from apps.accounting.models import CashShift, CashMovement

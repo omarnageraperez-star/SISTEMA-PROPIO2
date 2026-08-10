@@ -55,6 +55,17 @@ class Sale(models.Model):
     promo_percent = models.IntegerField(default=0)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     
+    # Credit/Financing fields
+    is_credit = models.BooleanField(default=False)
+    credit_status = models.CharField(
+        max_length=20, 
+        choices=[('PENDING', 'Pendiente'), ('PARTIAL', 'Abonado parcial'), ('PAID', 'Pagado')], 
+        default='PENDING'
+    )
+    amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    due_date = models.DateField(null=True, blank=True)
+    credit_notes = models.TextField(blank=True, default='')
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -97,3 +108,17 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"{self.payment_method.name}: {self.amount}"
+
+class CreditPayment(models.Model):
+    sale = models.ForeignKey(Sale, related_name='credit_payments', on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    note = models.TextField(blank=True, default='')
+    paid_at = models.DateTimeField(auto_now_add=True)
+    registered_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Abono de Crédito"
+        verbose_name_plural = "Abonos de Crédito"
+
+    def __str__(self):
+        return f"Abono {self.amount} para Venta {self.sale.id}"
