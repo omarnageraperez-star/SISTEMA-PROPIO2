@@ -2108,6 +2108,29 @@ function App() {
     setLoading(false);
   };
 
+  const handleDownloadBackup = async () => {
+    Toast.fire({ icon: 'info', title: 'Generando copia de seguridad...' });
+    try {
+      const res = await apiRequest(`${config.apiUrl}users/export-db/`, {}, token);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Error en el servidor");
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `respaldo_db_ags_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      Toast.fire({ icon: 'success', title: '¡Copia de seguridad descargada!' });
+    } catch (error) {
+      console.error("Backup error:", error);
+      premiumAlert('Error de Respaldo', error.message || 'No se pudo descargar la copia de seguridad. Revisa tu conexión.', 'error');
+    }
+  };
 
   const handleSaveSettings = async (e) => {
     e.preventDefault();
@@ -4826,7 +4849,7 @@ function App() {
                     <p className="margin-0"><strong>Base de Datos Activa:</strong> MySQL 8.0 - u842590222_ags_sales</p>
                   </div>
                   <div className="flex flex-col gap-3">
-                    <button onClick={() => alert("Copia de seguridad en proceso... ¡Listo! Tu archivo SQL se ha descargado de forma segura.")} className="btn-premium !from-sky-500 !to-sky-600 flex items-center justify-center gap-2">
+                    <button onClick={handleDownloadBackup} className="btn-premium !from-sky-500 !to-sky-600 flex items-center justify-center gap-2">
                       <Save size={18} /> Crear Respaldo (Backup) Completo
                     </button>
                     <button onClick={() => window.open(`${config.apiUrl.replace('/api/', '')}/admin/`, '_blank')} className="bg-white border border-gray-200 text-gray-700 p-3.5 rounded-xl hover:bg-gray-50 flex items-center justify-center gap-2 font-semibold">
