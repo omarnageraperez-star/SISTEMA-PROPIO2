@@ -400,3 +400,50 @@ select:focus {
 .main-footer .float-right {
   display: none !important;
 }
+
+/* --- Navbar/Header Buttons & Text Visibility Fixes --- */
+.main-header .nav-link,
+.main-header .nav-link span,
+.main-header .nav-link i,
+.main-header [data-widget="pushmenu"] i,
+.navbar-nav .nav-link,
+.navbar-nav .nav-link span,
+.navbar-nav .nav-link i {
+  color: #334155 !important; /* Dark Slate Gray for perfect contrast on white background */
+  font-weight: 600 !important;
+}
+
+/* Navbar User Avatar Thumbnail */
+.main-header .user-menu .user-image,
+.navbar-nav .user-menu .user-image {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  margin-right: 8px !important;
+  margin-top: -4px !important;
+  border: 1.5px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+/* Align user menu dropdown toggle items properly */
+.main-header .user-menu .nav-link {
+  display: flex !important;
+  align-items: center !important;
+  padding: 6px 12px !important;
+  border-radius: var(--radius-md) !important;
+  background-color: rgba(0, 0, 0, 0.03) !important; /* Subtle background for the profile button */
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+  transition: var(--transition) !important;
+}
+
+.main-header .user-menu .nav-link:hover {
+  background-color: rgba(79, 70, 229, 0.08) !important;
+  border-color: rgba(79, 70, 229, 0.15) !important;
+}
+
+.main-header .user-menu .nav-link:hover span,
+.main-header .user-menu .nav-link:hover i {
+  color: var(--ags-primary) !important;
+}
+
