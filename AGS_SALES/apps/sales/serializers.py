@@ -97,6 +97,10 @@ class SaleSerializer(serializers.ModelSerializer):
                     )
                 validated_data['customer'] = customer
 
+            # Ensure interest fields are not None to avoid IntegrityError constraint violations
+            validated_data['interest_percent'] = validated_data.get('interest_percent') or 0
+            validated_data['interest_amount'] = validated_data.get('interest_amount') or 0
+
             # Create Sale
             sale = Sale.objects.create(**validated_data)
             
