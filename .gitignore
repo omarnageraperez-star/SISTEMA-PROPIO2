@@ -19,8 +19,6 @@ AGS_SALES/.env
 AGS_SALES/.env.*
 AGS_SALES/db.sqlite3
 AGS_SALES/media/
-AGS_SALES/staticfiles/
-AGS_SALES/static/
 *.log
 
 # ──────────────────────────────────────────

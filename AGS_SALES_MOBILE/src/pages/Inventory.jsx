@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, Plus, Package, X, Camera as CameraIcon, Edit2, Trash2, AlertTriangle, Layers, DollarSign, BarChart2, Tag, Info, ScanLine, Globe, Share2, LayoutGrid, List, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Plus, Package, X, Camera as CameraIcon, Edit2, Trash2, AlertTriangle, Layers, DollarSign, BarChart2, Tag, Info, ScanLine, Globe, Share2, LayoutGrid, List, ChevronDown, ChevronUp, QrCode } from 'lucide-react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Share } from '@capacitor/share';
 import TopBar from '../components/TopBar';
@@ -507,6 +507,18 @@ export default function Inventory({ auth }) {
                 }}
               >
                 <ScanLine size={20} color="#3b82f6" />
+              </button>
+              <button
+                onClick={() => setShowCatalogQR(true)}
+                title="Catálogo Digital QR"
+                style={{
+                  width: 36, height: 36, borderRadius: '50%',
+                  background: 'transparent', border: 'none',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <QrCode size={20} color="#f97316" />
               </button>
               {canEdit && (
                 <button

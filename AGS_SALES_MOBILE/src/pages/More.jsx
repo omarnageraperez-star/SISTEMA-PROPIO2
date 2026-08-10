@@ -346,10 +346,16 @@ export default function More({ auth, onLogout, onSettingsUpdate }) {
     try {
       const res = await apiRequest(apiUrl(auth.apiUrl, `users/admin-users/${userObj.id}/`), { method: 'DELETE' }, auth.token);
       if (res.ok) {
-        Toast.fire({ icon: 'success', title: 'Usuario eliminado' });
+        if (res.status === 200) {
+          const data = await res.json();
+          Toast.fire({ icon: 'warning', title: data.detail || 'Usuario desactivado' });
+        } else {
+          Toast.fire({ icon: 'success', title: 'Usuario eliminado correctamente' });
+        }
         fetchUsers();
       } else {
-        DarkSwal.fire('Error', 'No se pudo eliminar el usuario.', 'error');
+        const err = await res.json().catch(() => ({}));
+        DarkSwal.fire('Error', err.detail || 'No se pudo eliminar el usuario.', 'error');
       }
     } catch {
       DarkSwal.fire('Error', 'Error de conexión.', 'error');
