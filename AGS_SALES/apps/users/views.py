@@ -1,4 +1,4 @@
-from rest_framework import generics, permissions, viewsets
+from rest_framework import generics, permissions, viewsets, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import BasePermission
@@ -109,5 +109,27 @@ class AdminUserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsSuperAdmin]
 
     def get_queryset(self):
-        # Optional: Prevent regular superadmins from seeing other superadmins if needed
         return super().get_queryset()
+
+    def destroy(self, request, *args, **kwargs):
+        user_to_delete = self.get_object()
+
+        # Prevent self-deletion
+        if user_to_delete.pk == request.user.pk:
+            return Response(
+                {'detail': 'No puedes eliminar tu propio usuario.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        from django.db.models.deletion import ProtectedError
+        try:
+            user_to_delete.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ProtectedError:
+            # User has associated records — deactivate instead of hard delete
+            user_to_delete.is_active = False
+            user_to_delete.save(update_fields=['is_active'])
+            return Response(
+                {'detail': f'El usuario "{user_to_delete.username}" tiene registros asociados y fue desactivado en lugar de eliminado.'},
+                status=status.HTTP_200_OK
+            )
