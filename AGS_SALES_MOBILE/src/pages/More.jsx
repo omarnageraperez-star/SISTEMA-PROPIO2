@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, Settings, LogOut, Shield, Server, ArrowRight, X, Save, Image, Mail, FileText, Landmark, Users, UserPlus, Trash2, Edit, Key, ShieldAlert, Database, QrCode, Box, Plus, MapPin, Calendar, Cpu, ChevronDown, ChevronUp } from 'lucide-react';
+import { BarChart3, Settings, LogOut, Shield, Server, ArrowRight, X, Save, Image, Mail, FileText, Landmark, Users, UserPlus, Trash2, Edit, Key, ShieldAlert, Database, QrCode, Box, Plus, MapPin, Calendar, Cpu, ChevronDown, ChevronUp, CreditCard } from 'lucide-react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import TopBar from '../components/TopBar';
 import { apiRequest, apiUrl, parseError } from '../lib/api';
@@ -689,6 +689,32 @@ export default function More({ auth, onLogout, onSettingsUpdate }) {
                     <BarChart3 size={14} color="#8b5cf6" style={{ margin: 'auto' }} />
                   </div>
                   <span style={{ fontSize: 14, fontWeight: 600, color: '#f1f5f9', flex: 1 }}>Reportes y Estadísticas</span>
+                  <ArrowRight size={14} color="#475569" />
+                </button>
+              )}
+
+              {/* Credits / Cuentas por cobrar */}
+              {hasPermission(auth.user, 'sales.credits') && (
+                <button
+                  onClick={() => navigate('/credits')}
+                  style={{
+                    background: 'rgba(30, 36, 53, 0.3)',
+                    border: '1px solid rgba(255, 255, 255, 0.03)',
+                    borderRadius: 12,
+                    padding: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    width: '100%',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(249, 115, 22, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <CreditCard size={14} color="#f97316" style={{ margin: 'auto' }} />
+                  </div>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: '#f1f5f9', flex: 1 }}>Cuentas por Cobrar</span>
                   <ArrowRight size={14} color="#475569" />
                 </button>
               )}

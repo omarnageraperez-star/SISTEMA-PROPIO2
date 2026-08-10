@@ -12,6 +12,7 @@ import Login from './pages/Login';
 import Setup from './pages/Setup';
 import More from './pages/More';
 import CashControl from './pages/CashControl';
+import Credits from './pages/Credits';
 import BottomNav from './components/BottomNav';
 import { storage } from './lib/storage';
 import { loadAndApplyTheme } from './lib/theme';
@@ -116,21 +117,26 @@ export default function App() {
     });
   }, []);
 
-  // Real-time Mobile User Profile & Permissions Sync (every 3 seconds)
+  // Real-time Mobile User Profile & Permissions Sync (every 5 seconds)
+  const authRef = useRef(auth);
+  useEffect(() => { authRef.current = auth; }, [auth]);
+
   useEffect(() => {
     if (!auth.token || !auth.apiUrl) return;
 
     const syncProfileMobile = async () => {
       try {
-        const res = await fetch(`${auth.apiUrl}users/profile/`, {
-          headers: { Authorization: `Bearer ${auth.token}` }
+        const { token, apiUrl, user, settings } = authRef.current;
+        if (!token || !apiUrl) return;
+        const res = await fetch(`${apiUrl}users/profile/`, {
+          headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {
           const freshUser = await res.json();
-          const prevPermsStr = JSON.stringify(auth.user?.custom_permissions || {});
+          const prevPermsStr = JSON.stringify(user?.custom_permissions || {});
           const freshPermsStr = JSON.stringify(freshUser.custom_permissions || {});
-          
-          if (auth.user && auth.user.id === freshUser.id && prevPermsStr !== freshPermsStr && auth.settings?.notify_permission_change !== 'false') {
+
+          if (user && user.id === freshUser.id && prevPermsStr !== freshPermsStr && settings?.notify_permission_change !== 'false') {
             sendNativeNotification({
               title: '🔒 Permisos Actualizados',
               body: `Hola ${freshUser.username}, tus permisos en el sistema han sido modificados en tiempo real.`
@@ -146,7 +152,7 @@ export default function App() {
     syncProfileMobile();
     const interval = setInterval(syncProfileMobile, 5000);
     return () => clearInterval(interval);
-  }, [auth.token, auth.apiUrl, auth.user, auth.settings]);
+  }, [auth.token, auth.apiUrl]); // solo depende del token y la URL, no de user/settings
 
   // Monitor Real-time Sales for Admin Push Notifications (every 60 seconds)
   useEffect(() => {
@@ -155,10 +161,11 @@ export default function App() {
     if (!isAdmin) return;
 
     const checkAdminSales = async () => {
-      if (auth.settings?.notify_admin_on_sale === 'false') return;
+      if (authRef.current.settings?.notify_admin_on_sale === 'false') return;
       try {
-        const res = await fetch(`${auth.apiUrl}sales/sales/?page=1&page_size=1`, {
-          headers: { Authorization: `Bearer ${auth.token}` }
+        const { token, apiUrl } = authRef.current;
+        const res = await fetch(`${apiUrl}sales/sales/?page=1&page_size=1`, {
+          headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {
           const data = await res.json();
@@ -181,7 +188,7 @@ export default function App() {
     checkAdminSales();
     const interval = setInterval(checkAdminSales, 60000);
     return () => clearInterval(interval);
-  }, [auth.token, auth.apiUrl, auth.user?.role, auth.settings]);
+  }, [auth.token, auth.apiUrl, auth.user?.role]); // settings leída del ref, no como dep
 
   // Monitor Real-time Low Stock for Push Notifications (every 15 seconds)
   useEffect(() => {
@@ -229,11 +236,10 @@ export default function App() {
     return () => clearInterval(interval);
   }, [auth.token, auth.apiUrl]);
 
-  const handleLogin = async ({ token, user, apiUrl }) => {
-    await requestNotificationPermissions();
+  const handleLogin = ({ token, user, apiUrl, settings }) => {
+    requestNotificationPermissions();
     triggerHaptic('success');
-    const settings = await fetchSettings(token, apiUrl);
-    setAuth({ token, user, apiUrl, settings });
+    setAuth({ token, user, apiUrl, settings: settings || null });
   };
 
   const handleLogout = async () => {
@@ -529,6 +535,7 @@ function AppRoutes({ auth, onLogout, onSettingsUpdate }) {
         <Route path="/sales" element={canAccessSales ? <Sales auth={auth} /> : <Navigate to="/" replace />} />
         <Route path="/reports" element={canAccessReports ? <Reports auth={auth} /> : <Navigate to="/" replace />} />
         <Route path="/cash-control" element={canAccessCash ? <CashControl auth={auth} /> : <Navigate to="/" replace />} />
+        <Route path="/credits" element={hasPermission(user, 'sales.credits') ? <Credits auth={auth} /> : <Navigate to="/" replace />} />
         <Route path="/more" element={<More auth={auth} onLogout={onLogout} onSettingsUpdate={onSettingsUpdate} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

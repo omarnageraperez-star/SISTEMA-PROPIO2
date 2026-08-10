@@ -110,7 +110,16 @@ export default function Login({ onLogin }) {
         await storage.set('refresh', refresh);
         await storage.set('user',    user);
 
-        onLogin({ token, user, apiUrl: activeApiUrl });
+        // Fetch settings once here so App.jsx doesn't need a second async call
+        let settings = null;
+        try {
+          const sRes = await fetch(`${activeApiUrl}users/settings/`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (sRes.ok) settings = await sRes.json();
+        } catch (e) {}
+
+        onLogin({ token, user, apiUrl: activeApiUrl, settings });
         navigate('/');
       } else {
         const detail = await parseError(res);
