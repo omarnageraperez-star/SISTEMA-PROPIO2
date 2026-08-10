@@ -70,6 +70,7 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [amountReceived, setAmountReceived] = useState('');
   const [changeDue, setChangeDue] = useState(0);
+  const [interestPercent, setInterestPercent] = useState('');
 
   useEffect(() => {
     // Initial focus on search input
@@ -100,6 +101,25 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
       fetchPaymentMethods();
     }
   }, [appState]);
+
+  // Adjust amountReceived depending on whether the method is Credit
+  useEffect(() => {
+    const activePaymentMethods = paymentMethods.length > 0 ? paymentMethods : [
+      {id: 1, name: 'Efectivo'},
+      {id: 2, name: 'Tarjeta'},
+      {id: 3, name: 'Transferencia'}
+    ];
+    const selectedMethodObj = activePaymentMethods.find(m => String(m.id) === String(selectedPaymentMethod));
+    if (selectedMethodObj) {
+      const isCredit = selectedMethodObj.name.toLowerCase().includes('credit') || selectedMethodObj.name.toLowerCase().includes('crédit') || selectedMethodObj.name.toLowerCase().includes('fiar');
+      if (isCredit) {
+        setAmountReceived('0');
+      } else {
+        const roundedTotal = Math.round(totals.total);
+        setAmountReceived(roundedTotal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."));
+      }
+    }
+  }, [selectedPaymentMethod, totals.total, paymentMethods]);
 
   // Auto-Save Cart and Parked Sales to LocalStorage
   useEffect(() => {
@@ -592,6 +612,45 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
     ];
     const selectedMethodObj = activePaymentMethods.find(m => String(m.id) === String(selectedPaymentMethod)) || { name: 'Efectivo', id: selectedPaymentMethod };
 
+    const isCredit = selectedMethodObj.name.toLowerCase().includes('credit') || selectedMethodObj.name.toLowerCase().includes('crédit') || selectedMethodObj.name.toLowerCase().includes('fiar');
+    const cleanReceived = parseFloat(String(amountReceived || '').replace(/\./g, '') || 0);
+    const pct = isCredit ? (parseFloat(interestPercent) || 0) : 0;
+    const interestAmt = totals.total * (pct / 100);
+    const finalTotal = totals.total + interestAmt;
+
+    let paymentsPayload = [];
+    if (isCredit) {
+      const creditAmount = finalTotal - cleanReceived;
+      if (cleanReceived > 0) {
+        const cashMethod = activePaymentMethods.find(m => m.name.toLowerCase().includes('efectivo')) || { id: selectedPaymentMethod };
+        paymentsPayload.push({
+          payment_method: cashMethod.id,
+          amount: cleanReceived,
+          reference: 'Abono inicial en efectivo'
+        });
+      }
+      if (creditAmount > 0) {
+        paymentsPayload.push({
+          payment_method: selectedPaymentMethod,
+          amount: creditAmount,
+          reference: selectedMethodObj.name !== 'Efectivo' ? `Pago con ${selectedMethodObj.name}` : ''
+        });
+      }
+      if (paymentsPayload.length === 0) {
+        paymentsPayload.push({
+          payment_method: selectedPaymentMethod,
+          amount: 0,
+          reference: selectedMethodObj.name !== 'Efectivo' ? `Pago con ${selectedMethodObj.name}` : ''
+        });
+      }
+    } else {
+      paymentsPayload.push({
+        payment_method: selectedPaymentMethod,
+        amount: totals.total,
+        reference: selectedMethodObj.name !== 'Efectivo' ? `Pago con ${selectedMethodObj.name}` : ''
+      });
+    }
+
     const payload = {
       customer: selectedCustomer || null,
       warehouse: warehouse ? warehouse.id : null,
@@ -599,14 +658,10 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
       status: 'COMPLETED',
       dian_status: currentBillingMode === 'ELECTRONIC' ? 'PENDING' : 'NONE',
       promo_percent: globalDiscountPercent || 0,
+      interest_percent: pct,
+      interest_amount: interestAmt,
       details: detailsData,
-      payments: [
-        {
-          payment_method: selectedPaymentMethod,
-          amount: totals.total,
-          reference: selectedMethodObj.name !== 'Efectivo' ? `Pago con ${selectedMethodObj.name}` : ''
-        }
-      ]
+      payments: paymentsPayload
     };
 
     try {
@@ -619,8 +674,12 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
         const createdSale = await res.json();
         window.lastLocalSaleId = createdSale.id; // Mark as local to avoid auto-print duplicate
         Toast.fire({ icon: 'success', title: 'Venta procesada exitosamente' });
+        
         setCart([]);
-        setSelectedCustomer('');
+        setGlobalDiscountPercent(0);
+        setDiceResult(null);
+        setAmountReceived('');
+        setInterestPercent('');
         setShowPaymentModal(false);
         fetchProducts(); // Refresh stock
         
@@ -1132,7 +1191,7 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
                 </div>
               </div>
 
-              {/* Cash Calculation */}
+              {/* Cash OR Credit Calculation */}
               {(() => {
                 const defaultMethods = [
                   {id: 1, name: 'Efectivo'},
@@ -1141,8 +1200,67 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
                 ];
                 const activePaymentMethods = paymentMethods.length > 0 ? paymentMethods : defaultMethods;
                 const methodObj = activePaymentMethods.find(m => String(m.id) === String(selectedPaymentMethod));
+                
                 const isCash = methodObj ? methodObj.name.toLowerCase().includes('efectivo') : true;
-                if (!isCash) return null;
+                const isCredit = methodObj ? (methodObj.name.toLowerCase().includes('credit') || methodObj.name.toLowerCase().includes('crédit') || methodObj.name.toLowerCase().includes('fiar')) : false;
+
+                if (!isCash && !isCredit) return null;
+
+                if (isCredit) {
+                  const pct = parseFloat(interestPercent) || 0;
+                  const surcharge = totals.total * (pct / 100);
+                  const finalTotal = totals.total + surcharge;
+                  const cleanReceived = parseFloat(String(amountReceived || '').replace(/\./g, '') || 0);
+                  const pending = finalTotal - cleanReceived;
+                  
+                  return (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                      {/* Surcharge percentage */}
+                      <div>
+                        <label className="block text-sm font-bold text-black mb-2">Recargo por Financiación (%)</label>
+                        <input
+                          type="number"
+                          placeholder="Ej: 10 (O vacío si es 0%)"
+                          className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-black focus:ring-1 focus:ring-black font-sans text-md font-semibold text-black transition-all"
+                          value={interestPercent}
+                          onChange={e => setInterestPercent(e.target.value)}
+                        />
+                      </div>
+
+                      {surcharge > 0 && (
+                        <div className="flex justify-between items-center p-3 bg-purple-55/10 rounded-xl border border-purple-200 text-purple-700">
+                          <span className="text-xs font-bold uppercase tracking-wider">Interés Adicional:</span>
+                          <span className="font-bold text-sm">+{formatPrice(surcharge)} ({pct}%)</span>
+                        </div>
+                      )}
+
+                      {/* Abono input */}
+                      <div>
+                        <label className="block text-sm font-bold text-black mb-2">Abono Inicial (Monto Recibido)</label>
+                        <div className="relative mt-1">
+                          <span className="absolute left-4 top-3.5 text-gray-400 font-mono font-bold text-lg">{symbol}</span>
+                          <input
+                            type="text"
+                            placeholder="Ej: 10000"
+                            className="w-full bg-white border border-gray-300 rounded-xl pl-10 pr-4 py-3.5 outline-none focus:border-black focus:ring-1 focus:ring-black font-mono text-lg font-bold text-black transition-all"
+                            value={amountReceived}
+                            onChange={handleAmountReceivedChange}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-200">
+                        <span className="text-sm font-bold text-gray-500">Total Financiado:</span>
+                        <span className="font-mono font-bold text-black text-md">{formatPrice(finalTotal)}</span>
+                      </div>
+
+                      <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-200">
+                        <span className="text-sm font-bold text-gray-650">Deuda Restante:</span>
+                        <span className="font-mono font-black text-orange-600 text-xl">{formatPrice(pending >= 0 ? pending : 0)}</span>
+                      </div>
+                    </div>
+                  );
+                }
                 
                 return (
                   <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
@@ -1161,7 +1279,7 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
                     </div>
 
                     <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-200">
-                      <span className="text-sm font-bold text-gray-600">Cambio (Vueltos):</span>
+                      <span className="text-sm font-bold text-gray-650">Cambio (Vueltos):</span>
                       <span className="font-mono font-black text-black text-xl">{formatPrice(changeDue)}</span>
                     </div>
                   </div>

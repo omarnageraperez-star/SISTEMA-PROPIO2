@@ -236,7 +236,7 @@ export default function Credits({ auth }) {
 
       {/* Detail Bottom Sheet Modal */}
       {selectedCredit && !showAbonoModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 99, display: 'flex', alignItems: 'flex-end' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'flex-end' }}>
           <div style={{
             width: '100%',
             background: '#151b2a',
@@ -246,6 +246,8 @@ export default function Credits({ auth }) {
             display: 'flex',
             flexDirection: 'column',
             maxHeight: '85%',
+            boxSizing: 'border-box',
+            overflow: 'hidden',
             animation: 'slideUp 0.3s ease-out'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
@@ -258,7 +260,7 @@ export default function Credits({ auth }) {
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto', flex: 1, paddingRight: 4 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto', flex: 1, paddingRight: 4, paddingBottom: 40 }}>
               <div>
                 <span style={{ fontSize: 10, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Cliente</span>
                 <div style={{ fontSize: 16, fontWeight: 800, color: '#f1f5f9', marginTop: 2 }}>{selectedCredit.customer_name}</div>
@@ -300,33 +302,33 @@ export default function Credits({ auth }) {
                   ))
                 )}
               </div>
-            </div>
 
-            <button
-              onClick={() => setShowAbonoModal(true)}
-              style={{
-                width: '100%',
-                padding: '14px',
-                background: 'var(--color-accent)',
-                border: 'none',
-                borderRadius: 14,
-                color: '#ffffff',
-                fontWeight: 700,
-                fontSize: 14,
-                cursor: 'pointer',
-                marginTop: 20,
-                boxShadow: '0 4px 16px var(--color-accent-dim)'
-              }}
-            >
-              Registrar Abono
-            </button>
+              <button
+                onClick={() => setShowAbonoModal(true)}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  background: 'var(--color-accent)',
+                  border: 'none',
+                  borderRadius: 14,
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  marginTop: 20,
+                  boxShadow: '0 4px 16px var(--color-accent-dim)'
+                }}
+              >
+                Registrar Abono
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Abono Form Modal */}
       {showAbonoModal && selectedCredit && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <div style={{
             width: '100%',
             maxWidth: 360,

@@ -42,6 +42,7 @@ export default function POS({ auth }) {
   const [success, setSuccess]     = useState(false);
   const [errMsg, setErrMsg]       = useState('');
   const [cashReceived, setCashReceived] = useState('');
+  const [interestPercent, setInterestPercent] = useState('');
   
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
@@ -297,12 +298,53 @@ export default function POS({ auth }) {
         referenceText = referenceText ? `${referenceText} [NO_PRINT]` : '[NO_PRINT]';
       }
 
+      const isCredit = selectedMethodObj.name.toLowerCase().includes('credit') || selectedMethodObj.name.toLowerCase().includes('crédit') || selectedMethodObj.name.toLowerCase().includes('fiar');
+      const received = parseFloat(cashReceived) || 0;
+      const pct = isCredit ? (parseFloat(interestPercent) || 0) : 0;
+      const interestAmt = total * (pct / 100);
+      const finalTotal = total + interestAmt;
+      
+      let paymentsPayload = [];
+      if (isCredit) {
+        const creditAmount = finalTotal - received;
+        if (received > 0) {
+          const cashMethod = methods.find(m => m.name.toLowerCase().includes('efectivo')) || { id: selectedMethod };
+          paymentsPayload.push({
+            payment_method: cashMethod.id,
+            amount: received,
+            reference: 'Abono inicial en efectivo'
+          });
+        }
+        if (creditAmount > 0) {
+          paymentsPayload.push({
+            payment_method: selectedMethod,
+            amount: creditAmount,
+            reference: referenceText
+          });
+        }
+        if (paymentsPayload.length === 0) {
+          paymentsPayload.push({
+            payment_method: selectedMethod,
+            amount: 0,
+            reference: referenceText
+          });
+        }
+      } else {
+        paymentsPayload.push({
+          payment_method: selectedMethod,
+          amount: total,
+          reference: referenceText
+        });
+      }
+
       const saleBody = {
         status: 'COMPLETED',
         promo_percent: globalDiscountPercent || 0,
         customer_name_input: customerName,
         customer_email_input: customerEmail,
         customer_doc_input: customerDoc,
+        interest_percent: pct,
+        interest_amount: interestAmt,
         details: cart.map(i => {
           let extraDiscount = 0;
           if (globalDiscountPercent > 0) {
@@ -315,7 +357,7 @@ export default function POS({ auth }) {
             discount: Math.round(extraDiscount * 100) / 100
           };
         }),
-        payments: [{ payment_method: selectedMethod, amount: total, reference: referenceText }],
+        payments: paymentsPayload,
       };
       const res = await apiRequest(apiUrl(auth.apiUrl, 'sales/sales/'), {
         method: 'POST',
@@ -907,15 +949,91 @@ export default function POS({ auth }) {
                 </div>
               </div>
 
-              {/* Calculator: Cash received & Change (Devuelta) */}
+              {/* Calculator: Cash received & Change OR Credit Abono */}
               {(() => {
                 const selMethodObj = methods.find(m => m.id === selectedMethod);
                 const isCash = (selMethodObj?.name || '').toLowerCase().includes('efectivo');
-                if (!isCash) return null;
+                const isCredit = (selMethodObj?.name || '').toLowerCase().includes('credit') || (selMethodObj?.name || '').toLowerCase().includes('crédit') || (selMethodObj?.name || '').toLowerCase().includes('fiar');
+                
+                if (!isCash && !isCredit) return null;
 
                 const received = parseFloat(cashReceived) || 0;
-                const change = received - total;
+                
+                if (isCredit) {
+                  const pct = parseFloat(interestPercent) || 0;
+                  const surcharge = total * (pct / 100);
+                  const finalTotal = total + surcharge;
+                  const pending = finalTotal - received;
+                  
+                  return (
+                    <div style={{
+                      background: 'rgba(20, 26, 40, 0.7)',
+                      border: '1px solid rgba(139, 92, 246, 0.3)',
+                      borderRadius: 18,
+                      padding: 14,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 12,
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.3)'
+                    }}>
+                      {/* Surcharge input */}
+                      <div>
+                        <label style={{ fontSize: 11, fontWeight: 900, color: '#c084fc', display: 'block', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          📈 Recargo por Financiación (%)
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            className="input-field"
+                            type="number"
+                            placeholder="Ej: 10 (O vacío si es 0%)"
+                            value={interestPercent}
+                            onChange={e => setInterestPercent(e.target.value)}
+                            style={{ fontSize: 15, fontWeight: 800, background: '#090c14', borderRadius: 14, border: '1px solid rgba(255,255,255,0.1)', boxSizing: 'border-box', width: '100%', padding: '10px 14px' }}
+                          />
+                        </div>
+                      </div>
 
+                      {surcharge > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(139, 92, 246, 0.1)', padding: '10px 12px', borderRadius: 12, border: '1px solid rgba(139, 92, 246, 0.2)' }}>
+                          <span style={{ fontSize: 11, fontWeight: 800, color: '#c084fc' }}>INTERÉS ADICIONAL:</span>
+                          <span style={{ fontSize: 14, fontWeight: 900, color: '#c084fc' }}>+{fmt(surcharge)} ({pct}%)</span>
+                        </div>
+                      )}
+
+                      {/* Abono input */}
+                      <div>
+                        <label style={{ fontSize: 11, fontWeight: 900, color: '#a855f7', display: 'block', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          💵 Abono Inicial (Monto Recibido)
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#64748b', fontSize: 18, fontWeight: 900 }}>$</span>
+                          <input
+                            className="input-field"
+                            type="number"
+                            placeholder="Ej: 10000 (O vacío si es 0)"
+                            value={cashReceived}
+                            onChange={e => setCashReceived(e.target.value)}
+                            style={{ paddingLeft: 32, fontSize: 17, fontWeight: 800, background: '#090c14', borderRadius: 14, border: '1px solid rgba(255,255,255,0.1)' }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#090c14', padding: '12px 14px', borderRadius: 14, border: '1px solid rgba(255,255,255,0.06)' }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8' }}>TOTAL FINANCIADO:</span>
+                        <span style={{ fontSize: 15, fontWeight: 900, color: '#ffffff' }}>{fmt(finalTotal)}</span>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#090c14', padding: '12px 14px', borderRadius: 14, border: '1px solid rgba(255,255,255,0.06)' }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8' }}>DEUDA RESTANTE:</span>
+                        <span style={{ fontSize: 18, fontWeight: 950, color: pending >= 0 ? '#f97316' : '#ef4444' }}>
+                          {pending >= 0 ? fmt(pending) : 'El abono excede el total'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }
+
+                const change = received - total;
                 return (
                   <div style={{
                     background: 'rgba(20, 26, 40, 0.7)',
@@ -1124,9 +1242,15 @@ export default function POS({ auth }) {
               >
                 {saving ? (
                   <><span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> Procesando Venta...</>
-                ) : (
-                  <><Check size={20} /> Finalizar Venta ({fmt(total)})</>
-                )}
+                ) : (() => {
+                  const selMethodObj = methods.find(m => m.id === selectedMethod);
+                  const isCredit = selMethodObj ? (selMethodObj.name.toLowerCase().includes('credit') || selMethodObj.name.toLowerCase().includes('crédit') || selMethodObj.name.toLowerCase().includes('fiar')) : false;
+                  const pct = isCredit ? (parseFloat(interestPercent) || 0) : 0;
+                  const finalTotal = total + (total * (pct / 100));
+                  return (
+                    <><Check size={20} /> Finalizar Venta ({fmt(finalTotal)})</>
+                  );
+                })()}
               </button>
 
             </div>
