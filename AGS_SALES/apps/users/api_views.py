@@ -51,6 +51,7 @@ class DebugDBView(APIView):
     def get(self, request):
         from django.conf import settings
         from apps.sales.models import Sale
+        import os
         db_conf = settings.DATABASES['default']
         safe_conf = {k: v for k, v in db_conf.items() if k != 'PASSWORD'}
         return Response({
