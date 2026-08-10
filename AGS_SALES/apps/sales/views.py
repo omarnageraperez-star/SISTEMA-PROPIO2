@@ -1,3 +1,4 @@
+from decimal import Decimal
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -60,15 +61,17 @@ class SaleViewSet(viewsets.ModelViewSet):
             return Response({"detail": "Debe especificar el monto del abono."}, status=400)
             
         try:
-            amount = float(amount)
-        except ValueError:
+            amount = Decimal(str(amount))
+        except Exception:
             return Response({"detail": "El monto debe ser un número válido."}, status=400)
             
         if amount <= 0:
             return Response({"detail": "El monto debe ser mayor a cero."}, status=400)
             
-        pending = float(sale.total) - float(sale.amount_paid)
-        if amount > pending + 0.01:
+        total = Decimal(str(sale.total))
+        amount_paid = Decimal(str(sale.amount_paid))
+        pending = total - amount_paid
+        if amount > pending + Decimal('0.01'):
             return Response({"detail": f"El monto excede el saldo pendiente (${pending:.2f})."}, status=400)
             
         from django.db import transaction
@@ -81,8 +84,9 @@ class SaleViewSet(viewsets.ModelViewSet):
                 registered_by=request.user if request.user.is_authenticated else None
             )
             
-            sale.amount_paid = float(sale.amount_paid) + amount
-            if sale.amount_paid >= sale.total - 0.01:
+            new_amount_paid = amount_paid + amount
+            sale.amount_paid = new_amount_paid
+            if new_amount_paid >= total - Decimal('0.01'):
                 sale.credit_status = 'PAID'
             else:
                 sale.credit_status = 'PARTIAL'
