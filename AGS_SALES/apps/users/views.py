@@ -133,3 +133,24 @@ class AdminUserViewSet(viewsets.ModelViewSet):
                 {'detail': f'El usuario "{user_to_delete.username}" tiene registros asociados y fue desactivado en lugar de eliminado.'},
                 status=status.HTTP_200_OK
             )
+
+class ExportDatabaseView(APIView):
+    permission_classes = [IsSuperAdmin]
+
+    def get(self, request):
+        from django.core.management import call_command
+        import io
+        from django.http import HttpResponse
+        
+        output = io.StringIO()
+        try:
+            # Exclude database-specific auto-generated contents to avoid conflicts on import
+            call_command('dumpdata', indent=2, stdout=output, exclude=['contenttypes', 'auth.Permission'])
+            json_data = output.getvalue()
+            
+            response = HttpResponse(json_data, content_type='application/json')
+            response['Content-Disposition'] = 'attachment; filename="respaldo_db_ags.json"'
+            return response
+        except Exception as e:
+            return Response({'detail': f'Error al generar el respaldo: {str(e)}'}, status=500)
+

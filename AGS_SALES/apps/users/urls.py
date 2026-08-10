@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from .views import RegisterView, UserProfileView, SystemSettingsView, AdminUserViewSet, UploadUpdateView
+from .views import RegisterView, UserProfileView, SystemSettingsView, AdminUserViewSet, UploadUpdateView, ExportDatabaseView
 from .api_views import CheckAdminView, SetupAdminView
 
 router = DefaultRouter()
@@ -16,6 +16,7 @@ urlpatterns = [
     path('profile/', UserProfileView.as_view(), name='profile'),
     path('settings/', SystemSettingsView.as_view(), name='system_settings'),
     path('upload-update/', UploadUpdateView.as_view(), name='upload_update'),
+    path('export-db/', ExportDatabaseView.as_view(), name='export_db'),
     path('', include(router.urls)),
 ]
 
