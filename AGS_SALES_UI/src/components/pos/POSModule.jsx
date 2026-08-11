@@ -301,8 +301,21 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
         setSuccessMsg('Cliente creado con éxito');
         setTimeout(() => setSuccessMsg(''), 3000);
       } else {
-        setErrorMsg('Error al crear cliente');
-        setTimeout(() => setErrorMsg(''), 3000);
+        const errData = await res.json().catch(() => ({}));
+        let msg = 'Error al crear cliente';
+        if (errData) {
+          if (typeof errData === 'string') msg = errData;
+          else if (errData.detail) msg = errData.detail;
+          else {
+            const firstKey = Object.keys(errData)[0];
+            if (firstKey) {
+              const val = errData[firstKey];
+              msg = `${firstKey}: ${Array.isArray(val) ? val.join(', ') : val}`;
+            }
+          }
+        }
+        setErrorMsg(msg);
+        setTimeout(() => setErrorMsg(''), 5000);
       }
     } catch (e) {
       setErrorMsg('Error de red');
