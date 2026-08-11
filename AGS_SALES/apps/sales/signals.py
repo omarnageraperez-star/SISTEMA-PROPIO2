@@ -57,9 +57,12 @@ def sale_notification(sender, instance, created, **kwargs):
 
             # ── Payment method ────────────────────────────────────────────────
             payment_method_label = "Efectivo"
-            for p in sale.payments.all():
-                payment_method_label = p.payment_method.name
-                break
+            if sale.is_credit:
+                payment_method_label = "Crédito"
+            else:
+                for p in sale.payments.all():
+                    payment_method_label = p.payment_method.name
+                    break
 
             # ── Promo badge ───────────────────────────────────────────────────
             promo_html = ""
@@ -87,6 +90,46 @@ def sale_notification(sender, instance, created, **kwargs):
             address_row = f"<p style='margin:4px 0 0; color:#93c5fd; font-size:11px;'>{business_address}</p>" if business_address else ""
             phone_row = f"<p style='margin:2px 0 0; color:#93c5fd; font-size:11px;'>Tel: {business_phone}</p>" if business_phone else ""
             nit_row = f"<p style='margin:2px 0 0; color:#93c5fd; font-size:11px;'>NIT: {business_nit}</p>" if business_nit else ""
+
+            # ── Dynamic Status and Totals layout ───────────────────────────────
+            state_label = "Aprobado"
+            state_bg = "#d1fae5"
+            state_color = "#065f46"
+            
+            if sale.is_credit:
+                if sale.amount_paid == 0:
+                    state_label = "Pendiente de Pago"
+                    state_bg = "#fee2e2"
+                    state_color = "#991b1b"
+                else:
+                    state_label = "Abono Parcial"
+                    state_bg = "#fef3c7"
+                    state_color = "#92400e"
+
+            totals_rows_html = ""
+            if sale.is_credit:
+                pending_amount = sale.total - sale.amount_paid
+                totals_rows_html = f"""
+                <tr>
+                  <td style="font-size:13px; color:#4b5563; padding: 4px 0;">Valor Financiado</td>
+                  <td style="text-align:right; font-size:13px; color:#111827; font-weight:600; padding:4px 0;">{fmt(sale.total)}</td>
+                </tr>
+                <tr>
+                  <td style="font-size:13px; color:#4b5563; padding: 4px 0;">Abono Inicial</td>
+                  <td style="text-align:right; font-size:13px; color:#111827; font-weight:600; padding:4px 0;">{fmt(sale.amount_paid)}</td>
+                </tr>
+                <tr>
+                  <td style="font-size:15px; font-weight:700; color:#111827; padding: 10px 0 0; border-top:1px solid #e5e7eb;">Saldo Pendiente</td>
+                  <td style="text-align:right; font-size:18px; font-weight:800; color:#b91c1c; padding:10px 0 0; border-top:1px solid #e5e7eb;">{fmt(pending_amount)}</td>
+                </tr>
+                """
+            else:
+                totals_rows_html = f"""
+                <tr>
+                  <td style="font-size:15px; font-weight:700; color:#111827; padding: 10px 0 0; border-top:1px solid #e5e7eb;">Total Pagado</td>
+                  <td style="text-align:right; font-size:18px; font-weight:800; color:#002d72; padding:10px 0 0; border-top:1px solid #e5e7eb;">{fmt(sale.total)}</td>
+                </tr>
+                """
 
             subject = f"Tu comprobante de compra #{sale.invoice_number or sale.id}"
 
@@ -130,7 +173,7 @@ def sale_notification(sender, instance, created, **kwargs):
                 <strong>Medio de pago:</strong> {payment_method_label}
               </td>
               <td style="text-align: right; font-size: 13px; color: #4b5563; vertical-align: top;">
-                <strong>Estado:</strong> <span style="background: #d1fae5; color: #065f46; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase;">Aprobado</span>
+                <strong>Estado:</strong> <span style="background: {state_bg}; color: {state_color}; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase;">{state_label}</span>
               </td>
             </tr>
           </table>
@@ -183,10 +226,7 @@ def sale_notification(sender, instance, created, **kwargs):
               <td style="text-align:right; font-size:13px; color:#111827; font-weight:600; padding:4px 0;">{fmt(sale.tax)}</td>
             </tr>
             {promo_html}
-            <tr>
-              <td style="font-size:15px; font-weight:700; color:#111827; padding: 10px 0 0; border-top:1px solid #e5e7eb;">Total Pagado</td>
-              <td style="text-align:right; font-size:18px; font-weight:800; color:#002d72; padding:10px 0 0; border-top:1px solid #e5e7eb;">{fmt(sale.total)}</td>
-            </tr>
+            {totals_rows_html}
           </table>
         </td>
       </tr>
