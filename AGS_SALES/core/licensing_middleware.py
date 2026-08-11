@@ -106,16 +106,20 @@ class LicensingMiddleware:
             except Exception:
                 pass
 
-        # Send Automatic SMTP Notification
+        # Send Automatic SMTP Notification (using DB tracking so it only ever triggers ONCE per expiration setting)
         if expires_at:
             try:
                 now = datetime.datetime.now()
                 time_left = expires_at - now
-                email_cache_key = f'_license_email_sent_{expires_at_str}'
+                
+                warning_sent_for = settings_dict.get('license_warning_email_sent_for', '')
+                expired_sent_for = settings_dict.get('license_expired_email_sent_for', '')
                 
                 # Warning email (3 days before)
-                if 0 < time_left.days <= 3 and not cache.get(email_cache_key + '_warning'):
+                if 0 < time_left.days <= 3 and warning_sent_for != expires_at_str:
                     from core.mail import send_system_notification
+                    from apps.users.models import SystemSetting
+                    
                     smtp_user = settings_dict.get('smtp_user')
                     business_name = settings_dict.get('business_name', 'AGS SALES')
                     subject = f"Advertencia: Su licencia de {business_name} vencerá pronto"
@@ -127,12 +131,19 @@ class LicensingMiddleware:
                     <p>Métodos de pago:<br/>{settings_dict.get('license_payment_methods', 'Contacto con soporte')}</p>
                     <p>Soporte: {settings_dict.get('license_contact')}</p>
                     """
+                    # Send and save to DB immediately to avoid concurrent duplicates
                     send_system_notification(subject, html, recipient=smtp_user)
-                    cache.set(email_cache_key + '_warning', True, 86400)
+                    
+                    setting, created = SystemSetting.objects.get_or_create(key='license_warning_email_sent_for')
+                    setting.value = expires_at_str
+                    setting.save()
+                    cache.delete('_license_settings')
 
                 # Expired email (on expiration day)
-                elif time_left.total_seconds() <= 0 and not cache.get(email_cache_key + '_expired'):
+                elif time_left.total_seconds() <= 0 and expired_sent_for != expires_at_str:
                     from core.mail import send_system_notification
+                    from apps.users.models import SystemSetting
+                    
                     smtp_user = settings_dict.get('smtp_user')
                     business_name = settings_dict.get('business_name', 'AGS SALES')
                     subject = f"Aviso de Suspensión: Licencia expirada de {business_name}"
@@ -143,8 +154,13 @@ class LicensingMiddleware:
                     <p>Métodos de pago:<br/>{settings_dict.get('license_payment_methods', 'Contacto con soporte')}</p>
                     <p>Soporte: {settings_dict.get('license_contact')}</p>
                     """
+                    # Send and save to DB immediately to avoid concurrent duplicates
                     send_system_notification(subject, html, recipient=smtp_user)
-                    cache.set(email_cache_key + '_expired', True, 86400)
+                    
+                    setting, created = SystemSetting.objects.get_or_create(key='license_expired_email_sent_for')
+                    setting.value = expires_at_str
+                    setting.save()
+                    cache.delete('_license_settings')
             except Exception:
                 pass
 
