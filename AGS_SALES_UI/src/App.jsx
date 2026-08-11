@@ -174,6 +174,8 @@ const getFlagSvg = (iso) => {
 function App() {
   const [config, setConfig] = useState(null);
   const [licenseData, setLicenseData] = useState(null);
+  const [licenseStatusInfo, setLicenseStatusInfo] = useState(null);
+  const [showWarningBanner, setShowWarningBanner] = useState(true);
   const [loading, setLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingMessage, setLoadingMessage] = useState('Conectando al servidor Django...');
@@ -226,12 +228,21 @@ function App() {
   const [pendingUpdate, setPendingUpdate] = useState(null);
   const [appVersion, setAppVersion] = useState('0.0.0');
 
-  // Load app version from electron on startup
+  // Load app version and machine id from electron on startup, and setup licensing listeners
   useEffect(() => {
     if (ipcRenderer) {
       ipcRenderer.invoke('get-app-version').then(ver => {
         if (ver) setAppVersion(ver);
       }).catch(() => {});
+
+      ipcRenderer.invoke('get-machine-id').then(uuid => {
+        if (uuid) {
+          window.deviceUUID = uuid;
+          console.log("Device UUID initialized:", uuid);
+        }
+      }).catch(err => {
+        console.error("Failed to load machine ID:", err);
+      });
     }
 
     const handleLicenseExpired = (e) => {
@@ -239,9 +250,18 @@ function App() {
       if (userProfile && userProfile.role === 'SUPERADMIN') return;
       setLicenseData(e.detail);
     };
+
+    const handleLicenseStatusUpdate = (e) => {
+      setLicenseStatusInfo(e.detail);
+    };
+
     window.addEventListener('license-expired', handleLicenseExpired);
-    return () => window.removeEventListener('license-expired', handleLicenseExpired);
-  }, []);
+    window.addEventListener('license-status-update', handleLicenseStatusUpdate);
+    return () => {
+      window.removeEventListener('license-expired', handleLicenseExpired);
+      window.removeEventListener('license-status-update', handleLicenseStatusUpdate);
+    };
+  }, [userProfile]);
 
   const handleBoxFormInitialBalanceChange = (e) => {
     const rawVal = e.target.value;
