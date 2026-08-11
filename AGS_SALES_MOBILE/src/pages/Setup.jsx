@@ -60,7 +60,7 @@ export default function Setup() {
     clearTimeout(timer1);
     clearTimeout(timer2);
 
-    if (result.ok || result.status === 404) {
+    if (result.ok || result.status === 404 || result.status === 402) {
       setProgress(100);
       setStepMsg('¡Conexión establecida con éxito!');
       await storage.set('apiUrl', finalUrl);
