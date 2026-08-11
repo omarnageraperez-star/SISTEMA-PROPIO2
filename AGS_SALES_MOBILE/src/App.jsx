@@ -540,7 +540,14 @@ export default function App() {
             path="/*"
             element={
               <Protected auth={auth}>
-                <AppRoutes auth={auth} onLogout={handleLogout} onSettingsUpdate={handleSettingsUpdate} />
+                <AppRoutes 
+                  auth={auth} 
+                  onLogout={handleLogout} 
+                  onSettingsUpdate={handleSettingsUpdate} 
+                  licenseStatusInfo={licenseStatusInfo}
+                  showWarningBanner={showWarningBanner}
+                  setShowWarningBanner={setShowWarningBanner}
+                />
               </Protected>
             }
           />
