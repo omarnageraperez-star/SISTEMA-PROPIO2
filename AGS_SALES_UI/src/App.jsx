@@ -173,6 +173,7 @@ const getFlagSvg = (iso) => {
 
 function App() {
   const [config, setConfig] = useState(null);
+  const [licenseData, setLicenseData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingMessage, setLoadingMessage] = useState('Conectando al servidor Django...');
@@ -232,6 +233,12 @@ function App() {
         if (ver) setAppVersion(ver);
       }).catch(() => {});
     }
+
+    const handleLicenseExpired = (e) => {
+      setLicenseData(e.detail);
+    };
+    window.addEventListener('license-expired', handleLicenseExpired);
+    return () => window.removeEventListener('license-expired', handleLicenseExpired);
   }, []);
 
   const handleBoxFormInitialBalanceChange = (e) => {
@@ -5328,6 +5335,34 @@ function App() {
         </div>
       )}
       <Toaster position="top-right" />
+
+      {licenseData && (
+        <div className="fixed inset-0 z-[99999] bg-slate-950/98 backdrop-blur-2xl flex items-center justify-center p-6 text-center select-none">
+          <div className="bg-white/5 border border-white/10 p-10 rounded-3xl shadow-2xl w-full max-w-md flex flex-col items-center animate-in zoom-in-95 duration-500 text-center">
+            <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 rounded-full flex items-center justify-center text-red-500 mb-6">
+              <span className="text-3xl">🔒</span>
+            </div>
+            <h2 className="text-2xl font-black text-white mb-3 tracking-tight">Sistema Suspendido</h2>
+            <p className="text-slate-400 text-sm mb-6 leading-relaxed">
+              {licenseData.detail || 'Su licencia de uso ha expirado por falta de pago.'}
+            </p>
+            <div className="bg-white/5 border border-white/5 rounded-2xl p-5 text-left w-full mb-6">
+              <span className="text-xs font-bold text-orange-400 uppercase tracking-widest block mb-2">Métodos de Pago:</span>
+              <p className="text-slate-300 text-xs whitespace-pre-wrap leading-relaxed">
+                {licenseData.payment_methods}
+              </p>
+            </div>
+            <a 
+              href={`https://wa.me/${licenseData.contact_phone.replace(/\D/g, '')}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-emerald-500/20 transition-all text-sm block"
+            >
+              📞 Contactar Soporte
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

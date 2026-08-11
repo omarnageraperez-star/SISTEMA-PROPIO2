@@ -36,11 +36,18 @@ export default function App() {
   const lastSaleIdRef = useRef(null);
   const notifiedProductsRef = useRef(new Set());
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [licenseData, setLicenseData] = useState(null);
 
   useEffect(() => {
     window.showToast = (message, type = 'success') => {
       setToast({ show: true, message, type });
     };
+
+    const handleLicenseExpired = (e) => {
+      setLicenseData(e.detail);
+    };
+    window.addEventListener('license-expired', handleLicenseExpired);
+    return () => window.removeEventListener('license-expired', handleLicenseExpired);
   }, []);
 
   useEffect(() => {
@@ -552,6 +559,57 @@ export default function App() {
             {toast.type === 'warning' && <AlertTriangle size={22} color="#f59e0b" />}
             {toast.type === 'info' && <Info size={22} color="#3b82f6" />}
             <span style={{ fontSize: 14, fontWeight: 700, color: '#ffffff', flex: 1 }}>{toast.message}</span>
+          </div>
+        )}
+
+        {licenseData && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(5, 7, 12, 0.98)',
+            backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+            zIndex: 99999, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', padding: 24,
+            color: '#ffffff', textAlign: 'center'
+          }}>
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)',
+              borderRadius: 24, padding: '32px 24px', maxWidth: 450, width: '100%',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.6)'
+            }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.15)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px'
+              }}>
+                <span style={{ fontSize: 32 }}>🔒</span>
+              </div>
+              <h2 style={{ fontSize: 24, fontWeight: 900, marginBottom: 12, letterSpacing: '-0.02em' }}>
+                Sistema Suspendido
+              </h2>
+              <p style={{ fontSize: 15, color: '#94a3b8', lineHeight: 1.6, marginBottom: 24 }}>
+                {licenseData.detail || 'Su licencia de uso ha expirado por falta de pago.'}
+              </p>
+              
+              <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 16, textAlign: 'left', marginBottom: 24, border: '1px solid rgba(255,255,255,0.05)' }}>
+                <span style={{ fontSize: 11, fontWeight: 800, color: '#f97316', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Métodos de Pago:</span>
+                <p style={{ fontSize: 13, color: '#cbd5e1', marginTop: 6, whiteSpace: 'pre-wrap', lineHeight: 1.5, margin: 0 }}>
+                  {licenseData.payment_methods}
+                </p>
+              </div>
+
+              <a 
+                href={`https://wa.me/${licenseData.contact_phone.replace(/\D/g, '')}`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{
+                  display: 'block', width: '100%', padding: '14px 0', borderRadius: 14,
+                  background: 'linear-gradient(135deg, #22c55e 0%, #15803d 100%)',
+                  color: '#ffffff', fontWeight: 800, fontSize: 15, textDecoration: 'none',
+                  boxShadow: '0 4px 14px rgba(34, 197, 94, 0.4)'
+                }}
+              >
+                📞 Contactar Soporte
+              </a>
+            </div>
           </div>
         )}
       </div>

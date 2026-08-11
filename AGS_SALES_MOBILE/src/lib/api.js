@@ -40,6 +40,15 @@ export async function apiRequest(url, options = {}, token = null) {
       }
     }
 
+    if (response.status === 402) {
+      try {
+        const errData = await response.clone().json();
+        if (errData.error === 'license_expired') {
+          window.dispatchEvent(new CustomEvent('license-expired', { detail: errData }));
+        }
+      } catch (e) {}
+    }
+
     return response;
   } catch (error) {
     clearTimeout(timeoutId);
