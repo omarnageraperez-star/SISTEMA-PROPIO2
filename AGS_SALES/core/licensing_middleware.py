@@ -34,7 +34,8 @@ class LicensingMiddleware:
             'check-admin' in path or
             'register' in path or
             'health' in path or
-            'ping' in path
+            'ping' in path or
+            ('settings' in path and request.method == 'GET')
         )
         if excluded:
             return self.get_response(request)
