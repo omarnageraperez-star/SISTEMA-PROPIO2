@@ -5209,7 +5209,25 @@ function App() {
                       <select 
                         className="glass-input mt-1 font-bold" 
                         value={systemSettings.license_status || 'ACTIVE'} 
-                        onChange={e => setSystemSettings({...systemSettings, license_status: e.target.value})}
+                        onChange={e => {
+                          const newStatus = e.target.value;
+                          let newExpires = systemSettings.license_expires_at || '';
+                          if (newStatus === 'ACTIVE') {
+                            const futureDate = new Date();
+                            futureDate.setDate(futureDate.getDate() + 30);
+                            const yyyy = futureDate.getFullYear();
+                            const mm = String(futureDate.getMonth() + 1).padStart(2, '0');
+                            const dd = String(futureDate.getDate()).padStart(2, '0');
+                            newExpires = `${yyyy}-${mm}-${dd} 23:59`;
+                          } else if (newStatus === 'EXPIRED') {
+                            newExpires = '2026-01-01 00:00';
+                          }
+                          setSystemSettings({
+                            ...systemSettings, 
+                            license_status: newStatus,
+                            license_expires_at: newExpires
+                          });
+                        }}
                       >
                         <option value="ACTIVE" className="text-emerald-600 font-bold">🟢 ACTIVO (Funcionamiento Normal)</option>
                         <option value="EXPIRED" className="text-red-600 font-bold">🔴 SUSPENDIDO (Bloqueo Inmediato)</option>
