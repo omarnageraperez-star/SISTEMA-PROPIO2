@@ -22,6 +22,10 @@ class LicensingMiddleware:
     def __call__(self, request):
         path = request.path
 
+        # Clear license cache immediately when settings are saved to reflect changes instantly
+        if 'users/settings/' in path and request.method == 'POST':
+            cache.delete('_license_settings')
+
         # Exclude admin, login/auth and initial setup/health endpoints
         excluded = (
             path.startswith('/admin/') or
