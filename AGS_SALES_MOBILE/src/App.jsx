@@ -661,19 +661,31 @@ export default function App() {
                   <p style={{ fontSize: 13, color: '#cbd5e1', marginTop: 6, whiteSpace: 'pre-wrap', lineHeight: 1.5, margin: 0 }} dangerouslySetInnerHTML={{ __html: licenseData.payment_methods }} />
                 </div>
 
-                <a 
-                  href={`https://wa.me/${licenseData.contact_phone.replace(/\D/g, '')}`} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  style={{
-                    display: 'block', width: '100%', padding: '14px 0', borderRadius: 14,
-                    background: 'linear-gradient(135deg, #22c55e 0%, #15803d 100%)',
-                    color: '#ffffff', fontWeight: 800, fontSize: 15, textDecoration: 'none',
-                    boxShadow: '0 4px 14px rgba(34, 197, 94, 0.4)'
-                  }}
-                >
-                  📞 Contactar Soporte
-                </a>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <a 
+                    href={`https://wa.me/${licenseData.contact_phone.replace(/\D/g, '')}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'block', width: '100%', padding: '14px 0', borderRadius: 14,
+                      background: 'linear-gradient(135deg, #22c55e 0%, #15803d 100%)',
+                      color: '#ffffff', fontWeight: 800, fontSize: 15, textDecoration: 'none',
+                      boxShadow: '0 4px 14px rgba(34, 197, 94, 0.4)'
+                    }}
+                  >
+                    📞 Contactar Soporte
+                  </a>
+                  <button 
+                    onClick={handleVerifyLicense}
+                    style={{
+                      width: '100%', padding: '12px 0', borderRadius: 14,
+                      background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255,255,255,0.1)',
+                      color: '#ffffff', fontWeight: 700, fontSize: 13, cursor: 'pointer'
+                    }}
+                  >
+                    🔄 Verificar Activación / Reintentar
+                  </button>
+                </div>
               </div>
             )}
           </div>
