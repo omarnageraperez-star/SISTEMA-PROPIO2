@@ -3069,6 +3069,35 @@ function App() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col py-4 pr-4 h-full overflow-hidden">
+        {licenseStatusInfo && licenseStatusInfo.licenseStatus === 'WARNING' && showWarningBanner && (
+          <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 py-3.5 rounded-2xl flex items-center justify-between shadow-lg shadow-orange-500/10 mb-4 animate-in slide-in-from-top duration-300 border border-orange-500/20 shrink-0">
+            <div className="flex items-center gap-3">
+              <span className="text-xl">⚠️</span>
+              <div className="text-left">
+                <p className="font-extrabold text-sm tracking-tight">Atención: Licencia Próxima a Vencer</p>
+                <p className="text-xs opacity-90">
+                  Su período de licencia expira el <b>{licenseStatusInfo.licenseExpiresAt}</b> (quedan <b>{licenseStatusInfo.licenseRemainingDays}</b> días).
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <a 
+                href={`https://wa.me/${(systemSettings?.license_contact || '+573204954189').replace(/\D/g, '')}`}
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="bg-white text-orange-700 px-4 py-2 rounded-xl text-xs font-black hover:bg-orange-50 transition-all shadow-md"
+              >
+                Pagar Ahora
+              </a>
+              <button 
+                onClick={() => setShowWarningBanner(false)}
+                className="p-1 hover:bg-white/10 rounded-lg transition-all text-white/80 hover:text-white"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        )}
         
         {/* POSModule siempre montado pero oculto si no es DASHBOARD para preservar estado de carrito */}
         <div className={`h-full flex-col gap-4 overflow-hidden animate-in fade-in zoom-in-95 duration-300 ${appState === 'DASHBOARD' ? 'flex' : 'hidden'}`}>
@@ -5167,19 +5196,78 @@ function App() {
                       </select>
                     </div>
                     <div>
-                      <label className="text-sm font-semibold text-gray-700 ml-1">Fecha Límite / Vencimiento</label>
+                      <label className="text-sm font-semibold text-gray-700 ml-1">Fecha y Hora Límite de Bloqueo</label>
                       <input 
-                        type="date" 
+                        type="datetime-local" 
                         className="glass-input mt-1" 
-                        value={systemSettings.license_expires_at || ''} 
-                        onChange={e => setSystemSettings({...systemSettings, license_expires_at: e.target.value})} 
+                        value={(systemSettings.license_expires_at || '').replace(' ', 'T')} 
+                        onChange={e => setSystemSettings({...systemSettings, license_expires_at: e.target.value.replace('T', ' ')})} 
                       />
-                      <p className="text-[10px] text-gray-500 mt-1 ml-1">Dejar vacío para tiempo ilimitado. Si se define una fecha, el sistema se bloqueará al llegar el día siguiente.</p>
+                      <p className="text-[10px] text-gray-500 mt-1 ml-1">Establece la fecha y hora exacta en la que se suspenderá el servicio.</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-semibold text-gray-700 ml-1">Días de Advertencia Previa</label>
+                        <input 
+                          type="number" 
+                          min="1"
+                          max="30"
+                          className="glass-input mt-1" 
+                          value={systemSettings.license_warning_days || '7'} 
+                          onChange={e => setSystemSettings({...systemSettings, license_warning_days: e.target.value})} 
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-semibold text-gray-700 ml-1">Días de Período de Gracia</label>
+                        <input 
+                          type="number" 
+                          min="0"
+                          max="15"
+                          className="glass-input mt-1" 
+                          value={systemSettings.license_grace_days || '3'} 
+                          onChange={e => setSystemSettings({...systemSettings, license_grace_days: e.target.value})} 
+                        />
+                      </div>
+                    </div>
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col gap-2">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">🔒 Dispositivo Vinculado (Hardware UUID)</label>
+                      <div className="flex items-center gap-3">
+                        <input 
+                          type="text" 
+                          readOnly 
+                          className="glass-input text-xs font-mono !bg-slate-100 flex-1 cursor-default select-all" 
+                          value={systemSettings.license_device_id || 'Ningún dispositivo registrado (se auto-vinculará al primer inicio)'} 
+                        />
+                        {systemSettings.license_device_id && (
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              Swal.fire({
+                                title: '¿Desvincular Dispositivo?',
+                                text: "El sistema permitirá el registro de una nueva máquina al iniciar sesión.",
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonColor: '#3085d6',
+                                cancelButtonColor: '#d33',
+                                confirmButtonText: 'Sí, desvincular',
+                                cancelButtonText: 'Cancelar'
+                              }).then((result) => {
+                                if (result.isConfirmed) {
+                                  setSystemSettings({ ...systemSettings, license_device_id: '' });
+                                }
+                              });
+                            }}
+                            className="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-2 rounded-xl text-xs font-bold border border-red-200 shadow-sm transition-all"
+                          >
+                            Liberar
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div>
                       <label className="text-sm font-semibold text-gray-700 ml-1">Mensaje de Suspensión</label>
                       <textarea 
-                        rows={3} 
+                        rows={2} 
                         className="glass-input mt-1 text-sm" 
                         placeholder="Ej: Su suscripción mensual ha expirado..." 
                         value={systemSettings.license_message || ''} 
@@ -5412,27 +5500,71 @@ function App() {
       <Toaster position="top-right" />
 
       {licenseData && (
-        <div className="fixed inset-0 z-[99999] bg-slate-950/98 backdrop-blur-2xl flex items-center justify-center p-6 text-center select-none">
+        <div className="fixed inset-0 z-[99999] bg-slate-950/98 backdrop-blur-2xl flex items-center justify-center p-6 text-center select-none animate-in fade-in duration-300">
           <div className="bg-white/5 border border-white/10 p-10 rounded-3xl shadow-2xl w-full max-w-md flex flex-col items-center animate-in zoom-in-95 duration-500 text-center">
-            <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 rounded-full flex items-center justify-center text-red-500 mb-6">
-              <span className="text-3xl">🔒</span>
-            </div>
-            <h2 className="text-2xl font-black text-white mb-3 tracking-tight">Sistema Suspendido</h2>
-            <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-              {licenseData.detail || 'Su licencia de uso ha expirado por falta de pago.'}
-            </p>
-            <div className="bg-white/5 border border-white/5 rounded-2xl p-5 text-left w-full mb-6">
-              <span className="text-xs font-bold text-orange-400 uppercase tracking-widest block mb-2">Métodos de Pago:</span>
-              <p className="text-slate-300 text-xs whitespace-pre-wrap leading-relaxed" dangerouslySetInnerHTML={{ __html: licenseData.payment_methods }} />
-            </div>
-            <a 
-              href={`https://wa.me/${licenseData.contact_phone.replace(/\D/g, '')}`} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-emerald-500/20 transition-all text-sm block"
-            >
-              📞 Contactar Soporte
-            </a>
+            {licenseData.error === 'license_grace_period' ? (
+              <>
+                <div className="w-16 h-16 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center justify-center text-amber-500 mb-6 animate-pulse">
+                  <span className="text-3xl">⚠️</span>
+                </div>
+                <h2 className="text-2xl font-black text-white mb-3 tracking-tight">Período de Gracia Activo</h2>
+                <p className="text-slate-400 text-sm mb-6 leading-relaxed">
+                  {licenseData.detail}
+                </p>
+                <div className="bg-white/5 border border-white/5 rounded-2xl p-5 text-left w-full mb-6">
+                  <span className="text-xs font-bold text-orange-400 uppercase tracking-widest block mb-2">Métodos de Pago / Cuentas:</span>
+                  <p className="text-slate-300 text-xs whitespace-pre-wrap leading-relaxed" dangerouslySetInnerHTML={{ __html: licenseData.payment_methods }} />
+                </div>
+                <div className="flex flex-col gap-3 w-full">
+                  <a 
+                    href={`https://wa.me/${licenseData.contact_phone.replace(/\D/g, '')}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl shadow-lg hover:shadow-emerald-500/20 transition-all text-sm block"
+                  >
+                    📞 Contactar Soporte
+                  </a>
+                  <button
+                    onClick={() => {
+                      sessionStorage.setItem('bypass_grace', 'true');
+                      window.bypassGracePeriod = true;
+                      setLicenseData(null);
+                      Toast.fire({
+                        icon: 'success',
+                        title: 'Modo Período de Gracia Activado'
+                      });
+                    }}
+                    className="w-full bg-white/10 hover:bg-white/20 text-white font-semibold py-3 rounded-xl transition-all text-xs"
+                  >
+                    Continuar Operando (Bypass Temporal)
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 rounded-full flex items-center justify-center text-red-500 mb-6">
+                  <span className="text-3xl">🔒</span>
+                </div>
+                <h2 className="text-2xl font-black text-white mb-3 tracking-tight">
+                  {licenseData.error === 'license_device_mismatch' ? 'Dispositivo No Autorizado' : 'Sistema Suspendido'}
+                </h2>
+                <p className="text-slate-400 text-sm mb-6 leading-relaxed">
+                  {licenseData.detail || 'Su licencia de uso ha expirado por falta de pago.'}
+                </p>
+                <div className="bg-white/5 border border-white/5 rounded-2xl p-5 text-left w-full mb-6">
+                  <span className="text-xs font-bold text-orange-400 uppercase tracking-widest block mb-2">Métodos de Pago / Instrucciones:</span>
+                  <p className="text-slate-300 text-xs whitespace-pre-wrap leading-relaxed" dangerouslySetInnerHTML={{ __html: licenseData.payment_methods }} />
+                </div>
+                <a 
+                  href={`https://wa.me/${licenseData.contact_phone.replace(/\D/g, '')}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-emerald-500/20 transition-all text-sm block"
+                >
+                  📞 Contactar Soporte
+                </a>
+              </>
+            )}
           </div>
         </div>
       )}

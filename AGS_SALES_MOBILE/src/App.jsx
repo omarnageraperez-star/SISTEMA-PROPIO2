@@ -37,6 +37,8 @@ export default function App() {
   const notifiedProductsRef = useRef(new Set());
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [licenseData, setLicenseData] = useState(null);
+  const [licenseStatusInfo, setLicenseStatusInfo] = useState(null);
+  const [showWarningBanner, setShowWarningBanner] = useState(true);
 
   useEffect(() => {
     window.showToast = (message, type = 'success') => {
@@ -44,11 +46,22 @@ export default function App() {
     };
 
     const handleLicenseExpired = (e) => {
+      // SUPERADMIN always bypasses the license block
+      if (auth?.user && auth.user.role === 'SUPERADMIN') return;
       setLicenseData(e.detail);
     };
+
+    const handleLicenseStatusUpdate = (e) => {
+      setLicenseStatusInfo(e.detail);
+    };
+
     window.addEventListener('license-expired', handleLicenseExpired);
-    return () => window.removeEventListener('license-expired', handleLicenseExpired);
-  }, []);
+    window.addEventListener('license-status-update', handleLicenseStatusUpdate);
+    return () => {
+      window.removeEventListener('license-expired', handleLicenseExpired);
+      window.removeEventListener('license-status-update', handleLicenseStatusUpdate);
+    };
+  }, [auth?.user]);
 
   useEffect(() => {
     if (toast.show) {
@@ -571,45 +584,98 @@ export default function App() {
             alignItems: 'center', justifyContent: 'center', padding: 24,
             color: '#ffffff', textAlign: 'center'
           }}>
-            <div style={{
-              background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)',
-              borderRadius: 24, padding: '32px 24px', maxWidth: 450, width: '100%',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.6)'
-            }}>
+            {licenseData.error === 'license_grace_period' ? (
               <div style={{
-                width: 64, height: 64, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.15)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px'
+                background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.25)',
+                borderRadius: 24, padding: '32px 24px', maxWidth: 450, width: '100%',
+                boxShadow: '0 20px 50px rgba(0,0,0,0.6)'
               }}>
-                <span style={{ fontSize: 32 }}>🔒</span>
-              </div>
-              <h2 style={{ fontSize: 24, fontWeight: 900, marginBottom: 12, letterSpacing: '-0.02em' }}>
-                Sistema Suspendido
-              </h2>
-              <p style={{ fontSize: 15, color: '#94a3b8', lineHeight: 1.6, marginBottom: 24 }}>
-                {licenseData.detail || 'Su licencia de uso ha expirado por falta de pago.'}
-              </p>
-              
-              <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 16, textAlign: 'left', marginBottom: 24, border: '1px solid rgba(255,255,255,0.05)' }}>
-                <span style={{ fontSize: 11, fontWeight: 800, color: '#f97316', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Métodos de Pago:</span>
-                <p style={{ fontSize: 13, color: '#cbd5e1', marginTop: 6, whiteSpace: 'pre-wrap', lineHeight: 1.5, margin: 0 }}>
-                  {licenseData.payment_methods}
+                <div style={{
+                  width: 64, height: 64, borderRadius: '50%', background: 'rgba(245, 158, 11, 0.15)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px'
+                }}>
+                  <span style={{ fontSize: 32 }}>⚠️</span>
+                </div>
+                <h2 style={{ fontSize: 24, fontWeight: 900, marginBottom: 12, letterSpacing: '-0.02em' }}>
+                  Período de Gracia Activo
+                </h2>
+                <p style={{ fontSize: 15, color: '#e2e8f0', lineHeight: 1.6, marginBottom: 24 }}>
+                  {licenseData.detail}
                 </p>
+                <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 16, textAlign: 'left', marginBottom: 24, border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: '#f97316', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Métodos de Pago:</span>
+                  <p style={{ fontSize: 13, color: '#cbd5e1', marginTop: 6, whiteSpace: 'pre-wrap', lineHeight: 1.5, margin: 0 }} dangerouslySetInnerHTML={{ __html: licenseData.payment_methods }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <a 
+                    href={`https://wa.me/${licenseData.contact_phone.replace(/\D/g, '')}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'block', width: '100%', padding: '14px 0', borderRadius: 14,
+                      background: 'linear-gradient(135deg, #22c55e 0%, #15803d 100%)',
+                      color: '#ffffff', fontWeight: 800, fontSize: 15, textDecoration: 'none',
+                      boxShadow: '0 4px 14px rgba(34, 197, 94, 0.4)'
+                    }}
+                  >
+                    📞 Contactar Soporte
+                  </a>
+                  <button 
+                    onClick={() => {
+                      sessionStorage.setItem('bypass_grace', 'true');
+                      window.bypassGracePeriod = true;
+                      setLicenseData(null);
+                      if (window.showToast) window.showToast("Modo gracia activado temporalmente.", "success");
+                    }}
+                    style={{
+                      width: '100%', padding: '12px 0', borderRadius: 14,
+                      background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255,255,255,0.1)',
+                      color: '#ffffff', fontWeight: 700, fontSize: 13, cursor: 'pointer'
+                    }}
+                  >
+                    Continuar Operando (Bypass Temporal)
+                  </button>
+                </div>
               </div>
+            ) : (
+              <div style={{
+                background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)',
+                borderRadius: 24, padding: '32px 24px', maxWidth: 450, width: '100%',
+                boxShadow: '0 20px 50px rgba(0,0,0,0.6)'
+              }}>
+                <div style={{
+                  width: 64, height: 64, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.15)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px'
+                }}>
+                  <span style={{ fontSize: 32 }}>{licenseData.error === 'license_device_mismatch' ? '📱' : '🔒'}</span>
+                </div>
+                <h2 style={{ fontSize: 24, fontWeight: 900, marginBottom: 12, letterSpacing: '-0.02em' }}>
+                  {licenseData.error === 'license_device_mismatch' ? 'Dispositivo No Autorizado' : 'Sistema Suspendido'}
+                </h2>
+                <p style={{ fontSize: 15, color: '#94a3b8', lineHeight: 1.6, marginBottom: 24 }}>
+                  {licenseData.detail || 'Su licencia de uso ha expirado por falta de pago.'}
+                </p>
+                
+                <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 16, textAlign: 'left', marginBottom: 24, border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: '#f97316', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Métodos de Pago / Instrucciones:</span>
+                  <p style={{ fontSize: 13, color: '#cbd5e1', marginTop: 6, whiteSpace: 'pre-wrap', lineHeight: 1.5, margin: 0 }} dangerouslySetInnerHTML={{ __html: licenseData.payment_methods }} />
+                </div>
 
-              <a 
-                href={`https://wa.me/${licenseData.contact_phone.replace(/\D/g, '')}`} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                style={{
-                  display: 'block', width: '100%', padding: '14px 0', borderRadius: 14,
-                  background: 'linear-gradient(135deg, #22c55e 0%, #15803d 100%)',
-                  color: '#ffffff', fontWeight: 800, fontSize: 15, textDecoration: 'none',
-                  boxShadow: '0 4px 14px rgba(34, 197, 94, 0.4)'
-                }}
-              >
-                📞 Contactar Soporte
-              </a>
-            </div>
+                <a 
+                  href={`https://wa.me/${licenseData.contact_phone.replace(/\D/g, '')}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'block', width: '100%', padding: '14px 0', borderRadius: 14,
+                    background: 'linear-gradient(135deg, #22c55e 0%, #15803d 100%)',
+                    color: '#ffffff', fontWeight: 800, fontSize: 15, textDecoration: 'none',
+                    boxShadow: '0 4px 14px rgba(34, 197, 94, 0.4)'
+                  }}
+                >
+                  📞 Contactar Soporte
+                </a>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -617,7 +683,7 @@ export default function App() {
   );
 }
 
-function AppRoutes({ auth, onLogout, onSettingsUpdate }) {
+function AppRoutes({ auth, onLogout, onSettingsUpdate, licenseStatusInfo, showWarningBanner, setShowWarningBanner }) {
   const user = auth.user;
   const canAccessInventory = hasPermission(user, 'inventory.access');
   const canAccessReports   = hasPermission(user, 'reports.access');
@@ -627,6 +693,37 @@ function AppRoutes({ auth, onLogout, onSettingsUpdate }) {
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      {licenseStatusInfo && licenseStatusInfo.licenseStatus === 'WARNING' && showWarningBanner && (
+        <div style={{
+          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+          color: '#ffffff',
+          padding: '10px 16px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          boxShadow: '0 4px 10px rgba(245, 158, 11, 0.15)',
+          zIndex: 100
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left' }}>
+            <span style={{ fontSize: 18 }}>⚠️</span>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 800 }}>Licencia Próxima a Vencer</div>
+              <div style={{ fontSize: 10, opacity: 0.9 }}>
+                Vence el {licenseStatusInfo.licenseExpiresAt} ({licenseStatusInfo.licenseRemainingDays} días).
+              </div>
+            </div>
+          </div>
+          <button 
+            onClick={() => setShowWarningBanner(false)}
+            style={{
+              background: 'none', border: 'none', color: '#ffffff',
+              fontSize: 16, fontWeight: 'bold', cursor: 'pointer', padding: 4
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
       <Routes>
         <Route path="/" element={<Dashboard auth={auth} />} />
         <Route path="/inventory" element={canAccessInventory ? <Inventory auth={auth} /> : <Navigate to="/" replace />} />

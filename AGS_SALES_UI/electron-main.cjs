@@ -80,6 +80,25 @@ ipcMain.handle('get-app-version', () => {
   }
 });
 
+// IPC handler to get machine unique ID (Motherboard UUID)
+ipcMain.handle('get-machine-id', () => {
+  try {
+    const { execSync } = require('child_process');
+    let id = '';
+    if (process.platform === 'win32') {
+      id = execSync('powershell -Command "(Get-CimInstance Win32_ComputerSystemProduct).UUID"', { encoding: 'utf8' }).trim();
+    } else if (process.platform === 'darwin') {
+      id = execSync("ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/ { split($0, line, \"=\"); print line[2] }'", { encoding: 'utf8' }).replace(/[ \"]/g, "").trim();
+    } else {
+      id = execSync('cat /var/lib/dbus/machine-id 2>/dev/null || cat /etc/machine-id 2>/dev/null', { encoding: 'utf8' }).trim();
+    }
+    return id || 'unknown-device';
+  } catch (e) {
+    console.error('Failed to get machine id', e);
+    return 'unknown-device';
+  }
+});
+
 ipcMain.handle('save-config', (event, config) => {
   try {
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
