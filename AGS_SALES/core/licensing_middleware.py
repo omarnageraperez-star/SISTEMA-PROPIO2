@@ -100,6 +100,7 @@ class LicensingMiddleware:
 
         if expires_at_str:
             try:
+                from django.utils import timezone
                 # support both YYYY-MM-DD HH:MM and YYYY-MM-DD
                 if ' ' in expires_at_str:
                     expires_at = datetime.datetime.strptime(expires_at_str, '%Y-%m-%d %H:%M')
@@ -108,7 +109,8 @@ class LicensingMiddleware:
                     base_date = datetime.datetime.strptime(expires_at_str, '%Y-%m-%d')
                     expires_at = datetime.datetime.combine(base_date.date(), datetime.time(23, 59, 59))
                 
-                now = datetime.datetime.now()
+                expires_at = timezone.make_aware(expires_at)
+                now = timezone.now()
                 
                 if now > expires_at:
                     delta = now - expires_at
@@ -126,7 +128,8 @@ class LicensingMiddleware:
         # Send Automatic SMTP Notification (using DB tracking so it only ever triggers ONCE per expiration setting)
         if expires_at:
             try:
-                now = datetime.datetime.now()
+                from django.utils import timezone
+                now = timezone.now()
                 time_left = expires_at - now
                 
                 warning_sent_for = settings_dict.get('license_warning_email_sent_for', '')
