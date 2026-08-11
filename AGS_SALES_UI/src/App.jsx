@@ -235,6 +235,8 @@ function App() {
     }
 
     const handleLicenseExpired = (e) => {
+      // SUPERADMIN always bypasses the license block — they can still access the system to reactivate it
+      if (userProfile && userProfile.role === 'SUPERADMIN') return;
       setLicenseData(e.detail);
     };
     window.addEventListener('license-expired', handleLicenseExpired);
@@ -5421,9 +5423,7 @@ function App() {
             </p>
             <div className="bg-white/5 border border-white/5 rounded-2xl p-5 text-left w-full mb-6">
               <span className="text-xs font-bold text-orange-400 uppercase tracking-widest block mb-2">Métodos de Pago:</span>
-              <p className="text-slate-300 text-xs whitespace-pre-wrap leading-relaxed">
-                {licenseData.payment_methods}
-              </p>
+              <p className="text-slate-300 text-xs whitespace-pre-wrap leading-relaxed" dangerouslySetInnerHTML={{ __html: licenseData.payment_methods }} />
             </div>
             <a 
               href={`https://wa.me/${licenseData.contact_phone.replace(/\D/g, '')}`} 
