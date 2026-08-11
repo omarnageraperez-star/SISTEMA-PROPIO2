@@ -2071,7 +2071,15 @@ function App() {
           if (vInput) vInput.value = '';
           if (fileInput) fileInput.value = '';
         } else {
-          Toast.fire({ icon: 'error', title: result.error || 'Error al subir actualización' });
+          let rawErr = result.error;
+          let msg = 'Error al subir actualización';
+          if (rawErr) {
+            if (typeof rawErr === 'string') msg = rawErr;
+            else if (typeof rawErr === 'object') {
+              msg = rawErr.message || rawErr.detail || rawErr.error || JSON.stringify(rawErr);
+            }
+          }
+          Toast.fire({ icon: 'error', title: msg });
         }
       } else {
         // Fallback for browser (non-Electron)
@@ -2097,7 +2105,17 @@ function App() {
           if (fileInput) fileInput.value = '';
         } else {
           let errMsg = 'Error al subir actualización';
-          try { const d = await res.json(); errMsg = d.error || errMsg; } catch {}
+          try {
+            const d = await res.json();
+            if (d) {
+              if (typeof d === 'string') errMsg = d;
+              else if (d.error) {
+                errMsg = typeof d.error === 'object' ? (d.error.message || JSON.stringify(d.error)) : d.error;
+              } else if (d.detail) {
+                errMsg = d.detail;
+              }
+            }
+          } catch {}
           Toast.fire({ icon: 'error', title: errMsg });
         }
       }
