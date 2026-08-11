@@ -682,7 +682,30 @@ export default function Inventory({ auth }) {
               </div>
 
               {/* Categories horizontal filter pills */}
-              <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 6, scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+              <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 6, scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', alignItems: 'center' }}>
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={() => setShowCategoryModal(true)}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: 20,
+                      fontWeight: 800,
+                      fontSize: 10,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      background: 'rgba(59, 130, 246, 0.1)',
+                      color: '#60a5fa',
+                      border: '1px dashed rgba(59, 130, 246, 0.4)',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4
+                    }}
+                  >
+                    <Plus size={10} /> Categoría
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setSelectedCategory('')}
@@ -1282,24 +1305,46 @@ export default function Inventory({ auth }) {
                   {/* Categoría */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     <span style={{ fontSize: 12, color: '#8a94a6', fontWeight: 600 }}>Categoría</span>
-                    <select
-                      value={form.category}
-                      onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
-                      style={{
-                        background: '#090b10',
-                        border: '1px solid rgba(255, 255, 255, 0.08)',
-                        borderRadius: 14,
-                        padding: '12px 14px',
-                        color: form.category ? '#ffffff' : '#8a94a6',
-                        fontSize: 15,
-                        outline: 'none',
-                      }}
-                    >
-                      <option value="">Sin Categoría</option>
-                      {categories.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <select
+                        value={form.category}
+                        onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
+                        style={{
+                          flex: 1,
+                          background: '#090b10',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          borderRadius: 14,
+                          padding: '12px 14px',
+                          color: form.category ? '#ffffff' : '#8a94a6',
+                          fontSize: 15,
+                          outline: 'none',
+                        }}
+                      >
+                        <option value="">Sin Categoría</option>
+                        {categories.map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => setShowCategoryModal(true)}
+                          style={{
+                            width: 44,
+                            height: 44,
+                            borderRadius: 14,
+                            background: '#1e2435',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <Plus size={18} color="#3b82f6" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
