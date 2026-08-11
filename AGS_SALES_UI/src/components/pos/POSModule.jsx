@@ -72,6 +72,33 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
   const [changeDue, setChangeDue] = useState(0);
   const [interestPercent, setInterestPercent] = useState('');
 
+  // Calculations (moved to prevent Temporal Dead Zone ReferenceError)
+  const calcTotals = () => {
+    let subtotal = 0;
+    let tax = 0;
+    
+    cart.forEach(item => {
+      const itemSub = (item.quantity * item.unit_price) - item.discount;
+      const taxRate = parseFloat(item.product.tax_percent || 0);
+      const itemTax = (itemSub * taxRate) / 100;
+      
+      subtotal += itemSub;
+      tax += itemTax;
+    });
+    
+    let total = subtotal + tax;
+    let globalDiscount = 0;
+    
+    if (globalDiscountPercent > 0) {
+      globalDiscount = total * (globalDiscountPercent / 100);
+      total -= globalDiscount;
+    }
+    
+    return { subtotal, tax, globalDiscount, total };
+  };
+
+  const totals = calcTotals();
+
   useEffect(() => {
     // Initial focus on search input
     if (searchInputRef.current) {
@@ -434,32 +461,7 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
     setCart(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Calculations
-  const calcTotals = () => {
-    let subtotal = 0;
-    let tax = 0;
-    
-    cart.forEach(item => {
-      const itemSub = (item.quantity * item.unit_price) - item.discount;
-      const taxRate = parseFloat(item.product.tax_percent || 0);
-      const itemTax = (itemSub * taxRate) / 100;
-      
-      subtotal += itemSub;
-      tax += itemTax;
-    });
-    
-    let total = subtotal + tax;
-    let globalDiscount = 0;
-    
-    if (globalDiscountPercent > 0) {
-      globalDiscount = total * (globalDiscountPercent / 100);
-      total -= globalDiscount;
-    }
-    
-    return { subtotal, tax, globalDiscount, total };
-  };
 
-  const totals = calcTotals();
 
   const handleRollDice = () => {
     setIsRollingDice(true);
