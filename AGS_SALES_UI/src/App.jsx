@@ -378,7 +378,12 @@ function App() {
     shopify_enabled: 'false',
     shopify_domain: '',
     shopify_token: '',
-    dice_promo_enabled: 'false'
+    dice_promo_enabled: 'false',
+    license_status: 'ACTIVE',
+    license_expires_at: '',
+    license_message: 'Su licencia de uso ha expirado por falta de pago.',
+    license_contact: '+57 320 495 4189',
+    license_payment_methods: 'Por favor contáctenos para reactivar su servicio.'
   });
   
   const formatPrice = (val) => {
@@ -4523,6 +4528,7 @@ function App() {
                          activeSettingTab === 'ai' ? 'Configurar Inteligencia Artificial' :
                          activeSettingTab === 'online_store' ? 'Tienda Online' :
                          activeSettingTab === 'shopify' ? 'Integración Shopify' :
+                         activeSettingTab === 'licensing' ? 'Control de Licencia y Bloqueo' :
                          activeSettingTab === 'promo' ? 'Promociones y Juegos' : 'Ajustes del Sistema'}`
                       : 'Ajustes del Sistema'}
                   </h1>
@@ -4558,8 +4564,10 @@ function App() {
                     { id: 'online_store', title: 'Tienda online', icon: Globe, color: '#0284c7', desc: 'Sincronización WooCommerce y Web' },
                     { id: 'shopify', title: 'Shopify', icon: ShoppingBag, color: '#15803d', desc: 'Sincronizar stock con Shopify store' },
                     { id: 'promo', title: 'Promociones', icon: Tag, color: '#eab308', desc: 'Juegos y descuentos' },
-                    { id: 'updates', title: 'Actualizaciones', icon: Download, color: '#f97316', desc: 'Actualizar sistema globalmente' }
+                    { id: 'updates', title: 'Actualizaciones', icon: Download, color: '#f97316', desc: 'Actualizar sistema globalmente' },
+                    { id: 'licensing', title: 'Licencia', icon: Shield, color: '#6366f1', desc: 'Gestionar licencia y bloqueo' }
                   ].filter(opt => {
+                    if (opt.id === 'licensing') return userProfile?.role === 'SUPERADMIN';
                     if (userProfile?.role === 'SUPERADMIN' || userProfile?.role === 'ADMIN') return true;
                     if (opt.id === 'users') return hasPermission(userProfile, 'settings.user_management');
                     if (opt.id === 'business') return hasPermission(userProfile, 'settings.business_info');
@@ -5135,6 +5143,71 @@ function App() {
                       </label>
                     </div>
                     <button type="submit" className="btn-premium mt-2"><Save size={18}/> Guardar y Sincronizar</button>
+                  </form>
+                </div>
+              )}
+
+              {activeSettingTab === 'licensing' && userProfile?.role === 'SUPERADMIN' && (
+                <div className="glass-panel p-8 max-w-2xl mx-auto rounded-2xl shadow-sm text-left animate-in fade-in zoom-in-95">
+                  <h3 className="text-lg font-bold text-gray-800 flex items-center mb-6">
+                    <Shield className="mr-2 text-indigo-500"/> Control de Licencia y Suspensión
+                  </h3>
+                  <form onSubmit={(e) => { e.preventDefault(); handleSaveSystemSettings('Licencia'); }} className="flex flex-col gap-4">
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700 ml-1">Estado del Sistema</label>
+                      <select 
+                        className="glass-input mt-1 font-bold" 
+                        value={systemSettings.license_status || 'ACTIVE'} 
+                        onChange={e => setSystemSettings({...systemSettings, license_status: e.target.value})}
+                      >
+                        <option value="ACTIVE" className="text-emerald-600 font-bold">🟢 ACTIVO (Funcionamiento Normal)</option>
+                        <option value="EXPIRED" className="text-red-600 font-bold">🔴 SUSPENDIDO (Bloqueo Inmediato)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700 ml-1">Fecha Límite / Vencimiento</label>
+                      <input 
+                        type="date" 
+                        className="glass-input mt-1" 
+                        value={systemSettings.license_expires_at || ''} 
+                        onChange={e => setSystemSettings({...systemSettings, license_expires_at: e.target.value})} 
+                      />
+                      <p className="text-[10px] text-gray-500 mt-1 ml-1">Dejar vacío para tiempo ilimitado. Si se define una fecha, el sistema se bloqueará al llegar el día siguiente.</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700 ml-1">Mensaje de Suspensión</label>
+                      <textarea 
+                        rows={3} 
+                        className="glass-input mt-1 text-sm" 
+                        placeholder="Ej: Su suscripción mensual ha expirado..." 
+                        value={systemSettings.license_message || ''} 
+                        onChange={e => setSystemSettings({...systemSettings, license_message: e.target.value})} 
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700 ml-1">WhatsApp de Soporte (con indicativo de país, sin espacios)</label>
+                      <input 
+                        type="text" 
+                        className="glass-input mt-1" 
+                        placeholder="Ej: +573204954189" 
+                        value={systemSettings.license_contact || ''} 
+                        onChange={e => setSystemSettings({...systemSettings, license_contact: e.target.value})} 
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700 ml-1">Instrucciones / Cuentas de Pago</label>
+                      <textarea 
+                        rows={3} 
+                        className="glass-input mt-1 text-sm font-mono" 
+                        placeholder="Ej: Nequi: 320 495 4189..." 
+                        value={systemSettings.license_payment_methods || ''} 
+                        onChange={e => setSystemSettings({...systemSettings, license_payment_methods: e.target.value})} 
+                        required
+                      />
+                    </div>
+                    <button type="submit" className="btn-premium mt-2"><Save size={18}/> Guardar y Suspender/Activar</button>
                   </form>
                 </div>
               )}
