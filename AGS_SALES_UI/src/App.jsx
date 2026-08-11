@@ -2262,9 +2262,33 @@ function App() {
         body: JSON.stringify(systemSettings)
       });
       if (res.ok) {
-        const responseData = await res.json();
         // Update systemSettings state with server response
         setSystemSettings(prev => ({ ...prev, ...responseData }));
+
+        if (responseData.license_status && responseData.license_expires_at) {
+          let remDays = 999;
+          let status = 'ACTIVE';
+          try {
+            const expires = new Date(responseData.license_expires_at.replace(' ', 'T'));
+            const now = new Date();
+            const diffMs = expires - now;
+            const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+            remDays = Math.max(0, diffDays);
+            const warningDays = parseInt(responseData.license_warning_days || '7');
+            if (diffMs > 0 && diffDays <= warningDays) {
+              status = 'WARNING';
+            } else if (diffMs <= 0) {
+              status = 'EXPIRED';
+            }
+          } catch(e) {}
+          
+          setLicenseStatusInfo({
+            licenseStatus: status,
+            licenseRemainingDays: remDays,
+            licenseExpiresAt: responseData.license_expires_at
+          });
+          setShowWarningBanner(true);
+        }
         
         premiumAlert('Ajustes Guardados', `Ajustes de "${tabName}" guardados y sincronizados con éxito.`, 'success');
         
