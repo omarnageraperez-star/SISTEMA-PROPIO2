@@ -39,9 +39,22 @@ class LicensingMiddleware:
         if excluded:
             return self.get_response(request)
 
+        # Manually authenticate JWT token to determine request.user in middleware
+        auth_header = request.headers.get('Authorization') or request.META.get('HTTP_AUTHORIZATION')
+        if auth_header and auth_header.startswith('Bearer '):
+            try:
+                from rest_framework_simplejwt.tokens import AccessToken
+                from apps.users.models import User
+                token_str = auth_header.split(' ')[1]
+                access_token = AccessToken(token_str)
+                user_id = access_token['user_id']
+                request.user = User.objects.get(id=user_id)
+            except Exception:
+                pass
+
         # SUPERADMIN always bypasses the license block so they can reactivate
         try:
-            if request.user.is_authenticated and getattr(request.user, 'role', None) == 'SUPERADMIN':
+            if request.user and request.user.is_authenticated and getattr(request.user, 'role', None) == 'SUPERADMIN':
                 return self.get_response(request)
         except Exception:
             pass
