@@ -8,8 +8,9 @@ class LicensingMiddleware:
 
     def __call__(self, request):
         path = request.path
-        # Exclude admin and login/auth endpoints
-        if path.startswith('/admin/') or 'login' in path or 'token' in path:
+        # Exclude admin, login/auth endpoints, and setup/health check endpoints
+        if (path.startswith('/admin/') or 'login' in path or 'token' in path
+                or 'check-admin' in path or 'register' in path or 'health' in path or 'ping' in path):
             return self.get_response(request)
 
         # SUPERADMIN always bypasses the license block so they can reactivate
