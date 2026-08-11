@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Receipt, Search, X, ChevronDown, ChevronUp, Clock, Package, DollarSign, Filter, RefreshCw, MessageCircle, Trash2, Calendar, User, Tag } from 'lucide-react';
 import TopBar from '../components/TopBar';
-import { apiRequest, apiUrl } from '../lib/api';
+import { apiRequest, apiUrl, formatCurrency } from '../lib/api';
 import { DarkSwal, Toast } from '../lib/swal';
 import { SkeletonCard } from '../components/SkeletonLoader';
 import { Share } from '@capacitor/share';
@@ -12,10 +12,9 @@ import { generateTicketHTML } from '../lib/print';
 import { hasPermission } from '../lib/permissionsConfig';
 
 const formatWithSettings = (n, settings) => {
-  const num = parseFloat(n) || 0;
   const symbol = settings?.currency_symbol || '$';
   const decimals = parseInt(settings?.currency_decimals || '0', 10);
-  return `${symbol} ${num.toLocaleString('es-CO', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+  return formatCurrency(n, symbol, decimals);
 };
 
 const STATUS_MAP = {
@@ -223,14 +222,31 @@ export default function Sales({ auth }) {
     .reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
 
   return (
-    <div className="page-container" style={{ background: '#0f172a', minHeight: '100vh' }}>
-      <TopBar title="Historial de Ventas" subtitle={`${sales.length} registradas`} />
+    <div className="page-container" style={{ background: '#080a0f', minHeight: '100vh' }}>
+      
+      {/* 🌟 PREMIUM IOS STICKY HEADER */}
+      <div className="safe-top" style={{
+        padding: '20px 20px 12px',
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+        background: 'rgba(8, 10, 15, 0.96)',
+        backdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+      }}>
+        <h1 style={{ fontSize: 34, fontWeight: 800, color: '#ffffff', margin: 0, letterSpacing: '-0.03em' }}>
+          Ventas
+        </h1>
+        <span style={{ fontSize: 13, color: '#64748b', fontWeight: 700 }}>
+          {sales.length} facturas registradas
+        </span>
+      </div>
 
       <div className="page-content" style={{ padding: '16px 16px 0', paddingBottom: 'calc(140px + env(safe-area-inset-bottom, 16px))' }}>
         {/* Today summary card (Premium Dashboard style) */}
         <div style={{
-          background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(15, 23, 42, 0.95) 100%)',
-          backdropFilter: 'blur(12px)',
+          background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.12) 0%, rgba(20, 24, 33, 0.6) 100%)',
+          backdropFilter: 'blur(16px)',
           border: '1px solid rgba(34, 197, 94, 0.25)',
           borderRadius: 20,
           padding: '20px 22px',
@@ -238,21 +254,21 @@ export default function Sales({ auth }) {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          boxShadow: '0 8px 32px rgba(34, 197, 94, 0.08)'
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)'
         }}>
           <div>
-            <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Ingresos de Hoy</span>
-            <p style={{ fontSize: 26, fontWeight: 950, color: '#22c55e', margin: '4px 0 0', letterSpacing: '-0.02em' }}>{fmt(todayTotal)}</p>
+            <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Ingresos de Hoy</span>
+            <p style={{ fontSize: 28, fontWeight: 950, color: '#22c55e', margin: '6px 0 0', letterSpacing: '-0.03em' }}>{fmt(todayTotal)}</p>
           </div>
           <div style={{ 
             background: 'linear-gradient(135deg, #22c55e, #15803d)', 
-            width: 48, 
-            height: 48, 
+            width: 46, 
+            height: 46, 
             borderRadius: 14, 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center',
-            boxShadow: '0 4px 14px rgba(34, 197, 94, 0.4)'
+            boxShadow: '0 4px 14px rgba(34, 197, 94, 0.35)'
           }}>
             <Receipt size={22} color="#ffffff" />
           </div>
@@ -261,22 +277,24 @@ export default function Sales({ auth }) {
         {/* Filters Group */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
           {/* Search bar */}
-          <div className="search-bar" style={{ 
-            margin: 0, 
-            background: 'rgba(30, 41, 59, 0.7)', 
+          <div style={{ 
+            background: 'rgba(255, 255, 255, 0.05)', 
             border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: 14,
-            padding: '12px 14px'
+            padding: '12px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10
           }}>
             <Search size={18} color="#94a3b8" />
             <input 
               placeholder="Buscar por cliente, cajero o factura..." 
               value={query} 
               onChange={e => setQuery(e.target.value)} 
-              style={{ color: '#f8fafc', fontWeight: 600, fontSize: 13 }}
+              style={{ flex: 1, background: 'transparent', border: 'none', color: '#ffffff', outline: 'none', fontSize: 14, fontWeight: 500 }}
             />
             {query && (
-              <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+              <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
                 <X size={16} color="#94a3b8" />
               </button>
             )}
@@ -285,34 +303,34 @@ export default function Sales({ auth }) {
           {/* Cashier filter dropdown */}
           {!loading && ['SUPERADMIN', 'ADMIN'].includes(auth.user?.role) && cashiers.length > 0 && (
             <div style={{
-              background: 'rgba(30, 41, 59, 0.7)',
+              background: 'rgba(255, 255, 255, 0.05)',
               border: '1px solid rgba(255, 255, 255, 0.08)',
               borderRadius: 14,
-              padding: '10px 14px',
+              padding: '12px 16px',
               display: 'flex',
               alignItems: 'center',
               gap: 10
             }}>
               <Filter size={16} color="#94a3b8" />
-              <span style={{ fontSize: 12, fontWeight: 800, color: '#94a3b8', whiteSpace: 'nowrap' }}>Filtrar Cajero:</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: '#94a3b8', whiteSpace: 'nowrap' }}>Filtrar Cajero:</span>
               <select
                 value={selectedCashier}
                 onChange={e => setSelectedCashier(e.target.value)}
                 style={{
                   flex: 1,
                   background: 'transparent',
-                  color: '#f8fafc',
+                  color: '#ffffff',
                   border: 'none',
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: 700,
                   outline: 'none',
                   cursor: 'pointer',
                   paddingLeft: 6
                 }}
               >
-                <option value="" style={{ background: '#0f172a', color: '#f8fafc' }}>👤 Todos los Cajeros</option>
+                <option value="" style={{ background: '#080a0f', color: '#ffffff' }}>👤 Todos los Cajeros</option>
                 {cashiers.map(c => (
-                  <option key={c} value={c} style={{ background: '#0f172a', color: '#f8fafc' }}>
+                  <option key={c} value={c} style={{ background: '#080a0f', color: '#ffffff' }}>
                     👤 {c}
                   </option>
                 ))}
@@ -341,14 +359,26 @@ export default function Sales({ auth }) {
 
               return (
                 <div key={sale.id} style={{
-                  background: 'rgba(30, 41, 59, 0.55)',
-                  backdropFilter: 'blur(8px)',
-                  border: isOpen ? '1px solid #f97316' : '1px solid rgba(255, 255, 255, 0.06)',
-                  borderRadius: 18,
+                  background: 'rgba(20, 24, 36, 0.75)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  border: isOpen ? '1px solid var(--color-accent, #f97316)' : '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: 20,
                   overflow: 'hidden',
-                  boxShadow: isOpen ? '0 8px 24px rgba(249, 115, 22, 0.08)' : '0 4px 16px rgba(0,0,0,0.15)',
-                  transition: 'all 0.25s ease'
+                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35)',
+                  transition: 'all 0.25s ease',
+                  position: 'relative'
                 }}>
+                  {/* Status Color Bar Indicator */}
+                  <div style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: 4,
+                    background: status.color
+                  }} />
+
                   {/* Header Row */}
                   <button
                     onClick={() => setExpanded(isOpen ? null : sale.id)}
@@ -357,7 +387,7 @@ export default function Sales({ auth }) {
                       background: 'none',
                       border: 'none',
                       cursor: 'pointer',
-                      padding: '14px 16px',
+                      padding: '14px 16px 14px 20px',
                       display: 'flex',
                       alignItems: 'center',
                       gap: 12,
@@ -376,7 +406,7 @@ export default function Sales({ auth }) {
                     {/* Customer & ID */}
                     <div style={{ flex: 1, textAlign: 'left', minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 14, fontWeight: 800, color: '#f8fafc', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontSize: 15, fontWeight: 800, color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {sale.customer_name || 'Consumidor Final'}
                         </span>
                         {parseFloat(sale.discount || 0) > 0 && (
@@ -386,17 +416,17 @@ export default function Sales({ auth }) {
                         )}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                        <span style={{ fontSize: 10, color: '#64748b', fontFamily: 'monospace', fontWeight: 800 }}>#{sale.invoice_number || String(sale.id).padStart(6, '0')}</span>
+                        <span style={{ fontSize: 11, color: '#64748b', fontFamily: 'monospace', fontWeight: 800 }}>#{sale.invoice_number || String(sale.id).padStart(6, '0')}</span>
                         <span style={{ color: 'rgba(255,255,255,0.08)', fontSize: 10 }}>|</span>
-                        <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
-                          <Clock size={10} color="#64748b" /> {date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                        <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
+                          <Clock size={11} color="#64748b" /> {date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
                     </div>
 
                     {/* Total & Status */}
                     <div style={{ textAlign: 'right', flexShrink: 0, marginRight: 4 }}>
-                      <p style={{ fontSize: 15, fontWeight: 950, color: '#22c55e', margin: 0, letterSpacing: '-0.01em' }}>{fmt(sale.total)}</p>
+                      <p style={{ fontSize: 17, fontWeight: 950, color: '#22c55e', margin: 0, letterSpacing: '-0.01em' }}>{fmt(sale.total)}</p>
                       <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 8, background: status.bg, color: status.color, fontWeight: 800, textTransform: 'uppercase', marginTop: 4, display: 'inline-block', letterSpacing: '0.02em' }}>
                         {status.label}
                       </span>
@@ -407,7 +437,7 @@ export default function Sales({ auth }) {
 
                   {/* Expanded Detail Panel */}
                   {isOpen && (
-                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '16px', background: 'rgba(15, 23, 42, 0.45)' }}>
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '16px', background: 'rgba(9, 11, 16, 0.5)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
                         <Package size={12} color="#64748b" />
                         <p style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Artículos Vendidos</p>

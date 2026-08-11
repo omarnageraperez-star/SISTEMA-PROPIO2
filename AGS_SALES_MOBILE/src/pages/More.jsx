@@ -4,16 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import { BarChart3, Settings, LogOut, Shield, Server, ArrowRight, X, Save, Image, Mail, FileText, Landmark, Users, UserPlus, Trash2, Edit, Key, ShieldAlert, Database, QrCode, Box, Plus, MapPin, Calendar, Cpu, ChevronDown, ChevronUp, CreditCard } from 'lucide-react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import TopBar from '../components/TopBar';
-import { apiRequest, apiUrl, parseError } from '../lib/api';
+import { apiRequest, apiUrl, parseError, formatCurrency } from '../lib/api';
 import { ROLE_CHOICES, PERMISSION_MODULES, ROLE_PRESETS, hasPermission } from '../lib/permissionsConfig';
 import { DarkSwal, Toast } from '../lib/swal';
 import { loadAndApplyTheme, saveTheme } from '../lib/theme';
 
 const formatWithSettings = (n, settings) => {
-  const num = parseFloat(n) || 0;
   const symbol = settings?.currency_symbol || '$';
   const decimals = parseInt(settings?.currency_decimals || '0', 10);
-  return `${symbol} ${num.toLocaleString('es-CO', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+  return formatCurrency(n, symbol, decimals);
 };
 
 const compressImage = (file, maxWidth = 800, maxHeight = 800) => {

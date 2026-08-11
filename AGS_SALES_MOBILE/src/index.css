@@ -546,3 +546,49 @@ html, body, #root {
 [class*="sileo"] div {
   color: #ffffff !important;
 }
+
+/* Premium Toast styling like banks/modern apps */
+.premium-toast-popup {
+  background: rgba(20, 24, 36, 0.92) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5) !important;
+  margin-top: calc(max(env(safe-area-inset-top, 0px), 36px) + 12px) !important; /* Space down from status bar/notch */
+  padding: 12px 20px !important;
+  width: 90% !important;
+  max-width: 360px !important;
+  align-items: center !important;
+}
+
+.premium-toast-title {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  margin-left: 8px !important;
+  text-align: left !important;
+}
+
+.premium-toast-icon {
+  margin-right: 0 !important;
+  scale: 0.9 !important;
+}
+
+/* Custom linear gradient for Swal timer progress bar */
+.swal2-popup.swal2-toast .swal2-timer-progress-bar {
+  background: linear-gradient(90deg, var(--color-accent, #f97316), var(--color-accent-light, #fb923c)) !important;
+}
+
+/* Custom animation for global floating toast notifications */
+@keyframes toastSlideDown {
+  from {
+    transform: translateY(-24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

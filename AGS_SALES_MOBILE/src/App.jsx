@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Sparkles, ShoppingCart, ShoppingBag, CreditCard, Receipt, ScanLine, Tag, CheckCircle2 } from 'lucide-react';
-import { Toaster } from 'sileo';
+import { Sparkles, ShoppingCart, ShoppingBag, CreditCard, Receipt, ScanLine, Tag, CheckCircle2, XCircle, AlertTriangle, Info } from 'lucide-react';
 import defaultLogo from './default_logo.png';
 import Dashboard from './pages/Dashboard';
 import Inventory from './pages/Inventory';
@@ -36,6 +35,20 @@ export default function App() {
   });
   const lastSaleIdRef = useRef(null);
   const notifiedProductsRef = useRef(new Set());
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+  useEffect(() => {
+    window.showToast = (message, type = 'success') => {
+      setToast({ show: true, message, type });
+    };
+  }, []);
+
+  useEffect(() => {
+    if (toast.show) {
+      const t = setTimeout(() => setToast(prev => ({ ...prev, show: false })), 2800);
+      return () => clearTimeout(t);
+    }
+  }, [toast.show]);
 
   const fetchSettings = async (token, apiUrl) => {
     try {
@@ -173,7 +186,7 @@ export default function App() {
           if (latestSale) {
             if (lastSaleIdRef.current !== null && lastSaleIdRef.current !== latestSale.id) {
               const num = latestSale.invoice_number || `#${latestSale.id}`;
-              const val = latestSale.total_amount ? `$${Number(latestSale.total_amount).toLocaleString('es-CO')}` : '';
+              const val = latestSale.total_amount ? `$${Number(latestSale.total_amount).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}` : '';
               sendNativeNotification({
                 title: '🛒 Nueva Venta en Tiempo Real',
                 body: `Factura ${num} por ${val} (Atendido por: ${latestSale.user_username || 'Cajero'}).`
@@ -512,7 +525,35 @@ export default function App() {
             }
           />
         </Routes>
-        <Toaster position="top-center" />
+
+        {/* Custom iOS-Style Notification Toast */}
+        {toast.show && (
+          <div style={{
+            position: 'fixed',
+            top: 'calc(max(env(safe-area-inset-top, 0px), 36px) + 12px)',
+            left: '5%',
+            width: '90%',
+            maxWidth: 360,
+            background: 'rgba(20, 24, 33, 0.95)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: 20,
+            padding: '12px 18px',
+            boxShadow: '0 16px 36px rgba(0, 0, 0, 0.6)',
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            animation: 'toastSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+          }}>
+            {toast.type === 'success' && <CheckCircle2 size={22} color="#22c55e" />}
+            {toast.type === 'error' && <XCircle size={22} color="#ef4444" />}
+            {toast.type === 'warning' && <AlertTriangle size={22} color="#f59e0b" />}
+            {toast.type === 'info' && <Info size={22} color="#3b82f6" />}
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#ffffff', flex: 1 }}>{toast.message}</span>
+          </div>
+        )}
       </div>
     </BrowserRouter>
   );

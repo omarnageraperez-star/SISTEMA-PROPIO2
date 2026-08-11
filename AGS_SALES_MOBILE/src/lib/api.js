@@ -81,3 +81,15 @@ export async function parseError(response) {
   } catch { /* ignore */ }
   return `Error ${response.status}`;
 }
+
+/**
+ * Robust currency formatter using regex to guarantee dot (.) as thousands/millions separator
+ * and comma (,) as decimals separator across all mobile devices and webviews.
+ */
+export function formatCurrency(n, symbol = '$', decimals = 0) {
+  const num = parseFloat(n) || 0;
+  const fixed = num.toFixed(decimals);
+  const parts = fixed.split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${symbol} ${parts.join(',')}`;
+}

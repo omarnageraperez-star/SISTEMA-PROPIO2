@@ -11,14 +11,14 @@ export const DarkSwal = Swal.mixin({
   }
 });
 
-export const Toast = Swal.mixin({
-  toast: true,
-  position: 'bottom',
-  showConfirmButton: false,
-  timer: 2500,
-  timerProgressBar: true,
-  background: '#141824',
-  color: '#f1f5f9'
-});
+export const Toast = {
+  fire: ({ icon, title }) => {
+    if (window.showToast) {
+      window.showToast(title, icon);
+    } else {
+      console.log("Toast:", title, icon);
+    }
+  }
+};
 
 export default DarkSwal;

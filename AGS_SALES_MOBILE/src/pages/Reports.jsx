@@ -2,13 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, Calendar, RefreshCw, DollarSign, ShoppingBag, Package, Lightbulb } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import TopBar from '../components/TopBar';
-import { apiRequest, apiUrl } from '../lib/api';
+import { apiRequest, apiUrl, formatCurrency } from '../lib/api';
 
 const formatWithSettings = (n, settings) => {
-  const num = parseFloat(n) || 0;
   const symbol = settings?.currency_symbol || '$';
   const decimals = parseInt(settings?.currency_decimals || '0', 10);
-  return `${symbol} ${num.toLocaleString('es-CO', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+  return formatCurrency(n, symbol, decimals);
 };
 
 export default function Reports({ auth }) {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Send, Search, Plus, Minus, X, ShoppingCart, ChevronRight, Check, CheckCircle2, Trash2, Package, Tag, CreditCard, ScanLine } from 'lucide-react';
 import TopBar from '../components/TopBar';
-import { apiRequest, apiUrl, parseError } from '../lib/api';
+import { apiRequest, apiUrl, parseError, formatCurrency } from '../lib/api';
 import { DarkSwal, Toast } from '../lib/swal';
 import { sendNativeNotification, triggerHaptic, playSuccessSound } from '../lib/notifications';
 import { SkeletonGrid } from '../components/SkeletonLoader';
@@ -10,13 +10,11 @@ import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Capacitor } from '@capacitor/core';
 import WebScannerModal from '../components/WebScannerModal';
 import { saveSaleOffline, getOfflineSales, syncOfflineSales } from '../lib/offlineQueue';
-import { sileo } from 'sileo';
 
 const formatWithSettings = (n, settings) => {
-  const num = parseFloat(n) || 0;
   const symbol = settings?.currency_symbol || '$';
   const decimals = parseInt(settings?.currency_decimals || '0', 10);
-  return `${symbol} ${num.toLocaleString('es-CO', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+  return formatCurrency(n, symbol, decimals);
 };
 
 export default function POS({ auth }) {
@@ -32,7 +30,14 @@ export default function POS({ auth }) {
 
   const [products, setProducts]   = useState([]);
   const [methods, setMethods]     = useState([]);
-  const [cart, setCart]           = useState([]);
+  const [cart, setCart]           = useState(() => {
+    try {
+      const saved = localStorage.getItem('pos_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [query, setQuery]         = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [loading, setLoading]     = useState(true);
@@ -71,6 +76,10 @@ export default function POS({ auth }) {
     }, 10000);
     return () => clearInterval(syncInt);
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('pos_cart', JSON.stringify(cart));
+  }, [cart]);
 
   const [showWebScanner, setShowWebScanner] = useState(false);
 
@@ -172,16 +181,15 @@ export default function POS({ auth }) {
       const existing = prev.find(i => i.product_id === p.id);
       if (existing) {
         if (p.has_inventory_control !== false && existing.quantity + 1 > parseFloat(p.stock || 0)) {
-          sileo.warning(`Solo quedan ${p.stock} unidades de ${p.name}`);
           DarkSwal.fire({ icon: 'warning', title: 'Stock Máximo', text: `Solo quedan ${p.stock} unidades de este producto.`, confirmButtonText: 'Entendido' });
           triggerHaptic('error');
           return prev;
         }
-        sileo.info(`🛒 +1 ${p.name}`);
+        Toast.fire({ icon: 'info', title: `+1 ${p.name}` });
         return prev.map(i => i.product_id === p.id ? { ...i, quantity: i.quantity + 1 } : i);
       }
       const pr = parseFloat(p.price_sell || p.price || 0);
-      sileo.info(`🛒 Agregado: ${p.name}`);
+      Toast.fire({ icon: 'success', title: `Agregado: ${p.name}` });
       return [...prev, { product_id: p.id, product_name: p.name, price: pr, quantity: 1, stock: p.stock, has_inventory_control: p.has_inventory_control }];
     });
   };
@@ -388,14 +396,21 @@ export default function POS({ auth }) {
           title: '🎉 Venta Registrada',
           body: `Factura ${resData?.invoice_number || 'procesada'} por ${fmt(total)}.`
         });
-        sileo.success({
-          title: '🎉 ¡Venta Exitosa!',
-          description: `Factura ${resData?.invoice_number || 'procesada'} por ${fmt(total)}`
+        DarkSwal.fire({
+          icon: 'success',
+          title: '¡Venta Exitosa!',
+          text: `Factura ${resData?.invoice_number || 'procesada'} por ${fmt(total)}`,
+          confirmButtonText: 'Aceptar'
         });
       } else {
         const errorText = await parseError(res);
         setErrMsg(errorText);
-        sileo.error(errorText || 'Error al registrar la venta');
+        DarkSwal.fire({
+          icon: 'error',
+          title: 'Error al registrar la venta',
+          text: errorText || 'Por favor intente nuevamente.',
+          confirmButtonText: 'Aceptar'
+        });
       }
     } catch (err) {
       if (!navigator.onLine || err.message.includes('network') || err.message.includes('fetch')) {
@@ -552,7 +567,7 @@ export default function POS({ auth }) {
             )}
             {filtered.map(p => {
               const inCart = cart.find(i => i.product_id === p.id);
-              const stockNum = p.stock ?? 0;
+              const stockNum = Math.round(parseFloat(p.stock ?? 0));
               const isLowStock = stockNum <= 5 && stockNum > 0;
               const isOut = stockNum <= 0;
               const imgUrl = p.image ? (p.image.startsWith('http') ? p.image : `${auth.apiUrl.replace('/api/', '').replace(/\/$/, '')}/${p.image.startsWith('/') ? p.image.slice(1) : p.image}`) : null;
@@ -1009,10 +1024,14 @@ export default function POS({ auth }) {
                           <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#64748b', fontSize: 18, fontWeight: 900 }}>$</span>
                           <input
                             className="input-field"
-                            type="number"
-                            placeholder="Ej: 10000 (O vacío si es 0)"
-                            value={cashReceived}
-                            onChange={e => setCashReceived(e.target.value)}
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="Ej: 10.000 (O vacío si es 0)"
+                            value={cashReceived ? formatCurrency(cashReceived, '', 0).trim() : ''}
+                            onChange={e => {
+                              const raw = e.target.value.replace(/\D/g, '');
+                              setCashReceived(raw);
+                            }}
                             style={{ paddingLeft: 32, fontSize: 17, fontWeight: 800, background: '#090c14', borderRadius: 14, border: '1px solid rgba(255,255,255,0.1)' }}
                           />
                         </div>
@@ -1053,10 +1072,14 @@ export default function POS({ auth }) {
                         <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#64748b', fontSize: 18, fontWeight: 900 }}>$</span>
                         <input
                           className="input-field"
-                          type="number"
-                          placeholder="Ej: 50000"
-                          value={cashReceived}
-                          onChange={e => setCashReceived(e.target.value)}
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="Ej: 50.000"
+                          value={cashReceived ? formatCurrency(cashReceived, '', 0).trim() : ''}
+                          onChange={e => {
+                            const raw = e.target.value.replace(/\D/g, '');
+                            setCashReceived(raw);
+                          }}
                           style={{ paddingLeft: 32, fontSize: 17, fontWeight: 800, background: '#090c14', borderRadius: 14, border: '1px solid rgba(255,255,255,0.1)' }}
                         />
                       </div>

@@ -4,13 +4,12 @@ import { Search, Plus, Package, X, Camera as CameraIcon, Edit2, Trash2, AlertTri
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Share } from '@capacitor/share';
 import TopBar from '../components/TopBar';
-import { apiRequest, apiUrl, parseError } from '../lib/api';
+import { apiRequest, apiUrl, parseError, formatCurrency } from '../lib/api';
 import { DarkSwal, Toast } from '../lib/swal';
 import { SkeletonCard } from '../components/SkeletonLoader';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Capacitor } from '@capacitor/core';
 import WebScannerModal from '../components/WebScannerModal';
-import { sileo } from 'sileo';
 import { hasPermission } from '../lib/permissionsConfig';
 
 const BASE_FIELDS = { name: '', sku: '', internal_code: '', price: '', cost: '', stock: '', category: '', description: '' };
@@ -244,11 +243,55 @@ export default function Inventory({ auth }) {
     }
   }
 
+  async function handleDeleteCategory(id, name) {
+    const confirm = await DarkSwal.fire({
+      title: '¿Eliminar categoría?',
+      text: `¿Estás seguro de que deseas eliminar la categoría "${name}"? Los productos de esta categoría quedarán sin categoría asignada.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#1e2435',
+      background: '#12151c',
+      color: '#ffffff'
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      const res = await apiRequest(apiUrl(auth.apiUrl, `inventory/categories/${id}/`), {
+        method: 'DELETE',
+      }, auth.token);
+
+      if (res.ok) {
+        Toast.fire({ icon: 'success', title: 'Categoría eliminada' });
+        if (String(selectedCategory) === String(id)) {
+          setSelectedCategory('');
+        }
+        fetchAll();
+      } else {
+        const parsed = await parseError(res);
+        DarkSwal.fire({
+          icon: 'error',
+          title: 'Error al eliminar',
+          text: parsed || 'No se pudo eliminar la categoría.'
+        });
+      }
+    } catch (e) {
+      console.error(e);
+      DarkSwal.fire({
+        icon: 'error',
+        title: 'Error de red',
+        text: e.message || 'Error de red al intentar eliminar la categoría.'
+      });
+    }
+  }
+
   const fmt = (n) => {
-    const num = parseFloat(n) || 0;
     const symbol = auth.settings?.currency_symbol || '$';
     const decimals = parseInt(auth.settings?.currency_decimals || '0', 10);
-    return `${symbol} ${num.toLocaleString('es-CO', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+    return formatCurrency(n, symbol, decimals);
   };
 
   function openNew() {
@@ -377,12 +420,10 @@ export default function Inventory({ auth }) {
     try {
       const res = await apiRequest(apiUrl(auth.apiUrl, `inventory/products/${p.id}/`), { method: 'DELETE' }, auth.token);
       if (res.ok) {
-        sileo.success({ title: '¡Eliminado!', description: `El producto "${p.name}" fue eliminado.` });
         Toast.fire({ icon: 'success', title: 'Producto eliminado del inventario' });
         fetchAll();
       } else {
         const errorMsg = await parseError(res);
-        sileo.error(errorMsg || 'No se pudo eliminar el producto.');
         DarkSwal.fire({
           icon: 'error',
           title: 'No se pudo eliminar',
@@ -391,7 +432,6 @@ export default function Inventory({ auth }) {
       }
     } catch (e) {
       console.error(e);
-      sileo.error('Error de conexión al eliminar producto.');
       DarkSwal.fire('Error', 'Error de conexión con el servidor.', 'error');
     }
   }
@@ -407,7 +447,7 @@ export default function Inventory({ auth }) {
     const matchesQuery = nameMatch || skuMatch || codeMatch;
     const matchesCategory = selectedCategory === '' || String(p.category) === String(selectedCategory);
     
-    const stockNum = p.stock ?? 0;
+    const stockNum = Math.round(parseFloat(p.stock ?? 0));
     let matchesStock = true;
     if (stockFilter === 'OUT') matchesStock = stockNum <= 0;
     if (stockFilter === 'LOW') matchesStock = stockNum > 0 && stockNum <= 5;
@@ -425,141 +465,124 @@ export default function Inventory({ auth }) {
       
       {/* 🌟 IOS PRODUCTOS TOP HEADER */}
       <div className="safe-top" style={{
-        padding: '16px 20px 8px',
+        padding: '20px 20px 12px',
         position: 'sticky',
         top: 0,
         zIndex: 50,
-        background: 'rgba(8, 10, 15, 0.95)',
-        backdropFilter: 'blur(16px)',
+        background: 'rgba(8, 10, 15, 0.96)',
+        backdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <h1 style={{ fontSize: 32, fontWeight: 800, color: '#ffffff', margin: 0, letterSpacing: '-0.02em' }}>
+        {/* Fila 1: Título Grande, Escáner y Botón Agregar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <h1 style={{ fontSize: 34, fontWeight: 800, color: '#ffffff', margin: 0, letterSpacing: '-0.03em' }}>
             Productos
           </h1>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {/* Escáner de código de barras */}
+            <button
+              onClick={handleScan}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'transform 0.2s',
+              }}
+              onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.92)'}
+              onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              <ScanLine size={20} color="#3b82f6" />
+            </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {/* iOS Segmented View Control */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              background: '#12151c',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: 99,
-              padding: 3,
-            }}>
+            {/* Botón Principal de Agregar */}
+            {canEdit && (
               <button
-                type="button"
-                onClick={() => setViewMode('list')}
+                onClick={openNew}
                 style={{
-                  padding: '6px 10px',
-                  borderRadius: 99,
-                  background: viewMode === 'list' ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : 'transparent',
+                  width: 40,
+                  height: 40,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, var(--color-accent, #f97316), var(--color-accent-light, #fb923c))',
                   border: 'none',
-                  color: viewMode === 'list' ? 'white' : '#64748b',
-                  cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 4,
-                  transition: 'all 0.2s',
-                  boxShadow: viewMode === 'list' ? '0 2px 8px rgba(37,99,235,0.4)' : 'none'
-                }}
-              >
-                <List size={15} />
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('grid')}
-                style={{
-                  padding: '6px 10px',
-                  borderRadius: 99,
-                  background: viewMode === 'grid' ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : 'transparent',
-                  border: 'none',
-                  color: viewMode === 'grid' ? 'white' : '#64748b',
+                  justifyContent: 'center',
                   cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  transition: 'all 0.2s',
-                  boxShadow: viewMode === 'grid' ? '0 2px 8px rgba(37,99,235,0.4)' : 'none'
+                  boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)',
+                  transition: 'transform 0.2s',
                 }}
+                onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.92)'}
+                onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
               >
-                <LayoutGrid size={15} />
+                <Plus size={22} color="#ffffff" />
               </button>
-            </div>
-
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              background: '#12151c',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: 99,
-              padding: '4px 6px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-            }}>
-              <button
-                onClick={handleScan}
-                style={{
-                  width: 36, height: 36, borderRadius: '50%',
-                  background: 'transparent', border: 'none',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer',
-                }}
-              >
-                <ScanLine size={20} color="#3b82f6" />
-              </button>
-              <button
-                onClick={() => setShowCatalogQR(true)}
-                title="Catálogo Digital QR"
-                style={{
-                  width: 36, height: 36, borderRadius: '50%',
-                  background: 'transparent', border: 'none',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer',
-                }}
-              >
-                <QrCode size={20} color="#f97316" />
-              </button>
-              {canEdit && (
-                <button
-                  onClick={openNew}
-                  style={{
-                    width: 36, height: 36, borderRadius: '50%',
-                    background: 'transparent', border: 'none',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <Plus size={22} color="#3b82f6" />
-                </button>
-              )}
-            </div>
+            )}
           </div>
         </div>
 
-        {/* Search Bar Capsule */}
-        <div style={{
-          background: '#12151c',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          borderRadius: 99,
-          padding: '10px 16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          marginBottom: 12,
-        }}>
-          <Search size={18} color="#8a94a6" />
-          <input
-            placeholder="Buscar productos..."
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            style={{ flex: 1, background: 'transparent', border: 'none', color: '#ffffff', outline: 'none', fontSize: 15, fontWeight: 500 }}
-          />
-          {query && (
-            <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
-              <X size={16} color="#8a94a6" />
+        {/* Fila 2: Buscador + Acciones (QR y Selector de Vista) */}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          {/* Campo de búsqueda */}
+          <div style={{
+            flex: 1,
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            borderRadius: 14,
+            padding: '12px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+          }}>
+            <Search size={18} color="#94a3b8" />
+            <input
+              placeholder="Buscar productos..."
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              style={{ flex: 1, background: 'transparent', border: 'none', color: '#ffffff', outline: 'none', fontSize: 16, fontWeight: 500 }}
+            />
+            {query && (
+              <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                <X size={16} color="#94a3b8" />
+              </button>
+            )}
+          </div>
+
+          {/* Grupo de Acciones Secundarias (QR y Vista Cuadrícula/Lista) */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => setShowCatalogQR(true)}
+              style={{
+                width: 44, height: 44, borderRadius: 14,
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <QrCode size={20} color="#f97316" />
             </button>
-          )}
+            
+            {/* Selector de Vista (Lista / Cuadrícula) */}
+            <button
+              onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
+              style={{
+                width: 44, height: 44, borderRadius: 14,
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              {viewMode === 'list' ? <LayoutGrid size={20} color="#94a3b8" /> : <List size={20} color="#94a3b8" />}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -582,7 +605,7 @@ export default function Inventory({ auth }) {
               background: 'rgba(255,255,255,0.02)',
               border: 'none',
               borderBottom: showFiltersPanel ? '1px solid rgba(255,255,255,0.06)' : 'none',
-              padding: '12px 16px',
+              padding: '14px 16px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -592,14 +615,14 @@ export default function Inventory({ auth }) {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Layers size={16} color="#fbbf24" />
-              <span style={{ fontSize: 13, fontWeight: 800, color: '#ffffff' }}>
+              <span style={{ fontSize: 14, fontWeight: 800, color: '#ffffff' }}>
                 Filtros & Categorías
               </span>
               <span style={{
-                fontSize: 10,
+                fontSize: 11,
                 color: '#8a94a6',
                 background: 'rgba(255,255,255,0.06)',
-                padding: '2px 8px',
+                padding: '3px 10px',
                 borderRadius: 99,
                 fontWeight: 700,
                 marginLeft: 4
@@ -607,77 +630,77 @@ export default function Inventory({ auth }) {
                 {selectedCategory ? (categories.find(c=>String(c.id)===String(selectedCategory))?.name || 'Categoría') : 'Todas'}
               </span>
             </div>
-            {showFiltersPanel ? <ChevronUp size={16} color="#94a3b8" /> : <ChevronDown size={16} color="#94a3b8" />}
+            {showFiltersPanel ? <ChevronUp size={18} color="#94a3b8" /> : <ChevronDown size={18} color="#94a3b8" />}
           </button>
 
           {showFiltersPanel && (
-            <div style={{ padding: 12 }}>
-              {/* Quick Metrics Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 14 }}>
+            <div style={{ padding: 14 }}>
+              {/* Quick Metrics Cards con más espacio y legibilidad */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 18 }}>
                 {/* Card 1: Total */}
                 <div 
                   onClick={() => setStockFilter('ALL')}
                   style={{
-                    background: stockFilter === 'ALL' ? '#1c212d' : '#12151c',
+                    background: stockFilter === 'ALL' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255, 255, 255, 0.02)',
                     border: `1px solid ${stockFilter === 'ALL' ? '#3b82f6' : 'rgba(255,255,255,0.06)'}`,
-                    borderRadius: 12,
-                    padding: 8,
+                    borderRadius: 16,
+                    padding: '12px 14px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 4,
+                    gap: 6,
                     cursor: 'pointer',
                     transition: 'all 0.2s',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Package size={12} color="#3b82f6" />
-                    <span style={{ fontSize: 9, color: stockFilter === 'ALL' ? '#60a5fa' : '#8a94a6', fontWeight: 800 }}>TOTAL</span>
+                    <Package size={14} color="#3b82f6" />
+                    <span style={{ fontSize: 11, color: stockFilter === 'ALL' ? '#60a5fa' : '#94a3b8', fontWeight: 700, letterSpacing: '0.05em' }}>TOTAL</span>
                   </div>
-                  <span style={{ fontSize: 15, fontWeight: 950, color: '#ffffff' }}>{totalProductsCount}</span>
+                  <span style={{ fontSize: 20, fontWeight: 800, color: '#ffffff' }}>{totalProductsCount}</span>
                 </div>
 
-                {/* Card 2: Out of Stock */}
+                {/* Card 2: Sin Stock */}
                 <div 
                   onClick={() => setStockFilter(stockFilter === 'OUT' ? 'ALL' : 'OUT')}
                   style={{
-                    background: stockFilter === 'OUT' ? 'rgba(239, 68, 68, 0.15)' : '#12151c',
+                    background: stockFilter === 'OUT' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 255, 255, 0.02)',
                     border: `1px solid ${stockFilter === 'OUT' ? '#ef4444' : 'rgba(255,255,255,0.06)'}`,
-                    borderRadius: 12,
-                    padding: 8,
+                    borderRadius: 16,
+                    padding: '12px 14px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 4,
+                    gap: 6,
                     cursor: 'pointer',
                     transition: 'all 0.2s',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <AlertTriangle size={12} color="#ef4444" />
-                    <span style={{ fontSize: 9, color: '#ef4444', fontWeight: 800 }}>SIN STOCK</span>
+                    <AlertTriangle size={14} color="#ef4444" />
+                    <span style={{ fontSize: 11, color: '#ef4444', fontWeight: 700, letterSpacing: '0.05em' }}>SIN STOCK</span>
                   </div>
-                  <span style={{ fontSize: 15, fontWeight: 950, color: '#ef4444' }}>{outOfStockCount}</span>
+                  <span style={{ fontSize: 20, fontWeight: 800, color: '#ef4444' }}>{outOfStockCount}</span>
                 </div>
 
-                {/* Card 3: Low Stock */}
+                {/* Card 3: Bajo Stock */}
                 <div 
                   onClick={() => setStockFilter(stockFilter === 'LOW' ? 'ALL' : 'LOW')}
                   style={{
-                    background: stockFilter === 'LOW' ? 'rgba(245, 158, 11, 0.15)' : '#12151c',
+                    background: stockFilter === 'LOW' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255, 255, 255, 0.02)',
                     border: `1px solid ${stockFilter === 'LOW' ? '#f59e0b' : 'rgba(255,255,255,0.06)'}`,
-                    borderRadius: 12,
-                    padding: 8,
+                    borderRadius: 16,
+                    padding: '12px 14px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 4,
+                    gap: 6,
                     cursor: 'pointer',
                     transition: 'all 0.2s',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <BarChart2 size={12} color="#f59e0b" />
-                    <span style={{ fontSize: 9, color: '#f59e0b', fontWeight: 800 }}>BAJO STOCK</span>
+                    <BarChart2 size={14} color="#f59e0b" />
+                    <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 700, letterSpacing: '0.05em' }}>BAJO STOCK</span>
                   </div>
-                  <span style={{ fontSize: 15, fontWeight: 950, color: '#f59e0b' }}>{lowStockCount}</span>
+                  <span style={{ fontSize: 20, fontWeight: 800, color: '#f59e0b' }}>{lowStockCount}</span>
                 </div>
               </div>
 
@@ -688,10 +711,10 @@ export default function Inventory({ auth }) {
                     type="button"
                     onClick={() => setShowCategoryModal(true)}
                     style={{
-                      padding: '6px 12px',
+                      padding: '8px 14px',
                       borderRadius: 20,
                       fontWeight: 800,
-                      fontSize: 10,
+                      fontSize: 12,
                       cursor: 'pointer',
                       whiteSpace: 'nowrap',
                       background: 'rgba(59, 130, 246, 0.1)',
@@ -703,22 +726,22 @@ export default function Inventory({ auth }) {
                       gap: 4
                     }}
                   >
-                    <Plus size={10} /> Categoría
+                    <Plus size={12} /> Categoría
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={() => setSelectedCategory('')}
                   style={{
-                    padding: '6px 12px',
+                    padding: '8px 14px',
                     borderRadius: 20,
                     fontWeight: 700,
-                    fontSize: 10,
+                    fontSize: 12,
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
-                    background: selectedCategory === '' ? 'linear-gradient(135deg, #f97316, #ea580c)' : '#1e2435',
+                    background: selectedCategory === '' ? 'linear-gradient(135deg, var(--color-accent, #f97316), var(--color-accent-light, #fb923c))' : 'rgba(255, 255, 255, 0.05)',
                     color: selectedCategory === '' ? 'white' : '#94a3b8',
-                    border: `1px solid ${selectedCategory === '' ? 'transparent' : '#252d42'}`,
+                    border: `1px solid ${selectedCategory === '' ? 'transparent' : 'rgba(255,255,255,0.08)'}`,
                     transition: 'all 0.2s'
                   }}
                 >
@@ -730,15 +753,15 @@ export default function Inventory({ auth }) {
                     type="button"
                     onClick={() => setSelectedCategory(cat.id)}
                     style={{
-                      padding: '6px 12px',
+                      padding: '8px 14px',
                       borderRadius: 20,
                       fontWeight: 700,
-                      fontSize: 10,
+                      fontSize: 12,
                       cursor: 'pointer',
                       whiteSpace: 'nowrap',
-                      background: String(selectedCategory) === String(cat.id) ? 'linear-gradient(135deg, #f97316, #ea580c)' : '#1e2435',
+                      background: String(selectedCategory) === String(cat.id) ? 'linear-gradient(135deg, var(--color-accent, #f97316), var(--color-accent-light, #fb923c))' : 'rgba(255, 255, 255, 0.05)',
                       color: String(selectedCategory) === String(cat.id) ? 'white' : '#94a3b8',
-                      border: `1px solid ${String(selectedCategory) === String(cat.id) ? 'transparent' : '#252d42'}`,
+                      border: `1px solid ${String(selectedCategory) === String(cat.id) ? 'transparent' : 'rgba(255,255,255,0.08)'}`,
                       transition: 'all 0.2s'
                     }}
                   >
@@ -821,7 +844,7 @@ export default function Inventory({ auth }) {
             {viewMode === 'list' ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {filtered.map(p => {
-                  const stockNum = p.stock ?? 0;
+                  const stockNum = Math.round(parseFloat(p.stock ?? 0));
                   const isLow = stockNum > 0 && stockNum <= 5;
                   const isOut = stockNum <= 0;
                   const imgUrl = buildImgUrl(p.image);
@@ -979,7 +1002,7 @@ export default function Inventory({ auth }) {
               /* 🎴 VISTA DE TARJETAS EN CUADRÍCULA ESTILO IOS */
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 {filtered.map(p => {
-                  const stockNum = p.stock ?? 0;
+                  const stockNum = Math.round(parseFloat(p.stock ?? 0));
                   const isLow = stockNum > 0 && stockNum <= 5;
                   const isOut = stockNum <= 0;
                   const imgUrl = buildImgUrl(p.image);
@@ -1365,7 +1388,7 @@ export default function Inventory({ auth }) {
                         type="text"
                         inputMode="numeric"
                         placeholder="0.00"
-                        value={form.cost ? Number(form.cost).toLocaleString('es-CO') : ''}
+                        value={form.cost ? formatCurrency(form.cost, '', 0).trim() : ''}
                         onChange={e => {
                           const raw = e.target.value.replace(/\D/g, '');
                           setForm(p => ({ ...p, cost: raw }));
@@ -1395,7 +1418,7 @@ export default function Inventory({ auth }) {
                         type="text"
                         inputMode="numeric"
                         placeholder="0.00"
-                        value={form.price ? Number(form.price).toLocaleString('es-CO') : ''}
+                        value={form.price ? formatCurrency(form.price, '', 0).trim() : ''}
                         onChange={e => {
                           const raw = e.target.value.replace(/\D/g, '');
                           setForm(p => ({ ...p, price: raw }));
@@ -1445,7 +1468,7 @@ export default function Inventory({ auth }) {
                       type="text"
                       inputMode="numeric"
                       placeholder="0"
-                      value={form.stock ? Number(form.stock).toLocaleString('es-CO') : '0'}
+                      value={form.stock ? formatCurrency(form.stock, '', 0).trim() : '0'}
                       onChange={e => {
                         const raw = e.target.value.replace(/\D/g, '');
                         setForm(p => ({ ...p, stock: raw }));
@@ -1562,7 +1585,7 @@ export default function Inventory({ auth }) {
         document.body
       )}
 
-      {/* Modal - Nueva Categoría */}
+      {/* Modal - Gestionar Categorías */}
       {showCategoryModal && createPortal(
         <div className="modal-overlay" style={{ zIndex: 220 }} onClick={e => e.target === e.currentTarget && setShowCategoryModal(false)}>
           <div className="modal-sheet" style={{
@@ -1571,28 +1594,41 @@ export default function Inventory({ auth }) {
             borderTopRightRadius: 24,
             display: 'flex',
             flexDirection: 'column',
-            gap: 16
+            gap: 16,
+            maxHeight: '80vh',
+            overflowY: 'auto'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#f1f5f9', margin: 0 }}>🏷️ Nueva Categoría</h3>
-                <p style={{ fontSize: 11, color: '#64748b', margin: '2px 0 0' }}>Crea una categoría para organizar tus productos</p>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#f1f5f9', margin: 0 }}>🏷️ Gestionar Categorías</h3>
+                <p style={{ fontSize: 11, color: '#64748b', margin: '2px 0 0' }}>Crea o elimina las categorías del sistema</p>
               </div>
-              <button onClick={() => setShowCategoryModal(false)} style={{ background: '#1e2435', border: 'none', borderRadius: '50%', width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <button onClick={() => { setShowCategoryModal(false); setCatErrMsg(''); setNewCatName(''); }} style={{ background: '#1e2435', border: 'none', borderRadius: '50%', width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                 <X size={16} color="#64748b" />
               </button>
             </div>
 
-            <div>
-              <span style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Nombre de la Categoría *</span>
-              <input
-                className="input-field"
-                placeholder="Ej. Bebidas, Embutidos, Mecatos..."
-                value={newCatName}
-                onChange={e => setNewCatName(e.target.value)}
-                style={{ marginTop: 6 }}
-                autoFocus
-              />
+            {/* Formulario de Creación */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ fontSize: 11, color: '#8a94a6', fontWeight: 700, textTransform: 'uppercase' }}>Nueva Categoría</span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  className="input-field"
+                  placeholder="Ej. Bebidas, Mecatos..."
+                  value={newCatName}
+                  onChange={e => setNewCatName(e.target.value)}
+                  style={{ flex: 1, height: 44, fontSize: 14 }}
+                  autoFocus
+                />
+                <button 
+                  className="btn-primary" 
+                  style={{ height: 44, borderRadius: 12, padding: '0 20px', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, width: 'auto' }} 
+                  onClick={handleSaveCategory} 
+                  disabled={savingCat}
+                >
+                  {savingCat ? 'Creando...' : 'Crear'}
+                </button>
+              </div>
             </div>
 
             {catErrMsg && (
@@ -1601,10 +1637,66 @@ export default function Inventory({ auth }) {
               </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 4 }}>
-              <button className="btn-secondary" style={{ height: 44, borderRadius: 12 }} onClick={() => setShowCategoryModal(false)} disabled={savingCat}>Cancelar</button>
-              <button className="btn-primary" style={{ height: 44, borderRadius: 12 }} onClick={handleSaveCategory} disabled={savingCat}>
-                {savingCat ? <><div className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> Guardando</> : 'Crear Categoría'}
+            {/* Listado de Categorías Existentes */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+              <span style={{ fontSize: 11, color: '#8a94a6', fontWeight: 700, textTransform: 'uppercase' }}>Categorías Existentes ({categories.length})</span>
+              <div style={{ 
+                background: '#090b10', 
+                border: '1px solid rgba(255, 255, 255, 0.06)', 
+                borderRadius: 16, 
+                maxHeight: 200, 
+                overflowY: 'auto',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                {categories.length === 0 ? (
+                  <span style={{ fontSize: 13, color: '#64748b', padding: '16px 12px', textAlign: 'center' }}>No hay categorías registradas</span>
+                ) : (
+                  categories.map((c, idx) => (
+                    <div 
+                      key={c.id} 
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between', 
+                        padding: '12px 14px',
+                        borderBottom: idx < categories.length - 1 ? '1px solid rgba(255, 255, 255, 0.04)' : 'none'
+                      }}
+                    >
+                      <span style={{ fontSize: 14, fontWeight: 600, color: '#f1f5f9' }}>{c.name}</span>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCategory(c.id, c.name)}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 28,
+                            height: 28,
+                            borderRadius: '50%',
+                            transition: 'all 0.2s',
+                          }}
+                        >
+                          <Trash2 size={16} color="#ef4444" />
+                        </button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+              <button 
+                className="btn-secondary" 
+                style={{ height: 40, borderRadius: 12, padding: '0 24px', fontSize: 13 }} 
+                onClick={() => { setShowCategoryModal(false); setCatErrMsg(''); setNewCatName(''); }}
+              >
+                Cerrar
               </button>
             </div>
           </div>

@@ -2,14 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Landmark, ArrowUpRight, ArrowDownRight, Scale, AlertTriangle, Plus, X, Save, Clock, ArrowRight, ShieldCheck, DollarSign, Users } from 'lucide-react';
 import TopBar from '../components/TopBar';
-import { apiRequest, apiUrl, parseError } from '../lib/api';
+import { apiRequest, apiUrl, parseError, formatCurrency } from '../lib/api';
 import { DarkSwal, Toast } from '../lib/swal';
 import { hasPermission } from '../lib/permissionsConfig';
 const formatWithSettings = (n, settings) => {
-  const num = parseFloat(n) || 0;
   const symbol = settings?.currency_symbol || '$';
   const decimals = parseInt(settings?.currency_decimals || '0', 10);
-  return `${symbol} ${num.toLocaleString('es-CO', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+  return formatCurrency(n, symbol, decimals);
 };
 
 export default function CashControl({ auth }) {

@@ -66,8 +66,8 @@ def sale_notification(sender, instance, created, **kwargs):
             if getattr(sale, 'promo_percent', 0) and int(sale.promo_percent) > 0:
                 promo_html = f"""
                 <tr>
-                  <td style="font-size:13px; color:#92400e; font-weight:600; padding: 8px 0;">
-                    🎲 Descuento por dados ({sale.promo_percent}%)
+                  <td style="font-size:13px; color:#4b5563; font-weight:600; padding: 8px 0;">
+                    Descuento Promocional ({sale.promo_percent}%)
                   </td>
                   <td style="text-align:right; font-size:13px; color:#b45309; font-weight:700; padding: 8px 0;">
                     -{fmt(sale.discount)}
@@ -77,16 +77,16 @@ def sale_notification(sender, instance, created, **kwargs):
             # ── Logo block ────────────────────────────────────────────────────
             logo_block = ""
             if logo_url:
-                logo_block = f'<img src="{logo_url}" alt="{business_name}" style="height:50px; max-width:180px; object-fit:contain; margin-bottom:12px; display:block; margin-left:auto; margin-right:auto;" />'
+                logo_block = f'<img src="{logo_url}" alt="{business_name}" style="height:45px; max-width:160px; object-fit:contain; display:block;" />'
 
             # ── Extra customer info rows ───────────────────────────────────────
-            email_row = f"<tr><td style='font-size:13px; color:#64748b; padding-top:2px;'>{customer_email_display}</td></tr>" if customer_email_display else ""
-            doc_row = f"<tr><td style='font-size:13px; color:#64748b; padding-top:2px;'>CC / NIT: {customer_doc}</td></tr>" if customer_doc else ""
+            email_row = f"<tr><td style='font-size:13px; color:#4b5563; padding-top:2px;'>{customer_email_display}</td></tr>" if customer_email_display else ""
+            doc_row = f"<tr><td style='font-size:13px; color:#4b5563; padding-top:2px;'>CC / NIT: {customer_doc}</td></tr>" if customer_doc else ""
 
             # ── Footer business info ───────────────────────────────────────────
-            address_row = f"<p style='margin:4px 0 0; color:#64748b; font-size:12px;'>{business_address}</p>" if business_address else ""
-            phone_row = f"<p style='margin:2px 0 0; color:#64748b; font-size:12px;'>Tel: {business_phone}</p>" if business_phone else ""
-            nit_row = f"<p style='margin:2px 0 0; color:#64748b; font-size:12px;'>NIT: {business_nit}</p>" if business_nit else ""
+            address_row = f"<p style='margin:4px 0 0; color:#93c5fd; font-size:11px;'>{business_address}</p>" if business_address else ""
+            phone_row = f"<p style='margin:2px 0 0; color:#93c5fd; font-size:11px;'>Tel: {business_phone}</p>" if business_phone else ""
+            nit_row = f"<p style='margin:2px 0 0; color:#93c5fd; font-size:11px;'>NIT: {business_nit}</p>" if business_nit else ""
 
             subject = f"Tu comprobante de compra #{sale.invoice_number or sale.id}"
 
@@ -95,39 +95,57 @@ def sale_notification(sender, instance, created, **kwargs):
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Comprobante de Compra</title>
+  <title>Comprobante de Pago</title>
 </head>
-<body style="margin:0; padding:0; background-color:#f8fafc; font-family:'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+<body style="margin:0; padding:0; background-color:#f3f4f6; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
 
-<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc; padding: 40px 20px;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6; padding: 30px 15px;">
   <tr><td align="center">
-    <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
+    <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px; width:100%; background:#ffffff; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
 
-      <!-- HEADER -->
+      <!-- TOP BRAND HEADER -->
       <tr>
-        <td style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 36px 40px; text-align:center;">
-          {logo_block}
-          <h1 style="margin:0; color:#ffffff; font-size:22px; font-weight:700; letter-spacing:-0.5px;">Comprobante de Compra</h1>
-          <p style="margin:8px 0 0; color:#94a3b8; font-size:13px; letter-spacing:0.5px;">#{sale.invoice_number or sale.id} &nbsp;&bull;&nbsp; {sale.created_at.strftime('%d/%m/%Y a las %H:%M')}</p>
+        <td style="padding: 30px 40px 20px; border-bottom: 2px solid #002d72; background: #ffffff;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td>
+                {logo_block}
+              </td>
+              <td style="text-align: right; vertical-align: bottom;">
+                <p style="margin: 0; font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">Soporte de Pago</p>
+                <p style="margin: 2px 0 0; font-size: 18px; font-weight: 800; color: #002d72;">Factura #{sale.invoice_number or sale.id}</p>
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
 
-      <!-- STATUS BANNER -->
+      <!-- TRANS INFO -->
       <tr>
-        <td style="background: linear-gradient(90deg, #10b981, #059669); padding: 12px 40px; text-align:center;">
-          <p style="margin:0; color:#fff; font-size:13px; font-weight:700; letter-spacing:1px; text-transform:uppercase;">&#10003; &nbsp; Pago confirmado &nbsp;&bull;&nbsp; {payment_method_label}</p>
+        <td style="padding: 20px 40px; background: #f8fafc; border-bottom: 1px solid #e5e7eb;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="font-size: 13px; color: #4b5563; line-height: 1.4;">
+                <strong>Fecha de emisión:</strong> {sale.created_at.strftime('%d/%m/%Y %H:%M')}<br>
+                <strong>Medio de pago:</strong> {payment_method_label}
+              </td>
+              <td style="text-align: right; font-size: 13px; color: #4b5563; vertical-align: top;">
+                <strong>Estado:</strong> <span style="background: #d1fae5; color: #065f46; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase;">Aprobado</span>
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
 
       <!-- CUSTOMER BLOCK -->
       <tr>
-        <td style="padding: 28px 40px 0;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc; border-radius:10px; padding:16px 20px; border:1px solid #e2e8f0;">
+        <td style="padding: 24px 40px 0;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="padding-bottom: 16px; border-bottom: 1px solid #e5e7eb;">
             <tr>
-              <td style="font-size:11px; color:#94a3b8; font-weight:700; text-transform:uppercase; letter-spacing:1px; padding-bottom:4px;">Cliente</td>
+              <td style="font-size:11px; color:#9ca3af; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding-bottom:4px;">Datos del Adquirente</td>
             </tr>
             <tr>
-              <td style="font-size:16px; color:#0f172a; font-weight:700;">{customer_name}</td>
+              <td style="font-size:15px; color:#111827; font-weight:700;">{customer_name}</td>
             </tr>
             {email_row}
             {doc_row}
@@ -138,56 +156,69 @@ def sale_notification(sender, instance, created, **kwargs):
       <!-- PRODUCTS TABLE -->
       <tr>
         <td style="padding: 24px 40px 0;">
-          <p style="margin:0 0 12px; font-size:11px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;">Detalle del pedido</p>
           <table width="100%" cellpadding="0" cellspacing="0">
-            <tr>
-              <th style="text-align:left; font-size:11px; color:#94a3b8; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; padding-bottom:8px; border-bottom:2px solid #e2e8f0;">Producto</th>
-              <th style="text-align:right; font-size:11px; color:#94a3b8; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; padding-bottom:8px; border-bottom:2px solid #e2e8f0; white-space:nowrap;">Total</th>
-            </tr>
-            {product_rows_html}
+            <thead>
+              <tr>
+                <th style="text-align:left; font-size:11px; color:#9ca3af; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding-bottom:8px; border-bottom:1px solid #e5e7eb;">Descripción</th>
+                <th style="text-align:right; font-size:11px; color:#9ca3af; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding-bottom:8px; border-bottom:1px solid #e5e7eb; white-space:nowrap;">Valor Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {product_rows_html}
+            </tbody>
           </table>
         </td>
       </tr>
 
       <!-- TOTALS -->
       <tr>
-        <td style="padding: 20px 40px 0;">
-          <table width="100%" cellpadding="0" cellspacing="0">
+        <td style="padding: 16px 40px 24px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="border-top: 1px solid #e5e7eb; padding-top: 8px;">
             <tr>
-              <td style="font-size:13px; color:#64748b; padding: 6px 0; border-top:1px solid #e2e8f0;">Subtotal</td>
-              <td style="text-align:right; font-size:13px; color:#334155; font-weight:600; padding:6px 0; border-top:1px solid #e2e8f0;">{fmt(sale.subtotal)}</td>
+              <td style="font-size:13px; color:#4b5563; padding: 4px 0;">Subtotal</td>
+              <td style="text-align:right; font-size:13px; color:#111827; font-weight:600; padding:4px 0;">{fmt(sale.subtotal)}</td>
             </tr>
             <tr>
-              <td style="font-size:13px; color:#64748b; padding: 6px 0;">IVA</td>
-              <td style="text-align:right; font-size:13px; color:#334155; font-weight:600; padding:6px 0;">{fmt(sale.tax)}</td>
+              <td style="font-size:13px; color:#4b5563; padding: 4px 0;">Impuestos (IVA)</td>
+              <td style="text-align:right; font-size:13px; color:#111827; font-weight:600; padding:4px 0;">{fmt(sale.tax)}</td>
             </tr>
             {promo_html}
             <tr>
-              <td style="font-size:18px; font-weight:800; color:#0f172a; padding: 14px 0 8px; border-top:2px solid #e2e8f0;">TOTAL PAGADO</td>
-              <td style="text-align:right; font-size:22px; font-weight:900; color:#10b981; padding:14px 0 8px; border-top:2px solid #e2e8f0;">{fmt(sale.total)}</td>
+              <td style="font-size:15px; font-weight:700; color:#111827; padding: 10px 0 0; border-top:1px solid #e5e7eb;">Total Pagado</td>
+              <td style="text-align:right; font-size:18px; font-weight:800; color:#002d72; padding:10px 0 0; border-top:1px solid #e5e7eb;">{fmt(sale.total)}</td>
             </tr>
           </table>
         </td>
       </tr>
 
-      <!-- THANK YOU -->
+      <!-- IMPORTANT NOTICE -->
       <tr>
-        <td style="padding: 28px 40px;">
-          <div style="background: linear-gradient(135deg, #eff6ff, #dbeafe); border-radius:10px; padding:18px 22px; border-left: 4px solid #3b82f6;">
-            <p style="margin:0; font-size:14px; color:#1e40af; font-weight:700;">&#127881; &#161;Gracias por tu compra!</p>
-            <p style="margin:6px 0 0; font-size:13px; color:#3b82f6; line-height:1.5;">Conserva este correo como comprobante de tu transacci&#243;n. Si tienes alguna duda, cont&#225;ctanos directamente.</p>
-          </div>
+        <td style="padding: 0 40px 30px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb; border:1px solid #e5e7eb; border-radius:6px; padding:16px;">
+            <tr>
+              <td style="font-size:12px; color:#4b5563; line-height:1.5;">
+                Estimado(a) cliente, agradecemos su compra. Este mensaje constituye el soporte de pago electrónico enviado en relación con la transacción referenciada. Conserve esta comunicación como constancia de su pago.
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
 
       <!-- FOOTER -->
       <tr>
-        <td style="background:#0f172a; padding:24px 40px; text-align:center; border-radius: 0 0 16px 16px;">
+        <td style="background:#002d72; padding:24px 40px; text-align:center;">
           <p style="margin:0; color:#ffffff; font-size:14px; font-weight:700;">{business_name}</p>
           {address_row}
-          {phone_row}
           {nit_row}
-          <p style="margin:12px 0 0; color:#475569; font-size:11px;">Este correo fue generado autom&#225;ticamente por AGS SALES ERP. Por favor no respondas a este mensaje.</p>
+          {phone_row}
+          <p style="margin:16px 0 0; color:#93c5fd; font-size:10px;">Este es un mensaje generado automáticamente por el sistema ERP de facturación. Por favor no responder a esta cuenta de correo.</p>
+        </td>
+      </tr>
+
+      <!-- SYSTEM WATERMARK -->
+      <tr>
+        <td style="padding: 16px 0; text-align: center;">
+          <p style="margin: 0; font-size: 10px; color: #9ca3af;">Procesado por AGS SALES ERP</p>
         </td>
       </tr>
 

@@ -8,14 +8,13 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import TopBar from '../components/TopBar';
-import { apiRequest, apiUrl } from '../lib/api';
+import { apiRequest, apiUrl, formatCurrency } from '../lib/api';
 import { DarkSwal, Toast } from '../lib/swal';
 
 const formatWithSettings = (n, settings) => {
-  const num = parseFloat(n) || 0;
   const symbol = settings?.currency_symbol || '$';
   const decimals = parseInt(settings?.currency_decimals || '0', 10);
-  return `${symbol} ${num.toLocaleString('es-CO', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+  return formatCurrency(n, symbol, decimals);
 };
 
 function MetricCard({ icon: Icon, label, value, color = '#f97316', trend }) {
