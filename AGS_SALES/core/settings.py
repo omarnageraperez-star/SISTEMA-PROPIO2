@@ -212,6 +212,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = ['*']
 CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+CORS_EXPOSE_HEADERS = ['X-License-Status', 'X-License-Remaining-Days', 'X-License-Expires-At']
 
 # Spectacular Settings
 SPECTACULAR_SETTINGS = {
