@@ -37,6 +37,29 @@ class SystemSettingsView(APIView):
         if not isinstance(data, dict):
             return Response({'error': 'El formato de datos debe ser un objeto JSON'}, status=400)
         
+        # Auto-adjust license dates on server-side to guarantee activation/suspension works instantly
+        if data.get('license_status') == 'ACTIVE':
+            expires_at_str = data.get('license_expires_at', '')
+            try:
+                import datetime
+                if expires_at_str:
+                    if ' ' in expires_at_str:
+                        expires_at = datetime.datetime.strptime(expires_at_str, '%Y-%m-%d %H:%M')
+                    else:
+                        base_date = datetime.datetime.strptime(expires_at_str, '%Y-%m-%d')
+                        expires_at = datetime.datetime.combine(base_date.date(), datetime.time(23, 59, 59))
+                    
+                    if datetime.datetime.now() > expires_at:
+                        future_date = datetime.datetime.now() + datetime.timedelta(days=30)
+                        data['license_expires_at'] = future_date.strftime('%Y-%m-%d 23:59')
+                else:
+                    future_date = datetime.datetime.now() + datetime.timedelta(days=30)
+                    data['license_expires_at'] = future_date.strftime('%Y-%m-%d 23:59')
+            except Exception:
+                pass
+        elif data.get('license_status') == 'EXPIRED':
+            data['license_expires_at'] = '2026-01-01 00:00'
+        
         from django.db import transaction
         
         with transaction.atomic():
