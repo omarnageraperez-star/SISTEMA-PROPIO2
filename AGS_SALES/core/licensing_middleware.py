@@ -12,6 +12,14 @@ class LicensingMiddleware:
         if path.startswith('/admin/') or 'login' in path or 'token' in path:
             return self.get_response(request)
 
+        # SUPERADMIN always bypasses the license block so they can reactivate
+        if request.user and request.user.is_authenticated:
+            try:
+                if getattr(request.user, 'role', None) == 'SUPERADMIN':
+                    return self.get_response(request)
+            except Exception:
+                pass
+
         # Retrieve licensing settings
         try:
             settings_dict = {s.key: s.value for s in SystemSetting.objects.all()}
