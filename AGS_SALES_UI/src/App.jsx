@@ -2262,6 +2262,7 @@ function App() {
         body: JSON.stringify(systemSettings)
       });
       if (res.ok) {
+        const responseData = await res.json();
         // Update systemSettings state with server response
         setSystemSettings(prev => ({ ...prev, ...responseData }));
 
