@@ -9,6 +9,8 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { generateTicketHTML } from '../lib/print';
+import { printTicket } from '../lib/printDispatcher';
+import { Printer } from 'lucide-react';
 import { hasPermission } from '../lib/permissionsConfig';
 
 const formatWithSettings = (n, settings) => {
@@ -548,12 +550,38 @@ export default function Sales({ auth }) {
 
                       {/* Action buttons */}
                       <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+                        {/* Print Receipt Button */}
+                        <button
+                          onClick={() => {
+                            printTicket(sale, auth.settings, auth.settings?.ticket_logo, { apiUrl: auth.apiUrl });
+                          }}
+                          style={{
+                            flex: 1.5,
+                            background: 'rgba(59, 130, 246, 0.1)',
+                            border: '1px solid rgba(59, 130, 246, 0.25)',
+                            borderRadius: 12,
+                            padding: '12px 14px',
+                            color: '#3b82f6',
+                            fontSize: 13,
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 8,
+                            transition: 'all 0.2s ease',
+                            boxShadow: '0 2px 8px rgba(59, 130, 246, 0.05)'
+                          }}
+                        >
+                          <Printer size={16} /> Imprimir Ticket
+                        </button>
+
                         {/* Send WhatsApp / Share Receipt Button */}
                         <button
                           onClick={() => handleShareReceipt(sale)}
                           disabled={sharingId === sale.id}
                           style={{
-                            flex: 2,
+                            flex: 1.5,
                             background: sharingId === sale.id ? 'rgba(34, 197, 94, 0.05)' : 'rgba(34, 197, 94, 0.1)',
                             border: '1px solid rgba(34, 197, 94, 0.25)',
                             borderRadius: 12,

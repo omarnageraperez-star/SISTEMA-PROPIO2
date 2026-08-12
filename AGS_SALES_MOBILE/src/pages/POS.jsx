@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Send, Search, Plus, Minus, X, ShoppingCart, ChevronRight, Check, CheckCircle2, Trash2, Package, Tag, CreditCard, ScanLine } from 'lucide-react';
+import { Send, Search, Plus, Minus, X, ShoppingCart, ChevronRight, Check, CheckCircle2, Trash2, Package, Tag, CreditCard, ScanLine, Printer } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import { apiRequest, apiUrl, parseError, formatCurrency } from '../lib/api';
 import { DarkSwal, Toast } from '../lib/swal';
@@ -10,6 +10,7 @@ import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Capacitor } from '@capacitor/core';
 import WebScannerModal from '../components/WebScannerModal';
 import { saveSaleOffline, getOfflineSales, syncOfflineSales } from '../lib/offlineQueue';
+import { printTicket } from '../lib/printDispatcher';
 
 const formatWithSettings = (n, settings) => {
   const symbol = settings?.currency_symbol || '$';
@@ -396,11 +397,22 @@ export default function POS({ auth }) {
           title: '🎉 Venta Registrada',
           body: `Factura ${resData?.invoice_number || 'procesada'} por ${fmt(total)}.`
         });
+        // Auto-print immediately if running on Sunmi (instant & silent)
+        if (Capacitor.getPlatform() === 'android' && window.sunmiInnerPrinter) {
+          printTicket(resData, auth.settings, auth.settings?.ticket_logo, { apiUrl: auth.apiUrl });
+        }
+
         DarkSwal.fire({
           icon: 'success',
           title: '¡Venta Exitosa!',
           text: `Factura ${resData?.invoice_number || 'procesada'} por ${fmt(total)}`,
-          confirmButtonText: 'Aceptar'
+          showCancelButton: true,
+          confirmButtonText: '🖨️ Imprimir Ticket',
+          cancelButtonText: 'Cerrar'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            printTicket(resData, auth.settings, auth.settings?.ticket_logo, { apiUrl: auth.apiUrl });
+          }
         });
       } else {
         const errorText = await parseError(res);
