@@ -94,6 +94,21 @@ export default function App() {
     return null;
   };
 
+  const handleVerifyLicense = async () => {
+    if (!auth.token || !auth.apiUrl) return;
+    try {
+      const settings = await fetchSettings(auth.token, auth.apiUrl);
+      if (settings) {
+        setLicenseData(null);
+        setToast({ show: true, message: '✅ Licencia Verificada. ¡Sistema Activo!', type: 'success' });
+      } else {
+        setToast({ show: true, message: '❌ La licencia sigue suspendida. Si ya pagaste, espera unos minutos.', type: 'error' });
+      }
+    } catch (e) {
+      setToast({ show: true, message: '❌ Error de conexión al verificar.', type: 'error' });
+    }
+  };
+
   useEffect(() => {
     (async () => {
       const startTime = Date.now();
