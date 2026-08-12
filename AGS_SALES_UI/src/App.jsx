@@ -896,6 +896,17 @@ function App() {
             const sysData = await sysSettingsRes.json();
             setSystemSettings(prev => ({ ...prev, ...sysData }));
             
+            const licenseStatus = sysSettingsRes.headers.get('X-License-Status');
+            const licenseRemainingDays = sysSettingsRes.headers.get('X-License-Remaining-Days');
+            const licenseExpiresAt = sysSettingsRes.headers.get('X-License-Expires-At');
+            if (licenseStatus) {
+              setLicenseStatusInfo({
+                licenseStatus,
+                licenseRemainingDays: parseInt(licenseRemainingDays || '999'),
+                licenseExpiresAt: licenseExpiresAt || ''
+              });
+            }
+            
             // Sync business name and logos to local config
             if (ipcRenderer) {
               let hasChanges = false;
@@ -1089,6 +1100,17 @@ function App() {
         });
         if (res.ok) {
           const settings = await res.json();
+          
+          const licenseStatus = res.headers.get('X-License-Status');
+          const licenseRemainingDays = res.headers.get('X-License-Remaining-Days');
+          const licenseExpiresAt = res.headers.get('X-License-Expires-At');
+          if (licenseStatus) {
+            setLicenseStatusInfo({
+              licenseStatus,
+              licenseRemainingDays: parseInt(licenseRemainingDays || '999'),
+              licenseExpiresAt: licenseExpiresAt || ''
+            });
+          }
           
           // Sync systemSettings in real-time only if not editing settings to prevent overwriting inputs
           if (!activeSettingTab) {
@@ -3114,14 +3136,19 @@ function App() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col py-4 pr-4 h-full overflow-hidden">
-        {licenseStatusInfo && licenseStatusInfo.licenseStatus === 'WARNING' && showWarningBanner && (
-          <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 py-3.5 rounded-2xl flex items-center justify-between shadow-lg shadow-orange-500/10 mb-4 animate-in slide-in-from-top duration-300 border border-orange-500/20 shrink-0">
+        {licenseStatusInfo && ['WARNING', 'GRACE'].includes(licenseStatusInfo.licenseStatus) && showWarningBanner && (
+          <div className={`bg-gradient-to-r ${licenseStatusInfo.licenseStatus === 'GRACE' ? 'from-red-500 to-rose-600 shadow-red-500/10 border-red-500/20' : 'from-amber-500 to-orange-600 shadow-orange-500/10 border-orange-500/20'} text-white px-6 py-3.5 rounded-2xl flex items-center justify-between shadow-lg mb-4 animate-in slide-in-from-top duration-300 border shrink-0`}>
             <div className="flex items-center gap-3">
               <span className="text-xl">⚠️</span>
               <div className="text-left">
-                <p className="font-extrabold text-sm tracking-tight">Atención: Licencia Próxima a Vencer</p>
+                <p className="font-extrabold text-sm tracking-tight">
+                  {licenseStatusInfo.licenseStatus === 'GRACE' ? '¡ATENCIÓN! Licencia Expirada (Período de Gracia)' : 'Atención: Licencia Próxima a Vencer'}
+                </p>
                 <p className="text-xs opacity-90">
-                  Su período de licencia expira el <b>{licenseStatusInfo.licenseExpiresAt}</b> (quedan <b>{licenseStatusInfo.licenseRemainingDays}</b> días).
+                  {licenseStatusInfo.licenseStatus === 'GRACE' 
+                    ? `Su licencia expiró el ${licenseStatusInfo.licenseExpiresAt}. Restan ${licenseStatusInfo.licenseRemainingDays} días de período de gracia.`
+                    : `Su período de licencia expira el ${licenseStatusInfo.licenseExpiresAt} (quedan ${licenseStatusInfo.licenseRemainingDays} días).`
+                  }
                 </p>
               </div>
             </div>
@@ -3130,7 +3157,7 @@ function App() {
                 href={`https://wa.me/${(systemSettings?.license_contact || '+573204954189').replace(/\D/g, '')}`}
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="bg-white text-orange-700 px-4 py-2 rounded-xl text-xs font-black hover:bg-orange-50 transition-all shadow-md"
+                className={`bg-white ${licenseStatusInfo.licenseStatus === 'GRACE' ? 'text-red-700 hover:bg-rose-50' : 'text-orange-700 hover:bg-orange-50'} px-4 py-2 rounded-xl text-xs font-black transition-all shadow-md`}
               >
                 Pagar Ahora
               </a>
