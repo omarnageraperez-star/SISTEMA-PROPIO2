@@ -33,16 +33,25 @@ class SystemSettingsView(APIView):
         return Response(data)
 
     def post(self, request):
+        if request.user.role != 'SUPERADMIN' and not request.user.is_superuser:
+            custom_perms = request.user.custom_permissions or {}
+            if not custom_perms.get('settings.user_management'):
+                return Response({'error': 'No autorizado. Se requieren privilegios de Administrador.'}, status=403)
+
         data = request.data
         if not isinstance(data, dict):
             return Response({'error': 'El formato de datos debe ser un objeto JSON'}, status=400)
         
-        # Auto-adjust license dates on server-side only if they are empty
+        # Auto-adjust license dates on server-side using Colombia local time only if they are empty
         if data.get('license_status') == 'ACTIVE':
             if not data.get('license_expires_at'):
                 try:
                     import datetime
-                    future_date = datetime.datetime.now() + datetime.timedelta(days=30)
+                    from django.utils import timezone
+                    import pytz
+                    colombia_tz = pytz.timezone('America/Bogota')
+                    now_col = timezone.now().astimezone(colombia_tz)
+                    future_date = now_col + datetime.timedelta(days=30)
                     data['license_expires_at'] = future_date.strftime('%Y-%m-%d 23:59')
                 except Exception:
                     pass
@@ -51,6 +60,7 @@ class SystemSettingsView(APIView):
                 data['license_expires_at'] = '2026-01-01 00:00'
         
         from django.db import transaction
+        from django.core.cache import cache
         
         with transaction.atomic():
             existing = {s.key: s for s in SystemSetting.objects.all()}
@@ -71,6 +81,9 @@ class SystemSettingsView(APIView):
                 SystemSetting.objects.bulk_create(to_create)
             if to_update:
                 SystemSetting.objects.bulk_update(to_update, ['value'])
+            
+            # Evict from cache inside transaction to prevent race conditions
+            cache.delete('_license_settings')
             
         settings = SystemSetting.objects.all()
         response_data = {s.key: s.value for s in settings}
