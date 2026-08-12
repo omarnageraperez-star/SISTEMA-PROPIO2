@@ -153,50 +153,52 @@ class LicensingMiddleware:
                 
                 # Warning email (3 days before)
                 if 0 < time_left.days <= 3 and warning_sent_for != expires_at_str:
-                    from core.mail import send_system_notification
-                    from apps.users.models import SystemSetting
-                    
-                    smtp_user = settings_dict.get('smtp_user')
-                    business_name = settings_dict.get('business_name', 'AGS SALES')
-                    subject = f"Advertencia: Su licencia de {business_name} vencerá pronto"
-                    html = f"""
-                    <h3>Estimado cliente,</h3>
-                    <p>Le informamos que la licencia de uso de su sistema POS/ERP <b>{business_name}</b> vencerá el próximo <b>{expires_at_str}</b>.</p>
-                    <p>Le restan aproximadamente {time_left.days} días de uso normal.</p>
-                    <p>Evite la suspensión del sistema realizando su pago a tiempo.</p>
-                    <p>Métodos de pago:<br/>{settings_dict.get('license_payment_methods', 'Contacto con soporte')}</p>
-                    <p>Soporte: {settings_dict.get('license_contact')}</p>
-                    """
-                    # Send and save to DB immediately to avoid concurrent duplicates
-                    send_system_notification(subject, html, recipient=smtp_user)
-                    
-                    setting, created = SystemSetting.objects.get_or_create(key='license_warning_email_sent_for')
-                    setting.value = expires_at_str
-                    setting.save()
-                    cache.delete('_license_settings')
+                    lock_key = f"sending_warn_email_{expires_at_str.replace(' ', '_')}"
+                    if cache.add(lock_key, 'true', 300):
+                        from core.mail import send_system_notification
+                        from apps.users.models import SystemSetting
+                        
+                        smtp_user = settings_dict.get('smtp_user')
+                        business_name = settings_dict.get('business_name', 'AGS SALES')
+                        subject = f"Advertencia: Su licencia de {business_name} vencerá pronto"
+                        html = f"""
+                        <h3>Estimado cliente,</h3>
+                        <p>Le informamos que la licencia de uso de su sistema POS/ERP <b>{business_name}</b> vencerá el próximo <b>{expires_at_str}</b>.</p>
+                        <p>Le restan aproximadamente {time_left.days} días de uso normal.</p>
+                        <p>Evite la suspensión del sistema realizando su pago a tiempo.</p>
+                        <p>Métodos de pago:<br/>{settings_dict.get('license_payment_methods', 'Contacto con soporte')}</p>
+                        <p>Soporte: {settings_dict.get('license_contact')}</p>
+                        """
+                        send_system_notification(subject, html, recipient=smtp_user)
+                        
+                        setting, created = SystemSetting.objects.get_or_create(key='license_warning_email_sent_for')
+                        setting.value = expires_at_str
+                        setting.save()
+                        cache.delete('_license_settings')
 
                 # Expired email (on expiration day)
                 elif time_left.total_seconds() <= 0 and expired_sent_for != expires_at_str:
-                    from core.mail import send_system_notification
-                    from apps.users.models import SystemSetting
-                    
-                    smtp_user = settings_dict.get('smtp_user')
-                    business_name = settings_dict.get('business_name', 'AGS SALES')
-                    subject = f"Aviso de Suspensión: Licencia expirada de {business_name}"
-                    html = f"""
-                    <h3>Estimado cliente,</h3>
-                    <p>Le informamos que la licencia de uso de su sistema POS/ERP <b>{business_name}</b> ha expirado el <b>{expires_at_str}</b>.</p>
-                    <p>El sistema entrará en suspensión. Por favor contáctenos para reactivar su servicio.</p>
-                    <p>Métodos de pago:<br/>{settings_dict.get('license_payment_methods', 'Contacto con soporte')}</p>
-                    <p>Soporte: {settings_dict.get('license_contact')}</p>
-                    """
-                    # Send and save to DB immediately to avoid concurrent duplicates
-                    send_system_notification(subject, html, recipient=smtp_user)
-                    
-                    setting, created = SystemSetting.objects.get_or_create(key='license_expired_email_sent_for')
-                    setting.value = expires_at_str
-                    setting.save()
-                    cache.delete('_license_settings')
+                    lock_key = f"sending_exp_email_{expires_at_str.replace(' ', '_')}"
+                    if cache.add(lock_key, 'true', 300):
+                        from core.mail import send_system_notification
+                        from apps.users.models import SystemSetting
+                        
+                        smtp_user = settings_dict.get('smtp_user')
+                        business_name = settings_dict.get('business_name', 'AGS SALES')
+                        subject = f"Aviso de Suspensión: Licencia expirada de {business_name}"
+                        html = f"""
+                        <h3>Estimado cliente,</h3>
+                        <p>Le informamos que la licencia de uso de su sistema POS/ERP <b>{business_name}</b> ha expirado el <b>{expires_at_str}</b>.</p>
+                        <p>El sistema entrará en suspensión. Por favor contáctenos para reactivar su servicio.</p>
+                        <p>Métodos de pago:<br/>{settings_dict.get('license_payment_methods', 'Contacto con soporte')}</p>
+                        <p>Soporte: {settings_dict.get('license_contact')}</p>
+                        """
+                        send_system_notification(subject, html, recipient=smtp_user)
+                        
+                        setting, created = SystemSetting.objects.get_or_create(key='license_expired_email_sent_for')
+                        setting.value = expires_at_str
+                        setting.save()
+                        cache.delete('_license_settings')
             except Exception:
                 pass
 

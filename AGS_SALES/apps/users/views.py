@@ -84,6 +84,9 @@ class SystemSettingsView(APIView):
         
         with transaction.atomic():
             existing = {s.key: s for s in SystemSetting.objects.all()}
+            prev_status = existing.get('license_status').value if existing.get('license_status') else 'ACTIVE'
+            prev_expires = existing.get('license_expires_at').value if existing.get('license_expires_at') else ''
+            
             to_create = []
             to_update = []
             
@@ -107,6 +110,36 @@ class SystemSettingsView(APIView):
             
         settings = SystemSetting.objects.all()
         response_data = {s.key: s.value for s in settings}
+        
+        # Check if the license was activated or extended
+        new_status = data.get('license_status')
+        new_expires = data.get('license_expires_at', '')
+        
+        is_activation = False
+        if new_status == 'ACTIVE':
+            if prev_status != 'ACTIVE':
+                is_activation = True
+            elif new_expires != prev_expires:
+                is_activation = True
+                
+        if is_activation:
+            try:
+                from core.mail import send_system_notification
+                smtp_user = response_data.get('smtp_user')
+                if smtp_user:
+                    business_name = response_data.get('business_name', 'AGS SALES')
+                    subject = f"Confirmacion: Licencia Activada para {business_name}"
+                    html = f"""
+                    <h3>Estimado cliente,</h3>
+                    <p>Le confirmamos que la licencia de uso de su sistema POS/ERP <b>{business_name}</b> ha sido activada o renovada con exito.</p>
+                    <p>Nueva fecha de vencimiento: <b>{new_expires}</b></p>
+                    <p>¡Gracias por su preferencia!</p>
+                    <p>Soporte: {response_data.get('license_contact', '')}</p>
+                    """
+                    send_system_notification(subject, html, recipient=smtp_user)
+            except Exception:
+                pass
+                
         return Response(response_data)
 
 class UploadUpdateView(APIView):
