@@ -485,7 +485,7 @@ function App() {
     };
 
     checkAdminSales();
-    const interval = setInterval(checkAdminSales, 45000);
+    const interval = setInterval(checkAdminSales, 2500);
     return () => clearInterval(interval);
   }, [token, apiUrl, userProfile?.role, userProfile?.username, config?.default_printer, config?.apiUrl, config?.ticket_logo, systemSettings]);
 
