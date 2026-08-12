@@ -42,9 +42,29 @@ class SystemSettingsView(APIView):
         if not isinstance(data, dict):
             return Response({'error': 'El formato de datos debe ser un objeto JSON'}, status=400)
         
-        # Auto-adjust license dates on server-side using Colombia local time only if they are empty
+        # Auto-adjust license dates on server-side using Colombia local time if empty or in the past on ACTIVE status
         if data.get('license_status') == 'ACTIVE':
-            if not data.get('license_expires_at'):
+            expires_at_val = data.get('license_expires_at', '')
+            is_past = False
+            if expires_at_val:
+                try:
+                    import datetime
+                    from django.utils import timezone
+                    import pytz
+                    colombia_tz = pytz.timezone('America/Bogota')
+                    if ' ' in expires_at_val:
+                        exp = datetime.datetime.strptime(expires_at_val, '%Y-%m-%d %H:%M')
+                    else:
+                        base_date = datetime.datetime.strptime(expires_at_val, '%Y-%m-%d')
+                        exp = datetime.datetime.combine(base_date.date(), datetime.time(23, 59, 59))
+                    exp = colombia_tz.localize(exp)
+                    now_col = timezone.now().astimezone(colombia_tz)
+                    if now_col > exp:
+                        is_past = True
+                except Exception:
+                    pass
+            
+            if not expires_at_val or is_past:
                 try:
                     import datetime
                     from django.utils import timezone
