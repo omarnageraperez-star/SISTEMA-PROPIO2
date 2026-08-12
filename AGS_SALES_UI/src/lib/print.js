@@ -230,9 +230,145 @@ export const generateTicketHTML = (sale, settings, ticketLogo, options = {}) => 
       </body>
     </html>
   `;
+const printSunmiTicket = async (sale, settings) => {
+  const printer = window.navigator.sunmiInnerPrinter;
+  if (!printer) return;
+  
+  const symbol = settings?.currency_symbol || '$';
+  const format = (val) => `${symbol}${Math.round(parseFloat(val || 0)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+  
+  try {
+    await printer.printerInit();
+    await printer.setAlignment(1);
+    await printer.setFontSize(30);
+    await printer.printOriginalText((settings?.business_name || 'AGS SALES') + '\n');
+    await printer.setFontSize(24);
+    if (settings?.business_nit) await printer.printOriginalText(`NIT: ${settings.business_nit}\n`);
+    if (settings?.business_address) await printer.printOriginalText(`${settings.business_address}\n`);
+    if (settings?.business_phone) await printer.printOriginalText(`Tel: ${settings.business_phone}\n`);
+    await printer.printOriginalText('--------------------------------\n');
+    
+    await printer.setFontSize(28);
+    await printer.printOriginalText(`${settings?.ticket_header || 'SISTEMA POS'}\n`);
+    await printer.printOriginalText(`Ticket: ${sale.invoice_number || 'Borrador'}\n`);
+    
+    await printer.setFontSize(24);
+    await printer.setAlignment(0);
+    await printer.printOriginalText('--------------------------------\n');
+    await printer.printOriginalText(`Fecha: ${new Date(sale.created_at).toLocaleString()}\n`);
+    await printer.printOriginalText(`Cajero: ${sale.user_username || 'Sistema'}\n`);
+    await printer.printOriginalText(`Cliente: ${sale.customer_name || 'Consumidor Final'}\n`);
+    await printer.printOriginalText('--------------------------------\n');
+    
+    await printer.printOriginalText('CANT  DESCRIPCION      TOTAL\n');
+    await printer.printOriginalText('--------------------------------\n');
+    for (const item of (sale.details || [])) {
+      let name = item.product_name || 'Producto';
+      if (name.length > 15) name = name.substring(0, 15);
+      const q = String(Math.round(parseFloat(item.quantity))).padEnd(4);
+      const n = name.padEnd(15);
+      const t = format(item.subtotal).padStart(11);
+      await printer.printOriginalText(`${q} ${n} ${t}\n`);
+    }
+    await printer.printOriginalText('--------------------------------\n');
+    
+    await printer.setAlignment(2);
+    await printer.setFontSize(26);
+    if (sale.discount > 0) {
+      await printer.printOriginalText(`Subtotal: ${format(sale.subtotal)}\n`);
+      await printer.printOriginalText(`Descuento: -${format(sale.discount)}\n`);
+    }
+    await printer.printOriginalText(`TOTAL: ${format(sale.total)}\n`);
+    
+    await printer.setAlignment(1);
+    await printer.setFontSize(24);
+    await printer.printOriginalText('--------------------------------\n');
+    if (sale.payments && sale.payments.length > 0) {
+      for (const p of sale.payments) {
+        await printer.printOriginalText(`${p.payment_method_name || 'Efectivo'}: ${format(p.amount)}\n`);
+      }
+    }
+    
+    await printer.printOriginalText('--------------------------------\n');
+    await printer.printOriginalText((settings?.ticket_footer || 'Gracias por su compra') + '\n');
+    
+    await printer.lineWrap(4);
+  } catch (e) {
+    console.error("Error printing on Sunmi:", e);
+  }
+};
+
+const printSunmiCashCut = async (shift, totals, settings) => {
+  const printer = window.navigator.sunmiInnerPrinter;
+  if (!printer) return;
+  
+  const symbol = settings?.currency_symbol || '$';
+  const format = (val) => `${symbol}${Math.round(parseFloat(val || 0)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+  
+  const line = (label, value) => {
+    const l = String(label);
+    const v = String(value);
+    const space = 32 - l.length - v.length;
+    return l + ' '.repeat(Math.max(1, space)) + v + '\n';
+  };
+
+  try {
+    await printer.printerInit();
+    await printer.setAlignment(1);
+    await printer.setFontSize(30);
+    await printer.printOriginalText((settings?.business_name || 'AGS SALES') + '\n');
+    await printer.setFontSize(24);
+    await printer.printOriginalText('CORTE DE CAJA (ARQUEO)\n');
+    await printer.printOriginalText('--------------------------------\n');
+    
+    await printer.setAlignment(0);
+    await printer.printOriginalText(line('Caja:', shift?.register_name || ''));
+    await printer.printOriginalText(line('Cajero:', shift?.username || ''));
+    await printer.printOriginalText(`Apertura: ${new Date(shift?.opened_at).toLocaleString()}\n`);
+    await printer.printOriginalText(`Corte: ${new Date().toLocaleString()}\n`);
+    await printer.printOriginalText('--------------------------------\n');
+    
+    await printer.printOriginalText(line('Saldo Inicial:', format(totals.initialBalance || 0)));
+    await printer.printOriginalText(line('Ventas Efectivo:', format(totals.totalCash || 0)));
+    await printer.printOriginalText(line('Ventas Tarjeta:', format(totals.totalCards || 0)));
+    await printer.printOriginalText(line('Ventas Transf:', format(totals.totalTransfers || 0)));
+    await printer.printOriginalText('--------------------------------\n');
+    await printer.printOriginalText(line('Total Vendido:', format(totals.totalSales || 0)));
+    await printer.printOriginalText(line('N Ventas:', totals.totalSalesCount || 0));
+    await printer.printOriginalText('--------------------------------\n');
+    await printer.printOriginalText(line('Entradas Adic:', format(totals.movementsIn || 0)));
+    await printer.printOriginalText(line('Salidas/Gastos:', format(totals.movementsOut || 0)));
+    await printer.printOriginalText('--------------------------------\n');
+    
+    await printer.setFontSize(26);
+    await printer.printOriginalText(line('TOTAL ESPERADO:', format(totals.expectedBalance || 0)));
+    await printer.printOriginalText(line('EFECTIVO REAL:', format(totals.finalBalance || 0)));
+    
+    await printer.setFontSize(24);
+    const diffLabel = totals.difference === 0 ? 'CUADRE EXACTO' : totals.difference > 0 ? 'SOBRANTE:' : 'FALTANTE:';
+    await printer.printOriginalText(line(diffLabel, format(Math.abs(totals.difference || 0))));
+    
+    if (totals.notes) {
+      await printer.printOriginalText('--------------------------------\n');
+      await printer.printOriginalText(`Obs: ${totals.notes}\n`);
+    }
+    
+    await printer.printOriginalText('\n\n\n');
+    await printer.setAlignment(1);
+    await printer.printOriginalText('Firma Cajero\n');
+    
+    await printer.lineWrap(4);
+  } catch (e) {
+    console.error("Error printing on Sunmi:", e);
+  }
 };
 
 export const printTicket = (sale, settings, ticketLogo, options = {}) => {
+  if (window?.navigator?.sunmiInnerPrinter) {
+    printSunmiTicket(sale, settings);
+    return;
+  }
+
   const htmlContent = generateTicketHTML(sale, settings, ticketLogo, options);
 
   if (options.silent && options.printerName && window.require) {
@@ -398,6 +534,11 @@ export const generateCashCutHTML = (shift, totals, settings, ticketLogo, options
 };
 
 export const printCashCut = (shift, totals, settings, ticketLogo, options = {}) => {
+  if (window?.navigator?.sunmiInnerPrinter) {
+    printSunmiCashCut(shift, totals, settings);
+    return;
+  }
+
   const htmlContent = generateCashCutHTML(shift, totals, settings, ticketLogo, options);
   
   if (options.silent && options.printerName && window.require) {
