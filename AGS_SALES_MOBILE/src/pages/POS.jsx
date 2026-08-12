@@ -398,7 +398,8 @@ export default function POS({ auth }) {
           body: `Factura ${resData?.invoice_number || 'procesada'} por ${fmt(total)}.`
         });
         // Auto-print immediately if running on Sunmi (instant & silent)
-        if (Capacitor.getPlatform() === 'android' && window.sunmiInnerPrinter) {
+        const isSunmi = Capacitor.getPlatform() === 'android' && window.navigator.sunmiInnerPrinter;
+        if (isSunmi) {
           printTicket(resData, auth.settings, auth.settings?.ticket_logo, { apiUrl: auth.apiUrl });
         }
 
@@ -406,11 +407,11 @@ export default function POS({ auth }) {
           icon: 'success',
           title: '¡Venta Exitosa!',
           text: `Factura ${resData?.invoice_number || 'procesada'} por ${fmt(total)}`,
-          showCancelButton: true,
-          confirmButtonText: '🖨️ Imprimir Ticket',
+          showCancelButton: !isSunmi,
+          confirmButtonText: isSunmi ? 'Aceptar' : '🖨️ Imprimir Ticket',
           cancelButtonText: 'Cerrar'
         }).then((result) => {
-          if (result.isConfirmed) {
+          if (!isSunmi && result.isConfirmed) {
             printTicket(resData, auth.settings, auth.settings?.ticket_logo, { apiUrl: auth.apiUrl });
           }
         });
