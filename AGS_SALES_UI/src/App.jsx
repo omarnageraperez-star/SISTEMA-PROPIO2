@@ -1116,16 +1116,7 @@ function App() {
           if (!activeSettingTab) {
             setSystemSettings(prev => ({ ...prev, ...settings }));
           }
-        }
-        if (res.status === 402) {
-          try {
-            const errData = await res.clone().json();
-            if (['license_expired', 'license_grace_period', 'license_device_mismatch'].includes(errData.error)) {
-              window.dispatchEvent(new CustomEvent('license-expired', { detail: errData }));
-            }
-          } catch (e) {}
-        }
-
+          
           // Sync logos and business name to local config
           if (ipcRenderer) {
             let hasChanges = false;
@@ -1169,6 +1160,16 @@ function App() {
             });
           }
         }
+        if (res.status === 402) {
+          try {
+            const errData = await res.clone().json();
+            if (['license_expired', 'license_grace_period', 'license_device_mismatch'].includes(errData.error)) {
+              window.dispatchEvent(new CustomEvent('license-expired', { detail: errData }));
+            }
+          } catch (e) {}
+        }
+
+
       } catch (e) {
         // Silently ignore network errors
       }
