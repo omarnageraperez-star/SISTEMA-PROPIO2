@@ -76,6 +76,16 @@ export default function App() {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
+        const licenseStatus = res.headers.get('X-License-Status');
+        const licenseRemainingDays = res.headers.get('X-License-Remaining-Days');
+        const licenseExpiresAt = res.headers.get('X-License-Expires-At');
+        if (licenseStatus) {
+          setLicenseStatusInfo({
+            licenseStatus,
+            licenseRemainingDays: parseInt(licenseRemainingDays || '999'),
+            licenseExpiresAt: licenseExpiresAt || ''
+          });
+        }
         return await res.json();
       }
     } catch (e) {
@@ -114,6 +124,17 @@ export default function App() {
             if (logoUrl && !logoUrl.startsWith('data:') && !logoUrl.startsWith('http')) {
               const base = apiUrl.replace('/api/', '').replace(/\/$/, '');
               logoUrl = `${base}/${logoUrl.startsWith('/') ? logoUrl.slice(1) : logoUrl}`;
+            }
+
+            const licenseStatus = res.headers.get('X-License-Status');
+            const licenseRemainingDays = res.headers.get('X-License-Remaining-Days');
+            const licenseExpiresAt = res.headers.get('X-License-Expires-At');
+            if (licenseStatus) {
+              setLicenseStatusInfo({
+                licenseStatus,
+                licenseRemainingDays: parseInt(licenseRemainingDays || '999'),
+                licenseExpiresAt: licenseExpiresAt || ''
+              });
             }
           }
         } catch (e) {
@@ -712,23 +733,32 @@ function AppRoutes({ auth, onLogout, onSettingsUpdate, licenseStatusInfo, showWa
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      {licenseStatusInfo && licenseStatusInfo.licenseStatus === 'WARNING' && showWarningBanner && (
+      {licenseStatusInfo && ['WARNING', 'GRACE'].includes(licenseStatusInfo.licenseStatus) && showWarningBanner && (
         <div style={{
-          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+          background: licenseStatusInfo.licenseStatus === 'GRACE'
+            ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+            : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
           color: '#ffffff',
           padding: '10px 16px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          boxShadow: '0 4px 10px rgba(245, 158, 11, 0.15)',
+          boxShadow: licenseStatusInfo.licenseStatus === 'GRACE'
+            ? '0 4px 10px rgba(239, 68, 68, 0.15)'
+            : '0 4px 10px rgba(245, 158, 11, 0.15)',
           zIndex: 100
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left' }}>
             <span style={{ fontSize: 18 }}>⚠️</span>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 800 }}>Licencia Próxima a Vencer</div>
+              <div style={{ fontSize: 12, fontWeight: 800 }}>
+                {licenseStatusInfo.licenseStatus === 'GRACE' ? '¡ATENCIÓN! Licencia Expirada (Gracia)' : 'Licencia Próxima a Vencer'}
+              </div>
               <div style={{ fontSize: 10, opacity: 0.9 }}>
-                Vence el {licenseStatusInfo.licenseExpiresAt} ({licenseStatusInfo.licenseRemainingDays} días).
+                {licenseStatusInfo.licenseStatus === 'GRACE'
+                  ? `Venció el ${licenseStatusInfo.licenseExpiresAt}. Quedan ${licenseStatusInfo.licenseRemainingDays} días de gracia.`
+                  : `Vence el ${licenseStatusInfo.licenseExpiresAt} (${licenseStatusInfo.licenseRemainingDays} días).`
+                }
               </div>
             </div>
           </div>
