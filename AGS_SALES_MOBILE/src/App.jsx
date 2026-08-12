@@ -197,8 +197,27 @@ export default function App() {
             });
           }
 
+          const licenseStatus = res.headers.get('X-License-Status');
+          const licenseRemainingDays = res.headers.get('X-License-Remaining-Days');
+          const licenseExpiresAt = res.headers.get('X-License-Expires-At');
+          if (licenseStatus) {
+            setLicenseStatusInfo({
+              licenseStatus,
+              licenseRemainingDays: parseInt(licenseRemainingDays || '999'),
+              licenseExpiresAt: licenseExpiresAt || ''
+            });
+          }
+
           await storage.set('user', freshUser);
           setAuth(prev => ({ ...prev, user: freshUser }));
+        }
+        if (res.status === 402) {
+          try {
+            const errData = await res.clone().json();
+            if (['license_expired', 'license_grace_period', 'license_device_mismatch'].includes(errData.error)) {
+              window.dispatchEvent(new CustomEvent('license-expired', { detail: errData }));
+            }
+          } catch (e) {}
         }
       } catch (e) {}
     };
