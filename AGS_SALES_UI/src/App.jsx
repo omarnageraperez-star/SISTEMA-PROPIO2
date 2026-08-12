@@ -2858,6 +2858,20 @@ function App() {
       <div className="flex items-center justify-center min-h-screen relative w-full">
 
         <div className="glass-panel p-8 w-full max-w-md text-center border-slate-200/55 shadow-2xl relative">
+          
+          {/* Change Server Button */}
+          <button 
+            type="button" 
+            onClick={() => {
+              setErrorMsg('');
+              setSuccessMsg('');
+              setAppState('SETUP_API');
+            }}
+            className="absolute top-4 right-4 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50/50 p-2 rounded-xl transition-all border border-slate-150/50 bg-white/80 shadow-sm flex items-center justify-center cursor-pointer"
+            title="Cambiar Servidor de Conexión (API)"
+          >
+            <Server size={14} />
+          </button>
           {(config?.app_logo || config?.ticket_logo) ? (
             <img 
               src={(config.app_logo || config.ticket_logo)?.startsWith('http') 
