@@ -3,6 +3,9 @@ apply plugin: 'com.android.application'
 android {
     namespace "com.agssales.mobile"
     compileSdk rootProject.ext.compileSdkVersion
+    buildFeatures {
+        aidl true
+    }
     defaultConfig {
         applicationId "com.agssales.mobile"
         minSdkVersion rootProject.ext.minSdkVersion
