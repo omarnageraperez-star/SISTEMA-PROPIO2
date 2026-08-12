@@ -74,9 +74,10 @@ class LicensingMiddleware:
             except Exception:
                 pass
 
-        # Exclude admin, login/auth and initial setup/health endpoints
+        # Exclude admin, login/auth, initial setup/health endpoints, and static assets
         excluded = (
             path.startswith('/admin/') or
+            path.startswith('/static/') or
             'login' in path or
             'token' in path or
             'check-admin' in path or
