@@ -19,10 +19,14 @@ class LicensingMiddleware:
         cache.set('_license_settings', settings_dict, 60)
         return settings_dict
 
-    def _add_headers(self, response, expires_at_str, remaining_days, warning_days):
+    def _add_headers(self, response, expires_at_str, remaining_days, warning_days, is_grace_period=False, grace_days_left=0):
         if expires_at_str and response:
-            response['X-License-Status'] = 'WARNING' if remaining_days <= warning_days else 'ACTIVE'
-            response['X-License-Remaining-Days'] = str(remaining_days)
+            if is_grace_period:
+                response['X-License-Status'] = 'GRACE'
+                response['X-License-Remaining-Days'] = str(grace_days_left)
+            else:
+                response['X-License-Status'] = 'WARNING' if remaining_days <= warning_days else 'ACTIVE'
+                response['X-License-Remaining-Days'] = str(remaining_days)
             response['X-License-Expires-At'] = expires_at_str
         return response
 
@@ -44,6 +48,7 @@ class LicensingMiddleware:
         # Expiration logic
         is_expired = license_status == 'EXPIRED'
         is_grace_period = False
+        grace_days_left = 0
         remaining_days = 999
         expires_at = None
 
@@ -88,7 +93,7 @@ class LicensingMiddleware:
         )
         if excluded:
             response = self.get_response(request)
-            return self._add_headers(response, expires_at_str, remaining_days, warning_days)
+            return self._add_headers(response, expires_at_str, remaining_days, warning_days, is_grace_period=is_grace_period, grace_days_left=grace_days_left)
 
         # Manually authenticate JWT token to determine request.user in middleware
         auth_header = request.headers.get('Authorization') or request.META.get('HTTP_AUTHORIZATION')
@@ -107,7 +112,7 @@ class LicensingMiddleware:
         try:
             if request.user and request.user.is_authenticated and getattr(request.user, 'role', None) == 'SUPERADMIN':
                 response = self.get_response(request)
-                return self._add_headers(response, expires_at_str, remaining_days, warning_days)
+                return self._add_headers(response, expires_at_str, remaining_days, warning_days, is_grace_period=is_grace_period, grace_days_left=grace_days_left)
         except Exception:
             pass
 
@@ -218,4 +223,4 @@ class LicensingMiddleware:
 
         # Process the request
         response = self.get_response(request)
-        return self._add_headers(response, expires_at_str, remaining_days, warning_days)
+        return self._add_headers(response, expires_at_str, remaining_days, warning_days, is_grace_period=is_grace_period, grace_days_left=grace_days_left)
