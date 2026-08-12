@@ -16,7 +16,7 @@ const printTextSunmi = async (printer, text, alignment = 0) => {
 };
 
 const printTicketSunmi = async (sale, settings) => {
-  const printer = window.sunmiInnerPrinter;
+  const printer = window.navigator.sunmiInnerPrinter;
   const symbol = settings?.currency_symbol || '$';
   
   const format = (val) => {
@@ -89,7 +89,7 @@ const printTicketSunmi = async (sale, settings) => {
 };
 
 const printCashCutSunmi = async (shift, totals, settings) => {
-  const printer = window.sunmiInnerPrinter;
+  const printer = window.navigator.sunmiInnerPrinter;
   const symbol = settings?.currency_symbol || '$';
   
   const format = (val) => {
@@ -163,7 +163,7 @@ const printWeb = (htmlContent) => {
 };
 
 export const printTicket = async (sale, settings, ticketLogo, options = {}) => {
-  if (Capacitor.getPlatform() === 'android' && window.sunmiInnerPrinter) {
+  if (Capacitor.getPlatform() === 'android' && window.navigator.sunmiInnerPrinter) {
     return await printTicketSunmi(sale, settings);
   }
   
@@ -174,7 +174,7 @@ export const printTicket = async (sale, settings, ticketLogo, options = {}) => {
 };
 
 export const printCashCut = async (shift, totals, settings, ticketLogo, options = {}) => {
-  if (Capacitor.getPlatform() === 'android' && window.sunmiInnerPrinter) {
+  if (Capacitor.getPlatform() === 'android' && window.navigator.sunmiInnerPrinter) {
     return await printCashCutSunmi(shift, totals, settings);
   }
   
