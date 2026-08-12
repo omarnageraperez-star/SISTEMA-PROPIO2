@@ -2905,22 +2905,43 @@ function App() {
             </button>
           </form>
 
-          <div className="mt-6 border-t border-slate-150 pt-4 flex justify-between items-center text-xs">
-            <span className="text-slate-400 font-medium">¿Olvidaste tu contraseña?</span>
-            <button 
-              type="button" 
+          <div className="mt-6 border-t border-slate-150 pt-4 flex flex-col gap-3 text-xs">
+            <div className="flex justify-between items-center">
+              <span className="text-slate-400 font-medium">¿Olvidaste tu contraseña?</span>
+              <button 
+                type="button" 
+                onClick={() => {
+                  premiumAlert(
+                    'Restablecer Contraseña',
+                    `Para restablecer tu contraseña, por favor ponte en contacto con soporte técnico o envía un correo a sistemas.torcoroma@gmail.com`,
+                    'info'
+                  );
+                }}
+                className="text-indigo-600 hover:text-indigo-800 font-bold transition-colors cursor-pointer"
+              >
+                Restablecer
+              </button>
+            </div>
+            
+            <button
+              type="button"
               onClick={() => {
-                premiumAlert(
-                  'Restablecer Contraseña',
-                  `Para restablecer tu contraseña, por favor ponte en contacto con soporte técnico o envía un correo a sistemas.torcoroma@gmail.com`,
-                  'info'
-                );
+                setErrorMsg('');
+                setSuccessMsg('');
+                setAppState('SETUP_API');
               }}
-              className="text-indigo-600 hover:text-indigo-800 font-bold transition-colors cursor-pointer"
+              className="mt-1 w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-slate-600 hover:text-slate-800 rounded-xl transition-all font-bold cursor-pointer"
             >
-              Restablecer
+              <Server size={14} className="text-slate-500" />
+              <span>Cambiar Servidor de Conexión (API)</span>
             </button>
           </div>
+
+          {config?.apiUrl && (
+            <p className="text-[10px] text-slate-400 mt-4 font-mono select-all text-center">
+              Conexión actual: {config.apiUrl}
+            </p>
+          )}
         </div>
       </div>
     );
