@@ -19,46 +19,19 @@ class LicensingMiddleware:
         cache.set('_license_settings', settings_dict, 60)
         return settings_dict
 
+    def _add_headers(self, response, expires_at_str, remaining_days, warning_days):
+        if expires_at_str and response:
+            response['X-License-Status'] = 'WARNING' if remaining_days <= warning_days else 'ACTIVE'
+            response['X-License-Remaining-Days'] = str(remaining_days)
+            response['X-License-Expires-At'] = expires_at_str
+        return response
+
     def __call__(self, request):
         path = request.path
 
         # Clear license cache immediately when settings are saved to reflect changes instantly
         if 'users/settings/' in path and request.method == 'POST':
             cache.delete('_license_settings')
-
-        # Exclude admin, login/auth and initial setup/health endpoints
-        excluded = (
-            path.startswith('/admin/') or
-            'login' in path or
-            'token' in path or
-            'check-admin' in path or
-            'register' in path or
-            'health' in path or
-            'ping' in path or
-            ('settings' in path and request.method == 'GET')
-        )
-        if excluded:
-            return self.get_response(request)
-
-        # Manually authenticate JWT token to determine request.user in middleware
-        auth_header = request.headers.get('Authorization') or request.META.get('HTTP_AUTHORIZATION')
-        if auth_header and auth_header.startswith('Bearer '):
-            try:
-                from rest_framework_simplejwt.tokens import AccessToken
-                from apps.users.models import User
-                token_str = auth_header.split(' ')[1]
-                access_token = AccessToken(token_str)
-                user_id = access_token['user_id']
-                request.user = User.objects.get(id=user_id)
-            except Exception:
-                pass
-
-        # SUPERADMIN always bypasses the license block so they can reactivate
-        try:
-            if request.user and request.user.is_authenticated and getattr(request.user, 'role', None) == 'SUPERADMIN':
-                return self.get_response(request)
-        except Exception:
-            pass
 
         # Retrieve licensing settings (cached)
         settings_dict = self._get_settings()
@@ -67,31 +40,6 @@ class LicensingMiddleware:
         expires_at_str = settings_dict.get('license_expires_at', '')
         grace_days = int(settings_dict.get('license_grace_days', '3'))
         warning_days = int(settings_dict.get('license_warning_days', '7'))
-
-        # Check device locking (if X-Device-UUID is provided by the desktop app)
-        device_uuid = request.META.get('HTTP_X_DEVICE_UUID')
-        if device_uuid:
-            registered_device = settings_dict.get('license_device_id', '')
-            if not registered_device:
-                # Auto-register this device UUID on first connection
-                try:
-                    from apps.users.models import SystemSetting
-                    setting, created = SystemSetting.objects.get_or_create(key='license_device_id')
-                    setting.value = device_uuid
-                    setting.save()
-                    # Clear cache
-                    cache.delete('_license_settings')
-                    settings_dict['license_device_id'] = device_uuid
-                except Exception:
-                    pass
-            elif registered_device != device_uuid:
-                # Device mismatch block
-                return JsonResponse({
-                    'error': 'license_device_mismatch',
-                    'detail': 'Esta licencia ya está vinculada a otro equipo de cómputo. No se permite el acceso desde múltiples dispositivos.',
-                    'contact_phone': settings_dict.get('license_contact', '+57 300 000 0000'),
-                    'payment_methods': 'Por favor contáctenos para transferir la licencia o adquirir licencias adicionales.'
-                }, status=402)
 
         # Expiration logic
         is_expired = license_status == 'EXPIRED'
@@ -125,6 +73,67 @@ class LicensingMiddleware:
                     remaining_days = delta.days
             except Exception:
                 pass
+
+        # Exclude admin, login/auth and initial setup/health endpoints
+        excluded = (
+            path.startswith('/admin/') or
+            'login' in path or
+            'token' in path or
+            'check-admin' in path or
+            'register' in path or
+            'health' in path or
+            'ping' in path or
+            ('settings' in path and request.method == 'GET')
+        )
+        if excluded:
+            response = self.get_response(request)
+            return self._add_headers(response, expires_at_str, remaining_days, warning_days)
+
+        # Manually authenticate JWT token to determine request.user in middleware
+        auth_header = request.headers.get('Authorization') or request.META.get('HTTP_AUTHORIZATION')
+        if auth_header and auth_header.startswith('Bearer '):
+            try:
+                from rest_framework_simplejwt.tokens import AccessToken
+                from apps.users.models import User
+                token_str = auth_header.split(' ')[1]
+                access_token = AccessToken(token_str)
+                user_id = access_token['user_id']
+                request.user = User.objects.get(id=user_id)
+            except Exception:
+                pass
+
+        # SUPERADMIN always bypasses the license block so they can reactivate
+        try:
+            if request.user and request.user.is_authenticated and getattr(request.user, 'role', None) == 'SUPERADMIN':
+                response = self.get_response(request)
+                return self._add_headers(response, expires_at_str, remaining_days, warning_days)
+        except Exception:
+            pass
+
+        # Check device locking (if X-Device-UUID is provided by the desktop app)
+        device_uuid = request.META.get('HTTP_X_DEVICE_UUID')
+        if device_uuid:
+            registered_device = settings_dict.get('license_device_id', '')
+            if not registered_device:
+                # Auto-register this device UUID on first connection
+                try:
+                    from apps.users.models import SystemSetting
+                    setting, created = SystemSetting.objects.get_or_create(key='license_device_id')
+                    setting.value = device_uuid
+                    setting.save()
+                    # Clear cache
+                    cache.delete('_license_settings')
+                    settings_dict['license_device_id'] = device_uuid
+                except Exception:
+                    pass
+            elif registered_device != device_uuid:
+                # Device mismatch block
+                return JsonResponse({
+                    'error': 'license_device_mismatch',
+                    'detail': 'Esta licencia ya está vinculada a otro equipo de cómputo. No se permite el acceso desde múltiples dispositivos.',
+                    'contact_phone': settings_dict.get('license_contact', '+57 300 000 0000'),
+                    'payment_methods': 'Por favor contáctenos para transferir la licencia o adquirir licencias adicionales.'
+                }, status=402)
 
         # Send Automatic SMTP Notification (using DB tracking so it only ever triggers ONCE per expiration setting)
         if expires_at:
@@ -208,11 +217,4 @@ class LicensingMiddleware:
 
         # Process the request
         response = self.get_response(request)
-
-        # Add license headers for non-blocking UI info (warning banners)
-        if expires_at_str:
-            response['X-License-Status'] = 'WARNING' if remaining_days <= warning_days else 'ACTIVE'
-            response['X-License-Remaining-Days'] = str(remaining_days)
-            response['X-License-Expires-At'] = expires_at_str
-
-        return response
+        return self._add_headers(response, expires_at_str, remaining_days, warning_days)
