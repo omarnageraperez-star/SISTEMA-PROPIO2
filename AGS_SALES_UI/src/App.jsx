@@ -2323,7 +2323,11 @@ function App() {
           setShowWarningBanner(true);
         }
         
-        premiumAlert('Ajustes Guardados', `Ajustes de "${tabName}" guardados y sincronizados con éxito.`, 'success');
+        if (tabName === 'Licencia') {
+          premiumAlert('¡Licencia Activada!', `La licencia de uso ha sido activada y extendida con éxito hasta el ${responseData.license_expires_at}.`, 'success');
+        } else {
+          premiumAlert('Ajustes Guardados', `Ajustes de "${tabName}" guardados y sincronizados con éxito.`, 'success');
+        }
         
         // Sync business settings to local config
         if (ipcRenderer) {
