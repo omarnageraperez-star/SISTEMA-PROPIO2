@@ -770,25 +770,25 @@ function AppRoutes({ auth, onLogout, onSettingsUpdate, licenseStatusInfo, showWa
       {licenseStatusInfo && ['WARNING', 'GRACE'].includes(licenseStatusInfo.licenseStatus) && showWarningBanner && (
         <div style={{
           background: licenseStatusInfo.licenseStatus === 'GRACE'
-            ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
-            : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+            ? 'linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)'
+            : 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
           color: '#ffffff',
-          padding: '10px 16px',
+          padding: '14px 16px 12px 16px',
+          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          boxShadow: licenseStatusInfo.licenseStatus === 'GRACE'
-            ? '0 4px 10px rgba(239, 68, 68, 0.15)'
-            : '0 4px 10px rgba(245, 158, 11, 0.15)',
-          zIndex: 100
+          borderBottom: '2px solid rgba(255,255,255,0.2)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          zIndex: 9999
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left' }}>
-            <span style={{ fontSize: 18 }}>⚠️</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left', flex: 1 }}>
+            <span style={{ fontSize: 22 }}>⚠️</span>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 800 }}>
+              <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: '0.3px', textTransform: 'uppercase' }}>
                 {licenseStatusInfo.licenseStatus === 'GRACE' ? '¡ATENCIÓN! Licencia Expirada (Gracia)' : 'Licencia Próxima a Vencer'}
               </div>
-              <div style={{ fontSize: 10, opacity: 0.9 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.95, marginTop: 2 }}>
                 {licenseStatusInfo.licenseStatus === 'GRACE'
                   ? `Venció el ${licenseStatusInfo.licenseExpiresAt}. Quedan ${licenseStatusInfo.licenseRemainingDays} días de gracia.`
                   : `Vence el ${licenseStatusInfo.licenseExpiresAt} (${licenseStatusInfo.licenseRemainingDays} días).`
@@ -799,8 +799,9 @@ function AppRoutes({ auth, onLogout, onSettingsUpdate, licenseStatusInfo, showWa
           <button 
             onClick={() => setShowWarningBanner(false)}
             style={{
-              background: 'none', border: 'none', color: '#ffffff',
-              fontSize: 16, fontWeight: 'bold', cursor: 'pointer', padding: 4
+              background: 'rgba(255,255,255,0.2)', border: 'none', color: '#ffffff',
+              fontSize: 14, fontWeight: 'bold', cursor: 'pointer', padding: '6px 10px',
+              borderRadius: 8, marginLeft: 8
             }}
           >
             ✕

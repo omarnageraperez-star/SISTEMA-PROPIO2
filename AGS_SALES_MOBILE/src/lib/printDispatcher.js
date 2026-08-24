@@ -27,67 +27,64 @@ const printTicketSunmi = async (sale, settings) => {
   };
 
   try {
-    await new Promise((resolve) => printer.printerInit(resolve));
+    // Single string assembly for maximum print speed
+    let fullTicket = '';
     
-    // Header (Centered, Font Size 30 for name, 24 for NIT & address)
-    await printBlockSunmi(printer, `${settings?.business_name || 'AGS SALES'}\n`, 1, 30);
+    // Header
+    fullTicket += `${settings?.business_name || 'AGS SALES'}\n`;
+    if (settings?.business_nit) fullTicket += `NIT: ${settings.business_nit}\n`;
+    if (settings?.business_phone) fullTicket += `Tel: ${settings.business_phone}\n`;
+    if (settings?.business_address) fullTicket += `Dir: ${settings.business_address}\n`;
+    fullTicket += `--------------------------------\n`;
     
-    let headerText = '';
-    if (settings?.business_nit) headerText += `NIT: ${settings.business_nit}\n`;
-    if (settings?.business_phone) headerText += `Tel: ${settings.business_phone}\n`;
-    if (settings?.business_address) headerText += `Dir: ${settings.business_address}\n`;
-    headerText += `--------------------------------\n`;
-    await printBlockSunmi(printer, headerText, 1, 24);
-    
-    // Meta & Items (Left-aligned, Font Size 24)
-    let bodyText = '';
-    bodyText += `Factura: #${sale.invoice_number || String(sale.id).padStart(6, '0')}\n`;
+    // Meta
+    fullTicket += `Factura: #${sale.invoice_number || String(sale.id).padStart(6, '0')}\n`;
     const dateStr = sale.created_at ? new Date(sale.created_at).toLocaleString('es-CO') : new Date().toLocaleString('es-CO');
-    bodyText += `Fecha: ${dateStr}\n`;
-    bodyText += `Cajero: ${sale.user_username || 'Sistema'}\n`;
-    bodyText += `Cliente: ${sale.customer_name || 'Consumidor Final'}\n`;
-    bodyText += `--------------------------------\n`;
+    fullTicket += `Fecha: ${dateStr}\n`;
+    fullTicket += `Cajero: ${sale.user_username || 'Sistema'}\n`;
+    fullTicket += `Cliente: ${sale.customer_name || 'Consumidor Final'}\n`;
+    fullTicket += `--------------------------------\n`;
     
+    // Items
     const items = sale.details || [];
     for (const item of items) {
       const name = (item.product_name || '').slice(0, 22);
       const qty = Math.round(parseFloat(item.quantity || 1));
       const price = parseFloat(item.unit_price || 0);
       const subtotal = price * qty;
-      bodyText += `${qty}x ${name}\n`;
-      bodyText += `   P.U. ${format(price)} | Sub: ${format(subtotal)}\n`;
+      fullTicket += `${qty}x ${name}\n`;
+      fullTicket += `   P.U. ${format(price)} | Sub: ${format(subtotal)}\n`;
     }
-    bodyText += `--------------------------------\n`;
-    await printBlockSunmi(printer, bodyText, 0, 24);
+    fullTicket += `--------------------------------\n`;
     
-    // Totals (Right-aligned, Font Size 26)
-    let totalsText = '';
+    // Totals
     if (parseFloat(sale.discount || 0) > 0) {
-      totalsText += `Subtotal: ${format(sale.subtotal)}\n`;
-      totalsText += `Descuento: -${format(sale.discount)}\n`;
+      fullTicket += `Subtotal: ${format(sale.subtotal)}\n`;
+      fullTicket += `Descuento: -${format(sale.discount)}\n`;
     }
     if (parseFloat(sale.tax || 0) > 0) {
-      totalsText += `${sale.tax_name || 'IVA'}: ${format(sale.tax)}\n`;
+      fullTicket += `${sale.tax_name || 'IVA'}: ${format(sale.tax)}\n`;
     }
-    totalsText += `TOTAL NETO: ${format(sale.total)}\n`;
-    await printBlockSunmi(printer, totalsText, 2, 26);
+    fullTicket += `TOTAL NETO: ${format(sale.total)}\n`;
     
-    // Payments & Footer (Centered, Font Size 24)
-    let footerText = '';
+    // Payments
     if (sale.payments && sale.payments.length > 0) {
-      footerText += `--------------------------------\n`;
-      footerText += `Metodos de Pago:\n`;
+      fullTicket += `--------------------------------\n`;
+      fullTicket += `Metodos de Pago:\n`;
       for (const pay of sale.payments) {
         const method = pay.payment_method_name || 'Efectivo';
-        footerText += ` - ${method}: ${format(pay.amount)}\n`;
+        fullTicket += ` - ${method}: ${format(pay.amount)}\n`;
       }
     }
-    footerText += `--------------------------------\n\n`;
+    fullTicket += `--------------------------------\n\n`;
     const footerMsg = settings?.ticket_footer || 'Garantia de 30 dias con su factura.\nAGS SALES ERP - Documento Oficial';
-    footerText += `${footerMsg}\n\n`;
-    await printBlockSunmi(printer, footerText, 1, 24);
-    
-    // Advance paper so it can be torn off cleanly
+    fullTicket += `${footerMsg}\n\n\n\n`;
+
+    // Single IPC execution for instant printing
+    await new Promise((resolve) => printer.printerInit(resolve));
+    await new Promise((resolve) => printer.setAlignment(1, resolve));
+    await new Promise((resolve) => printer.setFontSize(24, resolve));
+    await new Promise((resolve) => printer.printOriginalText(fullTicket, resolve));
     await new Promise((resolve) => printer.lineWrap(4, resolve));
     return true;
   } catch (e) {

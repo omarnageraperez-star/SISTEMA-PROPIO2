@@ -230,6 +230,8 @@ export const generateTicketHTML = (sale, settings, ticketLogo, options = {}) => 
       </body>
     </html>
   `;
+};
+
 const printSunmiTicket = async (sale, settings) => {
   const printer = window.navigator.sunmiInnerPrinter;
   if (!printer) return;
