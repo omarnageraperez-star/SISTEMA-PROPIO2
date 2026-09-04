@@ -11,8 +11,9 @@ import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Capacitor } from '@capacitor/core';
 import WebScannerModal from '../components/WebScannerModal';
 import { hasPermission } from '../lib/permissionsConfig';
+import { checkAndNotifyExpiringProducts } from '../lib/notifications';
 
-const BASE_FIELDS = { name: '', sku: '', internal_code: '', price: '', cost: '', stock: '', category: '', description: '' };
+const BASE_FIELDS = { name: '', sku: '', internal_code: '', price: '', cost: '', stock: '', category: '', description: '', has_expiration: false, expiration_date: '' };
 
 const compressImage = (file, maxWidth = 800, maxHeight = 800) => {
   return new Promise((resolve) => {
@@ -204,7 +205,9 @@ export default function Inventory({ auth }) {
       ]);
       if (pRes.ok) {
         const d = await pRes.json();
-        setProducts(Array.isArray(d) ? d : d.results || []);
+        const prods = Array.isArray(d) ? d : d.results || [];
+        setProducts(prods);
+        checkAndNotifyExpiringProducts(prods);
       }
       if (cRes.ok) {
         const d = await cRes.json();
@@ -314,6 +317,8 @@ export default function Inventory({ auth }) {
       stock: p.stock ?? '',
       category: p.category || '',
       description: p.description || '',
+      has_expiration: Boolean(p.expiration_date),
+      expiration_date: p.expiration_date || '',
     });
     setImgPreview(p.image ? buildImgUrl(p.image) : null);
     setImgFile(null);
@@ -379,6 +384,7 @@ export default function Inventory({ auth }) {
         stock: form.stock !== '' ? parseFloat(form.stock) : 0,
         category: form.category ? parseInt(form.category) : null,
         description: form.description || null,
+        expiration_date: form.has_expiration && form.expiration_date ? form.expiration_date : null,
         image: imageUrl || null,
       };
 
@@ -451,6 +457,25 @@ export default function Inventory({ auth }) {
     let matchesStock = true;
     if (stockFilter === 'OUT') matchesStock = stockNum <= 0;
     if (stockFilter === 'LOW') matchesStock = stockNum > 0 && stockNum <= 5;
+    if (stockFilter === 'EXPIRING') {
+      if (!p.expiration_date) matchesStock = false;
+      else {
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const exp = new Date(p.expiration_date + 'T00:00:00');
+        const diff = Math.ceil((exp - today) / (1000 * 60 * 60 * 24));
+        matchesStock = diff >= 0 && diff <= 30;
+      }
+    }
+    if (stockFilter === 'EXPIRED') {
+      if (!p.expiration_date) matchesStock = false;
+      else {
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const exp = new Date(p.expiration_date + 'T00:00:00');
+        matchesStock = exp < today;
+      }
+    }
 
     return matchesQuery && matchesCategory && matchesStock;
   });
@@ -459,6 +484,14 @@ export default function Inventory({ auth }) {
   const totalProductsCount = products.length;
   const outOfStockCount = products.filter(p => (p.stock ?? 0) <= 0).length;
   const lowStockCount = products.filter(p => (p.stock ?? 0) > 0 && (p.stock ?? 0) <= 5).length;
+  const todayForMetrics = new Date();
+  todayForMetrics.setHours(0, 0, 0, 0);
+  const expiredCount = products.filter(p => p.expiration_date && new Date(p.expiration_date + 'T00:00:00') < todayForMetrics).length;
+  const expiringCount = products.filter(p => {
+    if (!p.expiration_date) return false;
+    const diff = Math.ceil((new Date(p.expiration_date + 'T00:00:00') - todayForMetrics) / (1000 * 60 * 60 * 24));
+    return diff >= 0 && diff <= 30;
+  }).length;
 
   return (
     <div className="page-container">
@@ -636,7 +669,7 @@ export default function Inventory({ auth }) {
           {showFiltersPanel && (
             <div style={{ padding: 14 }}>
               {/* Quick Metrics Cards con más espacio y legibilidad */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 18 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(95px, 1fr))', gap: 10, marginBottom: 18 }}>
                 {/* Card 1: Total */}
                 <div 
                   onClick={() => setStockFilter('ALL')}
@@ -644,19 +677,19 @@ export default function Inventory({ auth }) {
                     background: stockFilter === 'ALL' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255, 255, 255, 0.02)',
                     border: `1px solid ${stockFilter === 'ALL' ? '#3b82f6' : 'rgba(255,255,255,0.06)'}`,
                     borderRadius: 16,
-                    padding: '12px 14px',
+                    padding: '10px 12px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 6,
+                    gap: 4,
                     cursor: 'pointer',
                     transition: 'all 0.2s',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Package size={14} color="#3b82f6" />
-                    <span style={{ fontSize: 11, color: stockFilter === 'ALL' ? '#60a5fa' : '#94a3b8', fontWeight: 700, letterSpacing: '0.05em' }}>TOTAL</span>
+                    <Package size={13} color="#3b82f6" />
+                    <span style={{ fontSize: 10, color: stockFilter === 'ALL' ? '#60a5fa' : '#94a3b8', fontWeight: 700, letterSpacing: '0.05em' }}>TOTAL</span>
                   </div>
-                  <span style={{ fontSize: 20, fontWeight: 800, color: '#ffffff' }}>{totalProductsCount}</span>
+                  <span style={{ fontSize: 18, fontWeight: 800, color: '#ffffff' }}>{totalProductsCount}</span>
                 </div>
 
                 {/* Card 2: Sin Stock */}
@@ -666,19 +699,19 @@ export default function Inventory({ auth }) {
                     background: stockFilter === 'OUT' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 255, 255, 0.02)',
                     border: `1px solid ${stockFilter === 'OUT' ? '#ef4444' : 'rgba(255,255,255,0.06)'}`,
                     borderRadius: 16,
-                    padding: '12px 14px',
+                    padding: '10px 12px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 6,
+                    gap: 4,
                     cursor: 'pointer',
                     transition: 'all 0.2s',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <AlertTriangle size={14} color="#ef4444" />
-                    <span style={{ fontSize: 11, color: '#ef4444', fontWeight: 700, letterSpacing: '0.05em' }}>SIN STOCK</span>
+                    <AlertTriangle size={13} color="#ef4444" />
+                    <span style={{ fontSize: 10, color: '#ef4444', fontWeight: 700, letterSpacing: '0.05em' }}>AGOTADOS</span>
                   </div>
-                  <span style={{ fontSize: 20, fontWeight: 800, color: '#ef4444' }}>{outOfStockCount}</span>
+                  <span style={{ fontSize: 18, fontWeight: 800, color: '#ef4444' }}>{outOfStockCount}</span>
                 </div>
 
                 {/* Card 3: Bajo Stock */}
@@ -688,19 +721,63 @@ export default function Inventory({ auth }) {
                     background: stockFilter === 'LOW' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255, 255, 255, 0.02)',
                     border: `1px solid ${stockFilter === 'LOW' ? '#f59e0b' : 'rgba(255,255,255,0.06)'}`,
                     borderRadius: 16,
-                    padding: '12px 14px',
+                    padding: '10px 12px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 6,
+                    gap: 4,
                     cursor: 'pointer',
                     transition: 'all 0.2s',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <BarChart2 size={14} color="#f59e0b" />
-                    <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 700, letterSpacing: '0.05em' }}>BAJO STOCK</span>
+                    <BarChart2 size={13} color="#f59e0b" />
+                    <span style={{ fontSize: 10, color: '#f59e0b', fontWeight: 700, letterSpacing: '0.05em' }}>BAJO STOCK</span>
                   </div>
-                  <span style={{ fontSize: 20, fontWeight: 800, color: '#f59e0b' }}>{lowStockCount}</span>
+                  <span style={{ fontSize: 18, fontWeight: 800, color: '#f59e0b' }}>{lowStockCount}</span>
+                </div>
+
+                {/* Card 4: Por Vencer */}
+                <div 
+                  onClick={() => setStockFilter(stockFilter === 'EXPIRING' ? 'ALL' : 'EXPIRING')}
+                  style={{
+                    background: stockFilter === 'EXPIRING' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255, 255, 255, 0.02)',
+                    border: `1px solid ${stockFilter === 'EXPIRING' ? '#fbbf24' : 'rgba(255,255,255,0.06)'}`,
+                    borderRadius: 16,
+                    padding: '10px 12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 4,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 12 }}>⏰</span>
+                    <span style={{ fontSize: 10, color: '#fbbf24', fontWeight: 700, letterSpacing: '0.05em' }}>POR VENCER</span>
+                  </div>
+                  <span style={{ fontSize: 18, fontWeight: 800, color: '#fbbf24' }}>{expiringCount}</span>
+                </div>
+
+                {/* Card 5: Vencidos */}
+                <div 
+                  onClick={() => setStockFilter(stockFilter === 'EXPIRED' ? 'ALL' : 'EXPIRED')}
+                  style={{
+                    background: stockFilter === 'EXPIRED' ? 'rgba(225, 29, 72, 0.2)' : 'rgba(255, 255, 255, 0.02)',
+                    border: `1px solid ${stockFilter === 'EXPIRED' ? '#f43f5e' : 'rgba(255,255,255,0.06)'}`,
+                    borderRadius: 16,
+                    padding: '10px 12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 4,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 12 }}>🔴</span>
+                    <span style={{ fontSize: 10, color: '#f43f5e', fontWeight: 700, letterSpacing: '0.05em' }}>VENCIDOS</span>
+                  </div>
+                  <span style={{ fontSize: 18, fontWeight: 800, color: '#f43f5e' }}>{expiredCount}</span>
                 </div>
               </div>
 
@@ -925,6 +1002,36 @@ export default function Inventory({ auth }) {
                               SKU: {p.sku}
                             </span>
                           )}
+                          {p.expiration_date && (() => {
+                            const today = new Date();
+                            today.setHours(0,0,0,0);
+                            const exp = new Date(p.expiration_date + 'T00:00:00');
+                            const diff = Math.ceil((exp - today) / (1000 * 60 * 60 * 24));
+                            if (diff < 0) {
+                              return (
+                                <span style={{ fontSize: 10, fontWeight: 800, color: '#f43f5e', background: 'rgba(244, 63, 94, 0.15)', padding: '2px 6px', borderRadius: 6 }}>
+                                  🔴 Vencido ({Math.abs(diff)}d)
+                                </span>
+                              );
+                            } else if (diff <= 7) {
+                              return (
+                                <span style={{ fontSize: 10, fontWeight: 800, color: '#fbbf24', background: 'rgba(251, 191, 36, 0.15)', padding: '2px 6px', borderRadius: 6 }}>
+                                  ⏰ Vence {diff}d
+                                </span>
+                              );
+                            } else if (diff <= 30) {
+                              return (
+                                <span style={{ fontSize: 10, fontWeight: 800, color: '#f59e0b', background: 'rgba(245, 158, 11, 0.15)', padding: '2px 6px', borderRadius: 6 }}>
+                                  ⚠️ Vence {diff}d
+                                </span>
+                              );
+                            }
+                            return (
+                              <span style={{ fontSize: 10, fontWeight: 700, color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 6px', borderRadius: 6 }}>
+                                ✓ Vence {p.expiration_date}
+                              </span>
+                            );
+                          })()}
                         </div>
 
                         {/* Price Display */}
@@ -1119,10 +1226,48 @@ export default function Inventory({ auth }) {
                         WebkitLineClamp: 2,
                         WebkitBoxOrient: 'vertical',
                         overflow: 'hidden',
-                        marginBottom: 8
+                        marginBottom: 6
                       }}>
                         {p.name}
                       </span>
+
+                      {/* Expiration badge in grid */}
+                      {p.expiration_date && (() => {
+                        const today = new Date();
+                        today.setHours(0,0,0,0);
+                        const exp = new Date(p.expiration_date + 'T00:00:00');
+                        const diff = Math.ceil((exp - today) / (1000 * 60 * 60 * 24));
+                        let color = '#10b981';
+                        let bg = 'rgba(16, 185, 129, 0.12)';
+                        let text = `Vence: ${p.expiration_date}`;
+                        if (diff < 0) {
+                          color = '#f43f5e';
+                          bg = 'rgba(244, 63, 94, 0.18)';
+                          text = `🔴 Vencido (${Math.abs(diff)}d)`;
+                        } else if (diff <= 7) {
+                          color = '#fbbf24';
+                          bg = 'rgba(251, 191, 36, 0.18)';
+                          text = `⏰ Vence en ${diff}d`;
+                        } else if (diff <= 30) {
+                          color = '#f59e0b';
+                          bg = 'rgba(245, 158, 11, 0.18)';
+                          text = `⚠️ Vence en ${diff}d`;
+                        }
+                        return (
+                          <div style={{
+                            fontSize: 9,
+                            fontWeight: 800,
+                            color,
+                            background: bg,
+                            padding: '2px 6px',
+                            borderRadius: 6,
+                            alignSelf: 'flex-start',
+                            marginBottom: 6
+                          }}>
+                            {text}
+                          </div>
+                        );
+                      })()}
 
                       {/* Price Footer */}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
@@ -1531,6 +1676,64 @@ export default function Inventory({ auth }) {
                     </div>
                   )}
 
+                </div>
+              </div>
+
+              {/* ⏰ SECTION: FECHA DE VENCIMIENTO (OPCIONAL) */}
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#8a94a6', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, marginLeft: 4 }}>
+                  VENCIMIENTO (OPCIONAL)
+                </div>
+                <div style={{ background: '#12151c', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 22, padding: '4px 16px' }}>
+                  {/* Switch Row */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0', borderBottom: form.has_expiration ? '1px solid rgba(255, 255, 255, 0.05)' : 'none' }}>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: '#ffffff' }}>¿Tiene fecha de vencimiento?</div>
+                      <div style={{ fontSize: 11, color: '#8a94a6', marginTop: 2 }}>Opcional para productos perecederos</div>
+                    </div>
+                    {/* iOS Switch */}
+                    <div 
+                      onClick={() => setForm(p => ({ ...p, has_expiration: !p.has_expiration }))}
+                      style={{
+                        width: 50, height: 30, borderRadius: 99, 
+                        background: form.has_expiration ? '#f59e0b' : 'rgba(255,255,255,0.1)',
+                        display: 'flex', alignItems: 'center', padding: 3, cursor: 'pointer',
+                        transition: 'background 0.2s'
+                      }}
+                    >
+                      <div style={{ 
+                        width: 24, height: 24, borderRadius: '50%', background: '#ffffff', 
+                        transform: form.has_expiration ? 'translateX(20px)' : 'translateX(0px)', 
+                        transition: 'transform 0.2s', 
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.3)' 
+                      }} />
+                    </div>
+                  </div>
+
+                  {/* Date Input if active */}
+                  {form.has_expiration && (
+                    <div style={{ padding: '14px 0', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <span style={{ fontSize: 12, color: '#fbbf24', fontWeight: 700 }}>Fecha de Caducidad / Vencimiento</span>
+                      <input
+                        type="date"
+                        value={form.expiration_date || ''}
+                        onChange={e => setForm(p => ({ ...p, expiration_date: e.target.value }))}
+                        style={{
+                          background: '#090b10',
+                          border: '1px solid rgba(245, 158, 11, 0.3)',
+                          borderRadius: 14,
+                          padding: '12px 14px',
+                          color: '#ffffff',
+                          fontSize: 15,
+                          outline: 'none',
+                          colorScheme: 'dark'
+                        }}
+                      />
+                      <span style={{ fontSize: 11, color: '#8a94a6' }}>
+                        💡 Te notificaremos automáticamente cuando esté próximo a vencer.
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 

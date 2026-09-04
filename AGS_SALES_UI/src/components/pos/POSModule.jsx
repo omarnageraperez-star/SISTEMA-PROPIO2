@@ -423,7 +423,29 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
     }
   };
 
-  const addToCart = (product) => {
+  const addToCart = async (product) => {
+    // Check if product is expired and alert cashier
+    if (product.expiration_date) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const expDate = new Date(product.expiration_date + 'T00:00:00');
+      if (expDate < today) {
+        const result = await Swal.fire({
+          title: '⚠️ Producto Vencido',
+          html: `El producto <b>${product.name}</b> venció el <b>${product.expiration_date}</b>.<br><br><span style="color:#ef4444;font-weight:700;font-size:13px;">¿Estás seguro de que deseas agregarlo a la venta?</span>`,
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, agregar de todos modos',
+          cancelButtonText: 'No, cancelar',
+          confirmButtonColor: '#ef4444',
+          cancelButtonColor: '#64748b'
+        });
+        if (!result.isConfirmed) {
+          return;
+        }
+      }
+    }
+
     setCart(prev => {
       const existing = prev.find(item => item.product.id === product.id);
       if (existing) {
@@ -849,6 +871,26 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
                        <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">Agotado</span>
                      </div>
                    )}
+                   {p.expiration_date && (() => {
+                     const today = new Date();
+                     today.setHours(0, 0, 0, 0);
+                     const expDate = new Date(p.expiration_date + 'T00:00:00');
+                     const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+                     if (diffDays < 0) {
+                       return (
+                         <span className="absolute top-1 right-1 bg-red-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow animate-pulse z-10">
+                           Vencido
+                         </span>
+                       );
+                     } else if (diffDays <= 7) {
+                       return (
+                         <span className="absolute top-1 right-1 bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow z-10">
+                           Vence {diffDays}d
+                         </span>
+                       );
+                     }
+                     return null;
+                   })()}
                 </div>
                 <h3 className="font-semibold text-gray-800 text-sm line-clamp-2 leading-tight flex-1">{p.name}</h3>
                 <div className="mt-2 flex justify-between items-end">

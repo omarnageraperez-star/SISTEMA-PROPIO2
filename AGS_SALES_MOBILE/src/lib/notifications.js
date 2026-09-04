@@ -131,3 +131,51 @@ export const playSuccessSound = () => {
     console.error('Audio play error:', e);
   }
 };
+
+/**
+ * Analyze products and send/schedule native notifications for expiring or expired items.
+ */
+export async function checkAndNotifyExpiringProducts(products) {
+  if (!Array.isArray(products) || products.length === 0) return;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const expired = [];
+  const critical = []; // <= 7 days
+  const warning = [];  // <= 30 days
+
+  products.forEach(p => {
+    if (!p.expiration_date) return;
+    const exp = new Date(p.expiration_date + 'T00:00:00');
+    const diffDays = Math.ceil((exp - today) / (1000 * 60 * 60 * 24));
+    if (diffDays < 0) {
+      expired.push({ ...p, diffDays });
+    } else if (diffDays <= 7) {
+      critical.push({ ...p, diffDays });
+    } else if (diffDays <= 30) {
+      warning.push({ ...p, diffDays });
+    }
+  });
+
+  const totalUrgent = expired.length + critical.length;
+
+  if (totalUrgent > 0) {
+    let body = '';
+    if (expired.length > 0 && critical.length > 0) {
+      body = `⚠️ ${expired.length} producto(s) vencidos y ${critical.length} por vencer esta semana.`;
+    } else if (expired.length > 0) {
+      body = `🚨 Tienes ${expired.length} producto(s) vencidos en tu inventario.`;
+    } else {
+      body = `⏰ Tienes ${critical.length} producto(s) que vencen en los próximos 7 días.`;
+    }
+
+    await sendNativeNotification({
+      title: 'AGS SALES: Alerta de Vencimiento',
+      body,
+      id: 99901
+    });
+    triggerHaptic('warning');
+  }
+}
+

@@ -492,7 +492,10 @@ function App() {
   // Inventory States
   const [products, setProducts] = useState([]);
   const [showStockAlerts, setShowStockAlerts] = useState(false);
+  const [stockAlertTab, setStockAlertTab] = useState('ALL'); // 'ALL' | 'OUT' | 'EXPIRED' | 'EXPIRING'
   const [showOnlyOutOfStock, setShowOnlyOutOfStock] = useState(false);
+  const [expirationFilter, setExpirationFilter] = useState('ALL'); // 'ALL' | 'EXPIRING' | 'EXPIRED'
+  const hasNotifiedExpiringRef = useRef(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [categorySearchQuery, setCategorySearchQuery] = useState('');
   const [showAddProduct, setShowAddProduct] = useState(false);
@@ -513,6 +516,8 @@ function App() {
     min_stock: '0',
     max_stock: '0',
     has_max_stock: false,
+    has_expiration_date: false,
+    expiration_date: '',
     profit_margin: '0.00',
     price_buy: '0.00',
     price_sell: '0.00',
@@ -1416,6 +1421,8 @@ function App() {
       min_stock: p.min_stock || '0',
       max_stock: p.max_stock || '0',
       has_max_stock: parseFloat(p.max_stock || 0) > 0,
+      has_expiration_date: Boolean(p.expiration_date),
+      expiration_date: p.expiration_date || '',
       profit_margin: p.profit_margin || '0.00',
       price_buy: p.price_buy || '0.00',
       price_sell: p.price_sell || '0.00',
@@ -1748,12 +1755,27 @@ function App() {
         return;
       }
       const data = await res.json();
-      if (data && Array.isArray(data.results)) {
-        setProducts(data.results);
-      } else if (Array.isArray(data)) {
-        setProducts(data);
-      } else {
-        setProducts([]);
+      const list = (data && Array.isArray(data.results)) ? data.results : (Array.isArray(data) ? data : []);
+      setProducts(list);
+
+      // Windows Native Desktop Notification for Expired/Expiring items
+      if (!hasNotifiedExpiringRef.current && typeof Notification !== 'undefined' && Notification.permission === 'granted' && list.length > 0) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const expiredCount = list.filter(p => p.expiration_date && new Date(p.expiration_date + 'T00:00:00') < today).length;
+        const soonCount = list.filter(p => {
+          if (!p.expiration_date) return false;
+          const diff = Math.ceil((new Date(p.expiration_date + 'T00:00:00') - today) / (1000 * 60 * 60 * 24));
+          return diff >= 0 && diff <= 15;
+        }).length;
+
+        if (expiredCount > 0 || soonCount > 0) {
+          hasNotifiedExpiringRef.current = true;
+          new Notification("AGS SALES ERP: Alerta de Vencimiento", {
+            body: `⚠️ Tienes ${expiredCount} producto(s) vencidos y ${soonCount} próximos a vencer en los próximos 15 días.`,
+            icon: 'icon.png'
+          });
+        }
       }
     } catch (e) {
       console.error(e);
@@ -2405,6 +2427,11 @@ function App() {
       formData.append('stock', parseFloat(productForm.stock || 0));
       formData.append('min_stock', parseFloat(productForm.min_stock || 0));
       formData.append('max_stock', productForm.has_max_stock ? parseFloat(productForm.max_stock || 0) : 0);
+      if (productForm.has_expiration_date && productForm.expiration_date) {
+        formData.append('expiration_date', productForm.expiration_date);
+      } else {
+        formData.append('expiration_date', '');
+      }
       formData.append('profit_margin', parseFloat(productForm.profit_margin || 0));
       formData.append('price_buy', parseFloat(productForm.price_buy || 0));
       formData.append('price_sell', parseFloat(productForm.price_sell || 0));
@@ -2455,6 +2482,8 @@ function App() {
           min_stock: '0',
           max_stock: '0',
           has_max_stock: false,
+          has_expiration_date: false,
+          expiration_date: '',
           profit_margin: '0.00',
           price_buy: '0.00',
           price_sell: '0.00',
@@ -3086,42 +3115,125 @@ function App() {
           </div>
           
           <div className={`flex items-center gap-1.5 ${sidebarCollapsed ? 'flex-col' : ''}`}>
-            {products.filter(p => p.has_inventory_control && parseFloat(p.stock || 0) <= 0).length > 0 && (
-              <div className="relative">
-                <button 
-                  onClick={() => setShowStockAlerts(!showStockAlerts)}
-                  className="p-1.5 text-red-650 bg-red-50 hover:bg-red-100 rounded-xl border border-red-200 transition-all flex items-center justify-center cursor-pointer shadow-sm relative shrink-0"
-                  title={`${products.filter(p => p.has_inventory_control && parseFloat(p.stock || 0) <= 0).length} productos agotados`}
-                >
-                  <Bell size={16} className="animate-swing" />
-                  <span className="absolute -top-1.5 -right-1.5 bg-red-650 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-white">
-                    {products.filter(p => p.has_inventory_control && parseFloat(p.stock || 0) <= 0).length}
-                  </span>
-                </button>
-                
-                {showStockAlerts && (
-                  <div className={`absolute mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-150 p-4 z-50 text-slate-800 text-xs animate-in slide-in-from-top-2 duration-150 ${sidebarCollapsed ? 'left-12 -top-10' : 'left-0'}`}>
-                    <h3 className="font-extrabold text-slate-700 mb-2 flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
-                      <span className="text-red-500">⚠️</span> Productos Agotados
-                    </h3>
-                    <div className="max-h-48 overflow-y-auto space-y-2 custom-scrollbar">
-                      {products.filter(p => p.has_inventory_control && parseFloat(p.stock || 0) <= 0).map(p => (
-                        <div key={p.id} className="flex justify-between items-center gap-2 border-b border-slate-50 pb-1.5 last:border-b-0">
-                          <div className="font-semibold text-slate-850 truncate flex-1" title={p.name}>{p.name}</div>
-                          <span className="bg-red-50 text-red-650 px-2 py-0.5 rounded font-black text-[9px] uppercase border border-red-100 shrink-0">Sin stock</span>
-                        </div>
-                      ))}
+            {(() => {
+              const today = new Date();
+              today.setHours(0,0,0,0);
+              const outOfStockList = products.filter(p => p.has_inventory_control && parseFloat(p.stock || 0) <= 0);
+              const expiredList = products.filter(p => {
+                if (!p.expiration_date) return false;
+                const exp = new Date(p.expiration_date + 'T00:00:00');
+                return exp < today;
+              });
+              const expiringSoonList = products.filter(p => {
+                if (!p.expiration_date) return false;
+                const exp = new Date(p.expiration_date + 'T00:00:00');
+                const diffDays = Math.ceil((exp - today) / (1000 * 60 * 60 * 24));
+                return diffDays >= 0 && diffDays <= 30;
+              });
+              const totalAlerts = outOfStockList.length + expiredList.length + expiringSoonList.length;
+
+              if (totalAlerts === 0) return null;
+
+              return (
+                <div className="relative">
+                  <button 
+                    onClick={() => setShowStockAlerts(!showStockAlerts)}
+                    className="p-1.5 text-red-650 bg-red-50 hover:bg-red-100 rounded-xl border border-red-200 transition-all flex items-center justify-center cursor-pointer shadow-sm relative shrink-0"
+                    title={`${totalAlerts} alertas de inventario (agotados o vencimientos)`}
+                  >
+                    <Bell size={16} className="animate-swing" />
+                    <span className="absolute -top-1.5 -right-1.5 bg-red-650 text-white text-[9px] font-black min-w-4 h-4 px-1 rounded-full flex items-center justify-center border border-white">
+                      {totalAlerts}
+                    </span>
+                  </button>
+                  
+                  {showStockAlerts && (
+                    <div className={`absolute mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 z-50 text-slate-800 text-xs animate-in slide-in-from-top-2 duration-150 ${sidebarCollapsed ? 'left-12 -top-10' : 'left-0'}`}>
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
+                        <h3 className="font-extrabold text-slate-800 flex items-center gap-1.5 text-xs">
+                          <span className="text-red-500 text-sm">🔔</span> Alertas del Negocio
+                        </h3>
+                        <span className="text-[10px] font-black bg-red-50 text-red-700 px-2 py-0.5 rounded-full border border-red-200">
+                          {totalAlerts} pendientes
+                        </span>
+                      </div>
+
+                      {/* Mini Tabs */}
+                      <div className="flex bg-slate-100 p-1 rounded-xl gap-1 mb-2.5 text-[10px] font-bold">
+                        <button
+                          type="button"
+                          onClick={() => setStockAlertTab('ALL')}
+                          className={`flex-1 py-1 rounded-lg transition-all ${stockAlertTab === 'ALL' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                        >
+                          Todo ({totalAlerts})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setStockAlertTab('OUT')}
+                          className={`flex-1 py-1 rounded-lg transition-all ${stockAlertTab === 'OUT' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                        >
+                          Agotados ({outOfStockList.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setStockAlertTab('EXP')}
+                          className={`flex-1 py-1 rounded-lg transition-all ${stockAlertTab === 'EXP' ? 'bg-white text-amber-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                        >
+                          Vencimiento ({expiredList.length + expiringSoonList.length})
+                        </button>
+                      </div>
+
+                      <div className="max-h-52 overflow-y-auto space-y-1.5 custom-scrollbar pr-1">
+                        {/* Agotados */}
+                        {(stockAlertTab === 'ALL' || stockAlertTab === 'OUT') && outOfStockList.map(p => (
+                          <div key={'out-' + p.id} className="flex justify-between items-center gap-2 p-1.5 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-100">
+                            <div className="font-semibold text-slate-800 truncate flex-1" title={p.name}>{p.name}</div>
+                            <span className="bg-red-50 text-red-600 px-1.5 py-0.5 rounded font-black text-[9px] uppercase border border-red-100 shrink-0">Sin stock</span>
+                          </div>
+                        ))}
+
+                        {/* Vencidos */}
+                        {(stockAlertTab === 'ALL' || stockAlertTab === 'EXP') && expiredList.map(p => (
+                          <div key={'exp-' + p.id} className="flex justify-between items-center gap-2 p-1.5 rounded-lg hover:bg-rose-50/50 border border-transparent hover:border-rose-100">
+                            <div className="font-semibold text-slate-800 truncate flex-1" title={p.name}>{p.name}</div>
+                            <span className="bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-black text-[9px] uppercase border border-rose-200 shrink-0">Vencido</span>
+                          </div>
+                        ))}
+
+                        {/* Próximos a vencer */}
+                        {(stockAlertTab === 'ALL' || stockAlertTab === 'EXP') && expiringSoonList.map(p => {
+                          const exp = new Date(p.expiration_date + 'T00:00:00');
+                          const diff = Math.ceil((exp - today) / (1000 * 60 * 60 * 24));
+                          return (
+                            <div key={'soon-' + p.id} className="flex justify-between items-center gap-2 p-1.5 rounded-lg hover:bg-amber-50/50 border border-transparent hover:border-amber-100">
+                              <div className="font-semibold text-slate-800 truncate flex-1" title={p.name}>{p.name}</div>
+                              <span className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-black text-[9px] border border-amber-200 shrink-0">
+                                {diff === 0 ? 'Vence hoy' : `En ${diff}d`}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="mt-3 pt-2 border-t border-slate-100 flex gap-2">
+                        <button 
+                          onClick={() => { 
+                            setAppState('INVENTORY'); 
+                            fetchProducts(); 
+                            setShowStockAlerts(false); 
+                            setShowOnlyOutOfStock(false);
+                            setExpirationFilter('ALL');
+                          }}
+                          className="w-full text-center py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl text-[11px] transition-all cursor-pointer shadow-sm"
+                        >
+                          Ir a Inventario Completo
+                        </button>
+                      </div>
                     </div>
-                    <button 
-                      onClick={() => { setAppState('INVENTORY'); fetchProducts(); setShowStockAlerts(false); }}
-                      className="w-full text-center text-[10px] text-indigo-650 hover:text-indigo-800 font-bold mt-2 pt-2 border-t border-slate-100 block cursor-pointer"
-                    >
-                      Ver en Inventario
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              );
+            })()}
             
             <button 
               type="button"
@@ -3451,8 +3563,11 @@ function App() {
               </div>
               <button 
                 type="button"
-                onClick={() => setShowOnlyOutOfStock(!showOnlyOutOfStock)}
-                className={`px-4 py-2.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-2 shadow-sm cursor-pointer select-none ${
+                onClick={() => {
+                  setShowOnlyOutOfStock(!showOnlyOutOfStock);
+                  if (!showOnlyOutOfStock) setExpirationFilter('ALL');
+                }}
+                className={`px-3.5 py-2.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm cursor-pointer select-none ${
                   showOnlyOutOfStock 
                     ? 'bg-red-500 text-white border-red-500 hover:bg-red-600' 
                     : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
@@ -3461,22 +3576,94 @@ function App() {
                 <Bell size={14} className={showOnlyOutOfStock ? 'animate-bounce' : ''} />
                 Solo Agotados
               </button>
+
+              <button 
+                type="button"
+                onClick={() => {
+                  setExpirationFilter(prev => prev === 'EXPIRING' ? 'ALL' : 'EXPIRING');
+                  setShowOnlyOutOfStock(false);
+                }}
+                className={`px-3.5 py-2.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm cursor-pointer select-none ${
+                  expirationFilter === 'EXPIRING'
+                    ? 'bg-amber-500 text-white border-amber-500 hover:bg-amber-600' 
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                <span className="text-xs">⏰</span>
+                Próximos a Vencer
+              </button>
+
+              <button 
+                type="button"
+                onClick={() => {
+                  setExpirationFilter(prev => prev === 'EXPIRED' ? 'ALL' : 'EXPIRED');
+                  setShowOnlyOutOfStock(false);
+                }}
+                className={`px-3.5 py-2.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm cursor-pointer select-none ${
+                  expirationFilter === 'EXPIRED'
+                    ? 'bg-rose-600 text-white border-rose-600 hover:bg-rose-700' 
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                <span className="text-xs">🔴</span>
+                Vencidos
+              </button>
             </div>
             
             <div className="flex-1 glass-panel overflow-hidden rounded-2xl shadow-sm border border-slate-200/60 bg-white flex flex-col">
-              {products.filter(p => p.has_inventory_control && parseFloat(p.stock || 0) <= 0).length > 0 && (
-                <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-center justify-between text-xs font-bold text-red-700 animate-pulse-soft">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">⚠️</span> ¡Alerta de Inventario! Tienes {products.filter(p => p.has_inventory_control && parseFloat(p.stock || 0) <= 0).length} producto(s) totalmente agotados.
+              {(() => {
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                const expiredCount = products.filter(p => p.expiration_date && new Date(p.expiration_date + 'T00:00:00') < today).length;
+                const expiringCount = products.filter(p => {
+                  if (!p.expiration_date) return false;
+                  const diff = Math.ceil((new Date(p.expiration_date + 'T00:00:00') - today) / (1000 * 60 * 60 * 24));
+                  return diff >= 0 && diff <= 30;
+                }).length;
+                const outCount = products.filter(p => p.has_inventory_control && parseFloat(p.stock || 0) <= 0).length;
+
+                if (expiredCount === 0 && expiringCount === 0 && outCount === 0) return null;
+
+                return (
+                  <div className="mx-6 mt-4 p-3 bg-gradient-to-r from-amber-50/90 via-red-50/70 to-amber-50/90 border border-amber-200/80 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs shadow-sm">
+                    <div className="flex items-center gap-2.5 font-semibold text-slate-800">
+                      <span className="text-base">📢</span>
+                      <div>
+                        <span className="font-extrabold text-slate-900">Alertas de Inventario: </span>
+                        {outCount > 0 && <span className="text-red-700 font-bold mr-2">⚠️ {outCount} agotados</span>}
+                        {expiredCount > 0 && <span className="text-rose-700 font-bold mr-2">🔴 {expiredCount} vencidos</span>}
+                        {expiringCount > 0 && <span className="text-amber-800 font-bold">⏰ {expiringCount} por vencer (30 días)</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {expiredCount > 0 && (
+                        <button 
+                          onClick={() => { setExpirationFilter('EXPIRED'); setShowOnlyOutOfStock(false); }}
+                          className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-bold text-[11px] shadow-sm transition-all cursor-pointer"
+                        >
+                          Ver Vencidos
+                        </button>
+                      )}
+                      {expiringCount > 0 && (
+                        <button 
+                          onClick={() => { setExpirationFilter('EXPIRING'); setShowOnlyOutOfStock(false); }}
+                          className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold text-[11px] shadow-sm transition-all cursor-pointer"
+                        >
+                          Ver por Vencer
+                        </button>
+                      )}
+                      {(showOnlyOutOfStock || expirationFilter !== 'ALL') && (
+                        <button 
+                          onClick={() => { setShowOnlyOutOfStock(false); setExpirationFilter('ALL'); }}
+                          className="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-bold text-[11px] transition-all cursor-pointer"
+                        >
+                          Mostrar todos
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <button 
-                    onClick={() => setShowOnlyOutOfStock(!showOnlyOutOfStock)}
-                    className="underline text-red-800 hover:text-red-950 font-black cursor-pointer"
-                  >
-                    {showOnlyOutOfStock ? 'Mostrar todos' : 'Filtrar y ver agotados'}
-                  </button>
-                </div>
-              )}
+                );
+              })()}
               {(errorMsg || successMsg) && (
                 <div className="px-6 pt-4 pb-2">
                   {renderError()}
@@ -3508,7 +3695,20 @@ function App() {
                         
                         const matchesCategory = selectedCategoryFilter === '' || String(p.category) === String(selectedCategoryFilter);
                         const matchesOutOfStock = !showOnlyOutOfStock || (p.has_inventory_control && parseFloat(p.stock || 0) <= 0);
-                        return matchesSearch && matchesCategory && matchesOutOfStock;
+                        
+                        const matchesExpiration = (() => {
+                          if (expirationFilter === 'ALL') return true;
+                          if (!p.expiration_date) return false;
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          const exp = new Date(p.expiration_date + 'T00:00:00');
+                          const diffDays = Math.ceil((exp - today) / (1000 * 60 * 60 * 24));
+                          if (expirationFilter === 'EXPIRED') return diffDays < 0;
+                          if (expirationFilter === 'EXPIRING') return diffDays >= 0 && diffDays <= 30;
+                          return true;
+                        })();
+
+                        return matchesSearch && matchesCategory && matchesOutOfStock && matchesExpiration;
                       });
 
                       const paginatedProducts = filteredProducts.slice((inventoryPage - 1) * INVENTORY_ITEMS_PER_PAGE, inventoryPage * INVENTORY_ITEMS_PER_PAGE);
@@ -3610,6 +3810,40 @@ function App() {
                                     {p.has_inventory_control && stockNum > 0 && stockNum <= 10 && (
                                       <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-amber-100 text-amber-700 border border-amber-250 shrink-0">Bajo Stock</span>
                                     )}
+                                    {/* EXPIRATION STATUS BADGE */}
+                                    {p.expiration_date && (() => {
+                                      const today = new Date();
+                                      today.setHours(0, 0, 0, 0);
+                                      const expDate = new Date(p.expiration_date + 'T00:00:00');
+                                      const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+                                      
+                                      if (diffDays < 0) {
+                                        return (
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-black uppercase bg-rose-600 text-white border border-rose-700 shrink-0 shadow-sm animate-pulse" title={`Venció el ${p.expiration_date}`}>
+                                            <span>🔴 Vencido</span>
+                                            <span className="font-mono text-[8px] opacity-90">({Math.abs(diffDays)}d)</span>
+                                          </span>
+                                        );
+                                      } else if (diffDays <= 7) {
+                                        return (
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-black uppercase bg-rose-100 text-rose-700 border border-rose-300 shrink-0 shadow-sm" title={`Vence el ${p.expiration_date}`}>
+                                            <span>⏰ Vence en {diffDays} {diffDays === 1 ? 'día' : 'días'}</span>
+                                          </span>
+                                        );
+                                      } else if (diffDays <= 30) {
+                                        return (
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-black uppercase bg-amber-100 text-amber-800 border border-amber-300 shrink-0" title={`Vence el ${p.expiration_date}`}>
+                                            <span>⚠️ Vence en {diffDays} días</span>
+                                          </span>
+                                        );
+                                      } else {
+                                        return (
+                                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0" title={`Vigente hasta ${p.expiration_date}`}>
+                                            <span>✓ Vence: {p.expiration_date}</span>
+                                          </span>
+                                        );
+                                      }
+                                    })()}
                                   </div>
                                   {p.location && (
                                     <div className="text-[11px] text-slate-400 font-medium mt-0.5 flex items-center gap-1.5">
@@ -4502,6 +4736,38 @@ function App() {
                                     <span className="absolute right-3 bottom-2.5 text-[9px] text-gray-400 font-mono font-bold">1</span>
                                   </div>
                                 )}
+
+                                {/* Sección Fecha de Vencimiento */}
+                                <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <input 
+                                      type="checkbox" 
+                                      id="has_expiration_date"
+                                      checked={productForm.has_expiration_date}
+                                      onChange={e => setProductForm({...productForm, has_expiration_date: e.target.checked})}
+                                      className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500 cursor-pointer"
+                                    />
+                                    <label htmlFor="has_expiration_date" className="text-xs font-bold text-slate-700 cursor-pointer flex items-center gap-1.5">
+                                      <span>¿Tiene fecha de vencimiento?</span>
+                                      <span className="text-[10px] text-slate-400 font-normal">(Opcional)</span>
+                                    </label>
+                                  </div>
+                                  
+                                  {productForm.has_expiration_date && (
+                                    <div className="relative animate-in fade-in duration-200 bg-amber-50/50 p-2.5 rounded-xl border border-amber-200/80">
+                                      <label className="text-[10px] font-extrabold text-amber-900 block mb-1">Fecha de Caducidad / Vencimiento</label>
+                                      <input 
+                                        type="date" 
+                                        className="glass-input text-sm font-semibold border-amber-200 focus:border-amber-500 bg-white w-full"
+                                        value={productForm.expiration_date || ''}
+                                        onChange={e => setProductForm({...productForm, expiration_date: e.target.value})}
+                                      />
+                                      <span className="text-[10px] text-amber-700 font-medium mt-1.5 block">
+                                        💡 El sistema te notificará automáticamente cuando esté próximo a vencer.
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           )}

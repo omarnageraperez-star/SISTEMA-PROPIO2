@@ -1,4 +1,5 @@
 from rest_framework import viewsets, permissions
+from datetime import date, timedelta
 from django.db import models
 from .models import Category, Brand, Product, Warehouse, Stock, Kardex
 from .serializers import (
@@ -115,6 +116,9 @@ class ProductViewSet(viewsets.ModelViewSet):
                 elif action_type == 'provider':
                     p.provider_id = int(value) if value else None
                     
+                elif action_type == 'expiration_date':
+                    p.expiration_date = value if value else None
+                    
                 p.save()
                 count += 1
             except Exception as e:
@@ -150,6 +154,36 @@ class ProductViewSet(viewsets.ModelViewSet):
         )
         serializer = self.get_serializer(products, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='expiring')
+    def expiring_products(self, request):
+        days = int(request.query_params.get('days', 30))
+        today = date.today()
+        threshold_date = today + timedelta(days=days)
+
+        # Products with expiration date set and active
+        products = Product.objects.filter(
+            is_active=True,
+            expiration_date__isnull=False,
+            expiration_date__lte=threshold_date
+        ).select_related('category', 'brand', 'provider').order_by('expiration_date')
+
+        expired = [p for p in products if p.expiration_date < today]
+        critical = [p for p in products if today <= p.expiration_date <= today + timedelta(days=7)]
+        warning = [p for p in products if today + timedelta(days=7) < p.expiration_date <= threshold_date]
+
+        return Response({
+            'summary': {
+                'total_alert': len(products),
+                'expired_count': len(expired),
+                'critical_count': len(critical),
+                'warning_count': len(warning),
+            },
+            'expired': self.get_serializer(expired, many=True).data,
+            'critical': self.get_serializer(critical, many=True).data,
+            'warning': self.get_serializer(warning, many=True).data,
+            'all': self.get_serializer(products, many=True).data
+        })
 
 
 

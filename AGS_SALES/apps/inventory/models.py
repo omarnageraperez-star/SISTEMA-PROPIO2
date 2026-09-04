@@ -45,6 +45,7 @@ class Product(models.Model):
     image = models.TextField(blank=True, null=True)
     tax_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     weight = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='Weight in kg')
+    expiration_date = models.DateField(blank=True, null=True, verbose_name="Fecha de Vencimiento")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
