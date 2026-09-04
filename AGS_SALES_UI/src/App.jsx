@@ -2427,6 +2427,12 @@ function App() {
       formData.append('stock', parseFloat(productForm.stock || 0));
       formData.append('min_stock', parseFloat(productForm.min_stock || 0));
       formData.append('max_stock', productForm.has_max_stock ? parseFloat(productForm.max_stock || 0) : 0);
+      if (productForm.has_expiration_date && !productForm.expiration_date) {
+        setErrorMsg('Debes ingresar o seleccionar una fecha de vencimiento.');
+        setLoading(false);
+        return;
+      }
+
       if (productForm.has_expiration_date && productForm.expiration_date) {
         formData.append('expiration_date', productForm.expiration_date);
       } else {
@@ -4744,7 +4750,16 @@ function App() {
                                       type="checkbox" 
                                       id="has_expiration_date"
                                       checked={productForm.has_expiration_date}
-                                      onChange={e => setProductForm({...productForm, has_expiration_date: e.target.checked})}
+                                      onChange={e => {
+                                        const isChecked = e.target.checked;
+                                        let nextDate = productForm.expiration_date;
+                                        if (isChecked && !nextDate) {
+                                          const tomorrow = new Date();
+                                          tomorrow.setDate(tomorrow.getDate() + 1);
+                                          nextDate = tomorrow.toISOString().split('T')[0];
+                                        }
+                                        setProductForm({...productForm, has_expiration_date: isChecked, expiration_date: nextDate});
+                                      }}
                                       className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500 cursor-pointer"
                                     />
                                     <label htmlFor="has_expiration_date" className="text-xs font-bold text-slate-700 cursor-pointer flex items-center gap-1.5">

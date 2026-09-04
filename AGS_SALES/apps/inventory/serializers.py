@@ -23,6 +23,12 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = '__all__'
 
+    def validate_expiration_date(self, value):
+        """Convert empty string to None so DateField doesn't raise a validation error."""
+        if value == '' or value is None:
+            return None
+        return value
+
     def get_days_until_expiration(self, obj):
         if not obj.expiration_date:
             return None

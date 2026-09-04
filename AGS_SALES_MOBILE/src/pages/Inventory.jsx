@@ -360,6 +360,11 @@ export default function Inventory({ auth }) {
       setErrMsg('Nombre y precio de venta son obligatorios.');
       return;
     }
+    if (form.has_expiration && !form.expiration_date) {
+      setErrMsg('Debes ingresar o seleccionar una fecha de vencimiento.');
+      return;
+    }
+
     setSaving(true);
     setErrMsg('');
     try {
@@ -399,6 +404,10 @@ export default function Inventory({ auth }) {
       }, auth.token);
 
       if (res.ok) {
+        const savedItem = await res.json().catch(() => null);
+        if (payload.expiration_date) {
+          checkAndNotifyExpiringProducts([savedItem || payload]);
+        }
         setShowModal(false);
         fetchAll();
       } else {
@@ -1693,7 +1702,16 @@ export default function Inventory({ auth }) {
                     </div>
                     {/* iOS Switch */}
                     <div 
-                      onClick={() => setForm(p => ({ ...p, has_expiration: !p.has_expiration }))}
+                      onClick={() => setForm(p => {
+                        const nextHas = !p.has_expiration;
+                        let nextDate = p.expiration_date;
+                        if (nextHas && !nextDate) {
+                          const tomorrow = new Date();
+                          tomorrow.setDate(tomorrow.getDate() + 1);
+                          nextDate = tomorrow.toISOString().split('T')[0];
+                        }
+                        return { ...p, has_expiration: nextHas, expiration_date: nextDate };
+                      })}
                       style={{
                         width: 50, height: 30, borderRadius: 99, 
                         background: form.has_expiration ? '#f59e0b' : 'rgba(255,255,255,0.1)',

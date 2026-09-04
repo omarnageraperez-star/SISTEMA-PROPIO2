@@ -8,7 +8,11 @@ export async function requestNotificationPermissions() {
   try {
     const status = await LocalNotifications.checkPermissions();
     if (status.display !== 'granted') {
-      await LocalNotifications.requestPermissions();
+      const result = await LocalNotifications.requestPermissions();
+      if (result.display !== 'granted') {
+        console.warn('Notification permission denied by user');
+        return;
+      }
     }
     // Crear canal de notificaciones predeterminado (requerido para Android 8.0+)
     await LocalNotifications.createChannel({
@@ -18,7 +22,10 @@ export async function requestNotificationPermissions() {
       importance: 5, // Importancia alta (muestra banners y sonido)
       visibility: 1, // Visible en pantalla de bloqueo
       playSound: true,
-      vibration: true
+      sound: 'default',
+      vibration: true,
+      lights: true,
+      lightColor: '#f59e0b',
     });
   } catch (e) {
     console.warn("Could not request notification permissions:", e);
@@ -30,6 +37,8 @@ export async function requestNotificationPermissions() {
  */
 export async function sendNativeNotification({ title, body, id = Math.floor(Math.random() * 100000) }) {
   try {
+    // Android 12+ requires SCHEDULE_EXACT_ALARM permission for exact times.
+    // We use a 1-second delay with allowWhileIdle as a robust alternative.
     await LocalNotifications.schedule({
       notifications: [
         {
@@ -37,9 +46,13 @@ export async function sendNativeNotification({ title, body, id = Math.floor(Math
           body,
           id,
           channelId: 'default',
-          schedule: { at: new Date(Date.now() + 100) },
-          sound: null,
-          attachments: null,
+          schedule: {
+            at: new Date(Date.now() + 1000), // 1 second delay
+            allowWhileIdle: true,            // works even in Doze mode
+          },
+          sound: 'default',
+          smallIcon: 'ic_stat_icon_config_sample',
+          iconColor: '#f59e0b',
           actionTypeId: '',
           extra: null
         }
@@ -48,7 +61,25 @@ export async function sendNativeNotification({ title, body, id = Math.floor(Math
     // Also trigger haptic feedback
     triggerHaptic('success');
   } catch (e) {
-    console.warn("Failed to schedule local notification:", e);
+    console.warn("Failed to schedule local notification (trying immediate display):", e);
+    // Fallback: try without schedule (immediate display)
+    try {
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            title,
+            body,
+            id,
+            channelId: 'default',
+            sound: 'default',
+            actionTypeId: '',
+            extra: null
+          }
+        ]
+      });
+    } catch (e2) {
+      console.warn("Fallback notification also failed:", e2);
+    }
   }
 }
 
@@ -158,7 +189,7 @@ export async function checkAndNotifyExpiringProducts(products) {
     }
   });
 
-  const totalUrgent = expired.length + critical.length;
+  const totalUrgent = expired.length + critical.length + warning.length;
 
   if (totalUrgent > 0) {
     let body = '';
@@ -166,8 +197,10 @@ export async function checkAndNotifyExpiringProducts(products) {
       body = `⚠️ ${expired.length} producto(s) vencidos y ${critical.length} por vencer esta semana.`;
     } else if (expired.length > 0) {
       body = `🚨 Tienes ${expired.length} producto(s) vencidos en tu inventario.`;
-    } else {
+    } else if (critical.length > 0) {
       body = `⏰ Tienes ${critical.length} producto(s) que vencen en los próximos 7 días.`;
+    } else {
+      body = `⚠️ Tienes ${warning.length} producto(s) que vencen este mes.`;
     }
 
     await sendNativeNotification({
