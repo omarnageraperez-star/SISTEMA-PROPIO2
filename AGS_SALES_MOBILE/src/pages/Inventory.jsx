@@ -307,6 +307,7 @@ export default function Inventory({ auth }) {
   }
 
   function openEdit(p) {
+    const rawDate = p.expiration_date ? String(p.expiration_date).split('T')[0] : '';
     setEditing(p);
     setForm({
       name: p.name || '',
@@ -317,8 +318,8 @@ export default function Inventory({ auth }) {
       stock: p.stock ?? '',
       category: p.category || '',
       description: p.description || '',
-      has_expiration: Boolean(p.expiration_date),
-      expiration_date: p.expiration_date || '',
+      has_expiration: Boolean(rawDate),
+      expiration_date: rawDate,
     });
     setImgPreview(p.image ? buildImgUrl(p.image) : null);
     setImgFile(null);
@@ -379,7 +380,7 @@ export default function Inventory({ auth }) {
         }
       }
 
-      const finalInternalCode = form.internal_code || 'PRD-' + Math.floor(100000 + Math.random() * 900000);
+      const expDateClean = form.has_expiration && form.expiration_date ? String(form.expiration_date).trim().split('T')[0] : null;
       const payload = {
         name: form.name,
         sku: form.sku || null,
@@ -389,7 +390,7 @@ export default function Inventory({ auth }) {
         stock: form.stock !== '' ? parseFloat(form.stock) : 0,
         category: form.category ? parseInt(form.category) : null,
         description: form.description || null,
-        expiration_date: form.has_expiration && form.expiration_date ? form.expiration_date : null,
+        expiration_date: expDateClean,
         image: imageUrl || null,
       };
 
@@ -1734,8 +1735,9 @@ export default function Inventory({ auth }) {
                       <span style={{ fontSize: 12, color: '#fbbf24', fontWeight: 700 }}>Fecha de Caducidad / Vencimiento</span>
                       <input
                         type="date"
-                        value={form.expiration_date || ''}
+                        value={form.expiration_date ? String(form.expiration_date).split('T')[0] : ''}
                         onChange={e => setForm(p => ({ ...p, expiration_date: e.target.value }))}
+                        onInput={e => setForm(p => ({ ...p, expiration_date: e.target.value }))}
                         style={{
                           background: '#090b10',
                           border: '1px solid rgba(245, 158, 11, 0.3)',
