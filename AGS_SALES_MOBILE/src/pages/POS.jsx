@@ -18,7 +18,7 @@ const formatWithSettings = (n, settings) => {
   return formatCurrency(n, symbol, decimals);
 };
 
-export default function POS({ auth }) {
+export default function POS({ auth, userHasOpenShift, onShiftOpened }) {
   const fmt = (n) => formatWithSettings(n, auth.settings);
 
   function buildImgUrl(path) {

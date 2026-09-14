@@ -33,6 +33,7 @@ export default function App() {
     business_name: 'AGS SALES',
     app_logo: ''
   });
+  const [userHasOpenShift, setUserHasOpenShift] = useState(null); // null = checking, true = has shift, false = no shift
   const lastSaleIdRef = useRef(null);
   const notifiedProductsRef = useRef(new Set());
   const notifiedExpiringRef = useRef(new Set());
@@ -379,10 +380,29 @@ export default function App() {
     return () => clearInterval(interval);
   }, [auth.token, auth.apiUrl]);
 
-  const handleLogin = ({ token, user, apiUrl, settings }) => {
+  const handleLogin = async ({ token, user, apiUrl, settings }) => {
     requestNotificationPermissions();
     triggerHaptic('success');
     setAuth({ token, user, apiUrl, settings: settings || null });
+    
+    // Check if user has an open cash shift (synchronized with desktop POS behavior)
+    setUserHasOpenShift(null); // Reset to checking state
+    try {
+      const res = await fetch(`${apiUrl}accounting/cash-shifts/?is_open=true`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const shifts = Array.isArray(data) ? data : (data.results || []);
+        const myShift = shifts.find(s => s.username?.toLowerCase() === user?.username?.toLowerCase());
+        setUserHasOpenShift(!!myShift);
+      } else {
+        setUserHasOpenShift(false);
+      }
+    } catch (e) {
+      console.error('Error checking open shift:', e);
+      setUserHasOpenShift(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -657,6 +677,8 @@ export default function App() {
                   licenseStatusInfo={licenseStatusInfo}
                   showWarningBanner={showWarningBanner}
                   setShowWarningBanner={setShowWarningBanner}
+                  userHasOpenShift={userHasOpenShift}
+                  onShiftOpened={() => setUserHasOpenShift(true)}
                 />
               </Protected>
             }
@@ -812,13 +834,14 @@ export default function App() {
   );
 }
 
-function AppRoutes({ auth, onLogout, onSettingsUpdate, licenseStatusInfo, showWarningBanner, setShowWarningBanner }) {
+function AppRoutes({ auth, onLogout, onSettingsUpdate, licenseStatusInfo, showWarningBanner, setShowWarningBanner, userHasOpenShift, onShiftOpened }) {
   const user = auth.user;
   const canAccessInventory = hasPermission(user, 'inventory.access');
   const canAccessReports   = hasPermission(user, 'reports.access');
   const canAccessCash      = hasPermission(user, 'cash.access');
   const canAccessPOS       = hasPermission(user, 'pos.access');
   const canAccessSales     = hasPermission(user, 'sales.view_history');
+  const [location, setLocation] = useState(window.location.pathname);
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
@@ -866,10 +889,20 @@ function AppRoutes({ auth, onLogout, onSettingsUpdate, licenseStatusInfo, showWa
       <Routes>
         <Route path="/" element={<Dashboard auth={auth} />} />
         <Route path="/inventory" element={canAccessInventory ? <Inventory auth={auth} /> : <Navigate to="/" replace />} />
-        <Route path="/pos" element={canAccessPOS ? <POS auth={auth} /> : <Navigate to="/" replace />} />
+        <Route path="/pos" element={
+          canAccessPOS ? (
+            userHasOpenShift === false ? (
+              <Navigate to="/cash-control" replace />
+            ) : (
+              <POS auth={auth} userHasOpenShift={userHasOpenShift} onShiftOpened={onShiftOpened} />
+            )
+          ) : (
+            <Navigate to="/" replace />
+          )
+        } />
         <Route path="/sales" element={canAccessSales ? <Sales auth={auth} /> : <Navigate to="/" replace />} />
         <Route path="/reports" element={canAccessReports ? <Reports auth={auth} /> : <Navigate to="/" replace />} />
-        <Route path="/cash-control" element={canAccessCash ? <CashControl auth={auth} /> : <Navigate to="/" replace />} />
+        <Route path="/cash-control" element={canAccessCash ? <CashControl auth={auth} onShiftOpened={onShiftOpened} /> : <Navigate to="/" replace />} />
         <Route path="/credits" element={hasPermission(user, 'sales.credits') ? <Credits auth={auth} /> : <Navigate to="/" replace />} />
         <Route path="/more" element={<More auth={auth} onLogout={onLogout} onSettingsUpdate={onSettingsUpdate} />} />
         <Route path="*" element={<Navigate to="/" replace />} />

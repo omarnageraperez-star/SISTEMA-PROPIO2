@@ -11,7 +11,7 @@ const formatWithSettings = (n, settings) => {
   return formatCurrency(n, symbol, decimals);
 };
 
-export default function CashControl({ auth }) {
+export default function CashControl({ auth, onShiftOpened }) {
   const fmt = (n) => formatWithSettings(n, auth.settings);
   // Lists
   const [registers, setRegisters]   = useState([]);
@@ -269,6 +269,10 @@ export default function CashControl({ auth }) {
 
       if (res.ok) {
         await fetchActiveShiftAndHistory();
+        // Notify App that user now has an open shift
+        if (onShiftOpened) {
+          onShiftOpened();
+        }
       } else {
         setErrMsg(await parseError(res));
       }
