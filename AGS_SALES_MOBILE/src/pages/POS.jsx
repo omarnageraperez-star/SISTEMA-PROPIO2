@@ -60,8 +60,11 @@ export default function POS({ auth }) {
   const [diceResult, setDiceResult] = useState(null);
 
   const [offlinePending, setOfflinePending] = useState(0);
+  const [hasOpenShift, setHasOpenShift] = useState(false);
+  const [checkingShift, setCheckingShift] = useState(true);
 
   useEffect(() => { 
+    checkOpenShift();
     fetchData(); 
     setOfflinePending(getOfflineSales().length);
     const syncInt = setInterval(async () => {
@@ -77,6 +80,22 @@ export default function POS({ auth }) {
     }, 10000);
     return () => clearInterval(syncInt);
   }, []);
+
+  const checkOpenShift = async () => {
+    setCheckingShift(true);
+    try {
+      const res = await apiRequest(apiUrl(auth.apiUrl, 'accounting/cash-shifts/?is_open=true'), {}, auth.token);
+      if (res.ok) {
+        const data = await res.json();
+        const shifts = Array.isArray(data) ? data : (data.results || []);
+        setHasOpenShift(shifts.length > 0);
+      }
+    } catch (e) {
+      console.error('Error checking open shift:', e);
+    } finally {
+      setCheckingShift(false);
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem('pos_cart', JSON.stringify(cart));
@@ -171,12 +190,36 @@ export default function POS({ auth }) {
     }
   }
 
-  const addToCart = (p) => {
+  const addToCart = async (p) => {
     if (p.has_inventory_control !== false && parseFloat(p.stock || 0) <= 0) {
       DarkSwal.fire({ icon: 'error', title: 'Producto Agotado', text: 'No hay unidades disponibles en el inventario.', confirmButtonText: 'Entendido' });
       triggerHaptic('error');
       return;
     }
+    
+    // Check if product is expired and alert cashier
+    if (p.expiration_date) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const expDate = new Date(p.expiration_date + 'T00:00:00');
+      if (expDate < today) {
+        const result = await DarkSwal.fire({
+          title: '⚠️ Producto Vencido',
+          html: `El producto <b>${p.name}</b> venció el <b>${p.expiration_date}</b>.<br><br><span style="color:#ef4444;font-weight:700;font-size:13px;">¿Estás seguro de que deseas agregarlo a la venta?</span>`,
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, agregar de todos modos',
+          cancelButtonText: 'Cancelar',
+          confirmButtonColor: '#ef4444',
+          cancelButtonColor: '#64748b'
+        });
+        if (!result.isConfirmed) {
+          triggerHaptic('warning');
+          return;
+        }
+      }
+    }
+    
     triggerHaptic('light');
     setCart(prev => {
       const existing = prev.find(i => i.product_id === p.id);
@@ -257,6 +300,22 @@ export default function POS({ auth }) {
 
   async function confirmCheckout() {
     if (!selectedMethod) { setErrMsg('Selecciona un método de pago.'); return; }
+    
+    // Check if there is an open cash shift
+    if (!hasOpenShift) {
+      DarkSwal.fire({
+        icon: 'warning',
+        title: 'Caja Cerrada',
+        text: 'No hay una caja abierta. Debes abrir una caja antes de realizar ventas.',
+        confirmButtonText: 'Ir a Control de Caja',
+        confirmButtonColor: '#f97316'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.href = '/cash-control';
+        }
+      });
+      return;
+    }
     
     // Check if it is a credit sale
     const selMethodObj = methods.find(m => m.id === selectedMethod);
@@ -475,9 +534,11 @@ export default function POS({ auth }) {
       <TopBar
         title="Punto de Venta"
         subtitle={
-          offlinePending > 0 
-            ? <span style={{ color: '#ef4444', fontWeight: 800 }}>{offlinePending} venta(s) pendiente(s)</span> 
-            : (itemCount > 0 ? `${itemCount} producto${itemCount > 1 ? 's' : ''} listo${itemCount > 1 ? 's' : ''}` : 'Registra tus ventas')
+          !hasOpenShift && !checkingShift
+            ? <span style={{ color: '#f59e0b', fontWeight: 800 }}>⚠️ Caja Cerrada - Abre una caja para vender</span>
+            : (offlinePending > 0 
+              ? <span style={{ color: '#ef4444', fontWeight: 800 }}>{offlinePending} venta(s) pendiente(s)</span> 
+              : (itemCount > 0 ? `${itemCount} producto${itemCount > 1 ? 's' : ''} listo${itemCount > 1 ? 's' : ''}` : 'Registra tus ventas'))
         }
         rightAction={
           cart.length > 0 && (

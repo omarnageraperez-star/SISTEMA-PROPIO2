@@ -380,6 +380,7 @@ export default function Inventory({ auth }) {
         }
       }
 
+      const finalInternalCode = form.internal_code || 'PRD-' + Math.floor(100000 + Math.random() * 900000);
       const expDateClean = form.has_expiration && form.expiration_date ? String(form.expiration_date).trim().split('T')[0] : null;
       const payload = {
         name: form.name,
