@@ -19,6 +19,7 @@ import { register401Callback } from './lib/api';
 import { checkForOtaUpdate } from './lib/ota';
 import { requestNotificationPermissions, sendNativeNotification, triggerHaptic } from './lib/notifications';
 import { hasPermission } from './lib/permissionsConfig';
+import { DarkSwal } from './lib/swal';
 
 function Protected({ auth, children }) {
   if (!auth?.token) return <Navigate to="/login" replace />;
@@ -34,6 +35,7 @@ export default function App() {
     app_logo: ''
   });
   const [userHasOpenShift, setUserHasOpenShift] = useState(null); // null = checking, true = has shift, false = no shift
+  const [showOpenBoxModal, setShowOpenBoxModal] = useState(false);
   const lastSaleIdRef = useRef(null);
   const notifiedProductsRef = useRef(new Set());
   const notifiedExpiringRef = useRef(new Set());
@@ -244,6 +246,15 @@ export default function App() {
     return () => clearInterval(interval);
   }, [auth.token, auth.apiUrl]); // solo depende del token y la URL, no de user/settings
 
+  // Show modal to open box if user doesn't have an open shift (synchronized with desktop POS)
+  useEffect(() => {
+    if (auth.token && userHasOpenShift === false) {
+      setShowOpenBoxModal(true);
+    } else if (userHasOpenShift === true) {
+      setShowOpenBoxModal(false);
+    }
+  }, [userHasOpenShift, auth.token]);
+
   // Monitor Real-time Sales for Admin Push Notifications (every 60 seconds)
   useEffect(() => {
     if (!auth.token || !auth.apiUrl) return;
@@ -406,9 +417,38 @@ export default function App() {
   };
 
   const handleLogout = async () => {
+    // Check if user has an open shift before allowing logout
+    if (userHasOpenShift === true && auth.token) {
+      const result = await DarkSwal.fire({
+        title: '⚠️ Caja Abierta',
+        text: 'Tienes una caja abierta. ¿Deseas cerrarla antes de salir?',
+        icon: 'warning',
+        showCancelButton: true,
+        showDenyButton: true,
+        confirmButtonText: 'Cerrar Caja',
+        denyButtonText: 'Salir sin cerrar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#f97316',
+        denyButtonColor: '#64748b',
+        cancelButtonColor: '#ef4444'
+      });
+
+      if (result.isConfirmed) {
+        // Redirect to cash control to close the box
+        window.location.href = '/cash-control';
+        return;
+      } else if (result.isDismissed || result.isDenied) {
+        // Proceed with logout
+      } else {
+        // Cancel - do nothing
+        return;
+      }
+    }
+
     await storage.remove('token');
     await storage.remove('user');
     setAuth({ token: null, user: null, apiUrl: null, settings: null });
+    setUserHasOpenShift(null);
   };
 
   // Called by More.jsx after saving settings — refreshes settings from server so every page sees updated logo/name
@@ -711,6 +751,51 @@ export default function App() {
             {toast.type === 'warning' && <AlertTriangle size={22} color="#f59e0b" />}
             {toast.type === 'info' && <Info size={22} color="#3b82f6" />}
             <span style={{ fontSize: 14, fontWeight: 700, color: '#ffffff', flex: 1 }}>{toast.message}</span>
+          </div>
+        )}
+
+        {/* Modal to open cash box if user doesn't have an open shift */}
+        {showOpenBoxModal && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(5, 7, 12, 0.95)',
+            backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+            zIndex: 99998, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', padding: 24,
+            color: '#ffffff', textAlign: 'center'
+          }}>
+            <div style={{
+              background: 'rgba(20, 24, 33, 0.95)', border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: 24, padding: '32px 24px', maxWidth: 400, width: '100%',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.6)'
+            }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: '50%', background: 'rgba(249, 115, 22, 0.15)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px'
+              }}>
+                <span style={{ fontSize: 32 }}>💰</span>
+              </div>
+              <h2 style={{ fontSize: 22, fontWeight: 900, marginBottom: 12, letterSpacing: '-0.02em' }}>
+                Caja Cerrada
+              </h2>
+              <p style={{ fontSize: 14, color: '#cbd5e1', lineHeight: 1.6, marginBottom: 24 }}>
+                No tienes una caja abierta. Debes abrir una caja antes de poder realizar ventas.
+              </p>
+              <button 
+                onClick={() => {
+                  setShowOpenBoxModal(false);
+                  window.location.href = '/cash-control';
+                }}
+                style={{
+                  display: 'block', width: '100%', padding: '14px 0', borderRadius: 14,
+                  background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+                  color: '#ffffff', fontWeight: 800, fontSize: 15, border: 'none',
+                  cursor: 'pointer', boxShadow: '0 4px 14px rgba(249, 115, 22, 0.4)'
+                }}
+              >
+                Abrir Caja
+              </button>
+            </div>
           </div>
         )}
 
