@@ -192,20 +192,24 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def check_new_orders(self, request):
         """Verificar si hay nuevos pedidos (para notificaciones en tiempo real)"""
-        from django.core.cache import cache
+        from django.utils import timezone
+        from datetime import timedelta
         
-        new_order = cache.get('new_catalog_order')
-        pending_count = cache.get('pending_catalog_orders_count', 0)
+        # En Vercel (Serverless), LocMemCache no se comparte entre peticiones, 
+        # así que verificamos directamente la BD buscando pedidos creados en los últimos 20 segundos
+        recent_time = timezone.now() - timedelta(seconds=20)
         
-        if new_order:
-            # Limpiar la cache después de leer
-            cache.delete('new_catalog_order')
+        recent_order = self.queryset.filter(status='PENDING', created_at__gte=recent_time).order_by('-created_at').first()
+        pending_count = self.queryset.filter(status='PENDING').count()
+        
+        if recent_order:
+            serializer = self.get_serializer(recent_order)
             return Response({
                 'has_new': True,
-                'order': new_order,
+                'order': serializer.data,
                 'pending_count': pending_count
             })
-        
+            
         return Response({
             'has_new': False,
             'pending_count': pending_count
