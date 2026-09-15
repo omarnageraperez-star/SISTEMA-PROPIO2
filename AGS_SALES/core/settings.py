@@ -112,6 +112,13 @@ else:
     default_max_age = 0 if (os.environ.get('VERCEL') or os.environ.get('VERCEL_ENV') or DB_PORT == '6543') else 600
     conn_max_age = int(os.environ.get('CONN_MAX_AGE', default_max_age))
 
+    db_options = {}
+    if db_engine == 'django.db.backends.mysql':
+        db_options = {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            'charset': 'utf8mb4',
+        }
+
     DATABASES = {
         'default': {
             'ENGINE': db_engine,
@@ -121,10 +128,8 @@ else:
             'HOST': DB_HOST,
             'PORT': DB_PORT,
             'CONN_MAX_AGE': conn_max_age,
-            'OPTIONS': {} if db_engine == 'django.db.backends.postgresql' else {
-                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-                'charset': 'utf8mb4',
-            }
+            'DISABLE_SERVER_SIDE_CURSORS': True if DB_PORT == '6543' or 'pooler.supabase.com' in DB_HOST else False,
+            'OPTIONS': db_options,
         }
     }
 
