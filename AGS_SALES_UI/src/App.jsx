@@ -20,6 +20,7 @@ import CatalogOrdersModule from './components/catalog/CatalogOrdersModule';
 import { hasPermission } from './lib/permissionsConfig';
 import { apiRequest } from './lib/api';
 import { printCashCut, generateCashCutHTML, printTicket } from './lib/print';
+import { playNewOrderSound } from './lib/sound';
 
 const normalizeText = (text) => text ? text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
 
@@ -183,6 +184,7 @@ function App() {
   const [appState, setAppState] = useState('SETUP_API'); // SETUP_API, CREATE_ADMIN, LOGIN, OPEN_BOX, DASHBOARD, SETTINGS, INVENTORY
   const [token, setToken] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
+  const [catalogOrdersPendingCount, setCatalogOrdersPendingCount] = useState(0);
   
   // API Config State
   const [apiUrl, setApiUrl] = useState('');
@@ -1188,6 +1190,61 @@ function App() {
       }
     };
   }, [token, appState, userProfile, config?.apiUrl, activeSettingTab, appVersion]);
+
+  // Global Catalog Orders Real-Time Polling & Audio Alert (Every 15s)
+  useEffect(() => {
+    if (!token || !config?.apiUrl || appState === 'LOGIN' || appState === 'SETUP_API') return;
+
+    const checkGlobalCatalogOrders = async () => {
+      try {
+        const cleanBaseUrl = config.apiUrl.endsWith('/') ? config.apiUrl : config.apiUrl + '/';
+        const res = await apiRequest(`${cleanBaseUrl}catalog-orders/orders/check-new-orders/`, {}, token);
+        if (res.ok) {
+          const data = await res.json();
+          setCatalogOrdersPendingCount(data.pending_count || 0);
+
+          if (data.has_new && data.order) {
+            playNewOrderSound();
+            
+            const sym = systemSettings?.currency_symbol || '$';
+            const formattedTotal = `${sym}${Number(data.order.total || 0).toLocaleString()}`;
+
+            Swal.fire({
+              icon: 'info',
+              title: '🔔 ¡NUEVO PEDIDO DEL CATÁLOGO!',
+              html: `
+                <div style="text-align: left; font-size: 14px; margin-top: 10px; line-height: 1.6;">
+                  <p><b>Pedido #:</b> #${data.order.order_number}</p>
+                  <p><b>Cliente:</b> ${data.order.customer_name}</p>
+                  <p><b>Total:</b> <span style="color: #10b981; font-weight: bold; font-size: 16px;">${formattedTotal}</span></p>
+                  <p><b>Tipo:</b> ${data.order.order_type === 'DELIVERY' ? '🚗 Domicilio' : data.order.order_type === 'TAKEOUT' ? '🥡 Llevar' : '🍽️ Mesa'}</p>
+                </div>
+              `,
+              showCancelButton: true,
+              confirmButtonText: '📦 Ver Pedidos del Catálogo',
+              cancelButtonText: 'Entendido',
+              customClass: {
+                popup: 'premium-swal',
+                title: 'premium-swal-title text-amber-600 font-bold',
+                confirmButton: 'premium-swal-confirm bg-amber-600 hover:bg-amber-700',
+                cancelButton: 'premium-swal-cancel'
+              }
+            }).then((result) => {
+              if (result.isConfirmed) {
+                setAppState('CATALOG_ORDERS');
+              }
+            });
+          }
+        }
+      } catch (e) {
+        // Silently catch network errors
+      }
+    };
+
+    checkGlobalCatalogOrders();
+    const interval = setInterval(checkGlobalCatalogOrders, 15000);
+    return () => clearInterval(interval);
+  }, [token, config?.apiUrl, appState, systemSettings]);
 
   const triggerUpdate = () => {
     if (!pendingUpdate) return;
@@ -3285,7 +3342,15 @@ function App() {
           {hasPermission(userProfile, 'sales.credits') && (
             <li className={`sidebar-item ${appState === 'CREDITS' ? 'active' : ''} ${sidebarCollapsed ? 'justify-center w-12 h-12 p-0' : 'w-full'}`} onClick={() => setAppState('CREDITS')} title={sidebarCollapsed ? "Cuentas por Cobrar" : ""}><CreditCard size={18} className="shrink-0" /> {!sidebarCollapsed && <span className="truncate">Cuentas por Cobrar</span>}</li>
           )}
-          <li className={`sidebar-item ${appState === 'CATALOG_ORDERS' ? 'active' : ''} ${sidebarCollapsed ? 'justify-center w-12 h-12 p-0' : 'w-full'}`} onClick={() => setAppState('CATALOG_ORDERS')} title={sidebarCollapsed ? "Pedidos del Catálogo" : ""}><ShoppingBag size={18} className="shrink-0" /> {!sidebarCollapsed && <span className="truncate">Pedidos del Catálogo</span>}</li>
+          <li className={`sidebar-item relative ${appState === 'CATALOG_ORDERS' ? 'active' : ''} ${sidebarCollapsed ? 'justify-center w-12 h-12 p-0' : 'w-full'}`} onClick={() => setAppState('CATALOG_ORDERS')} title={sidebarCollapsed ? "Pedidos del Catálogo" : ""}>
+            <ShoppingBag size={18} className="shrink-0" />
+            {!sidebarCollapsed && <span className="truncate">Pedidos del Catálogo</span>}
+            {catalogOrdersPendingCount > 0 && (
+              <span className={`${sidebarCollapsed ? 'absolute -top-1 -right-1' : 'ml-auto'} bg-gradient-to-r from-amber-500 to-orange-500 text-white font-extrabold text-xs px-2 py-0.5 rounded-full shadow-md shadow-amber-500/30 animate-pulse`}>
+                {catalogOrdersPendingCount}
+              </span>
+            )}
+          </li>
           <li className={`sidebar-item ${appState === 'ASSETS' ? 'active' : ''} ${sidebarCollapsed ? 'justify-center w-12 h-12 p-0' : 'w-full'}`} onClick={() => setAppState('ASSETS')} title={sidebarCollapsed ? "Activos de Empresa" : ""}><Briefcase size={18} className="shrink-0" /> {!sidebarCollapsed && <span className="truncate">Activos de Empresa</span>}</li>
           {hasPermission(userProfile, 'settings.access') && (
             <li className={`sidebar-item ${appState === 'SETTINGS' ? 'active' : ''} ${sidebarCollapsed ? 'justify-center w-12 h-12 p-0' : 'w-full'}`} onClick={() => { setAppState('SETTINGS'); loadPrinters(); fetchSystemSettings(); setActiveSettingTab(null); }} title={sidebarCollapsed ? "Ajustes del Sistema" : ""}><Settings size={18} className="shrink-0" /> {!sidebarCollapsed && <span className="truncate">Ajustes del Sistema</span>}</li>

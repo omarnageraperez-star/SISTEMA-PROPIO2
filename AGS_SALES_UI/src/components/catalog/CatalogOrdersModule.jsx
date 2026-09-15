@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ShoppingBag, Clock, CheckCircle, XCircle, AlertCircle, User, MapPin, Phone, CreditCard, RefreshCw, Filter, Bell } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { apiRequest } from '../../lib/api';
+import { playNewOrderSound } from '../../lib/sound';
 
 const STATUS_CONFIG = {
   'PENDING': { color: '#f59e0b', label: 'Pendiente', icon: Clock },
@@ -63,13 +64,20 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
         setPendingCount(data.pending_count);
         
         if (data.has_new && data.order) {
-          // Mostrar notificación
+          playNewOrderSound();
+          // Mostrar notificación con sonido
           Swal.fire({
             icon: 'info',
-            title: '¡Nuevo Pedido del Catálogo!',
+            title: '🔔 ¡Nuevo Pedido del Catálogo!',
             text: `Pedido #${data.order.order_number} de ${data.order.customer_name} - ${formatCurrency(data.order.total)}`,
-            timer: 5000,
-            showConfirmButton: false
+            timer: 8000,
+            showConfirmButton: true,
+            confirmButtonText: 'Ver Pedido',
+            customClass: {
+              popup: 'premium-swal',
+              title: 'premium-swal-title text-amber-600 font-bold',
+              confirmButton: 'premium-swal-confirm bg-amber-600 hover:bg-amber-700'
+            }
           });
           
           // Actualizar lista de pedidos
