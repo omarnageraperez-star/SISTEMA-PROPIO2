@@ -19,7 +19,6 @@ import CreditModule from './components/credits/CreditModule';
 import CatalogOrdersModule from './components/catalog/CatalogOrdersModule';
 import { hasPermission } from './lib/permissionsConfig';
 import { apiRequest } from './lib/api';
-import { OrderAlertProvider, useOrderAlert } from './contexts/OrderAlertContext';
 import { printCashCut, generateCashCutHTML, printTicket } from './lib/print';
 import { playNewOrderSound } from './lib/sound';
 
@@ -110,33 +109,6 @@ const Toast = Swal.mixin({
     htmlContainer: 'text-xs text-slate-500'
   }
 });
-
-// Global catalog order polling hook
-useEffect(() => {
-  if (!token || !apiUrl) return;
-  const isAdmin = ["SUPERADMIN", "ADMIN"].includes(userProfile?.role);
-  if (!isAdmin) return;
-  const { triggerAlert } = useOrderAlert();
-  const checkCatalogOrders = async () => {
-    try {
-      const cleanBaseUrl = apiUrl.endsWith('/') ? apiUrl : apiUrl + '/';
-      const res = await apiRequest(`${cleanBaseUrl}catalog-orders/orders/check-new-orders/`, {}, token);
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.has_new && data.order) {
-        if (window.lastCatalogOrderId !== data.order.id) {
-          window.lastCatalogOrderId = data.order.id;
-          triggerAlert(data.order);
-        }
-      }
-    } catch (e) {
-      console.error('Error checking catalog orders', e);
-    }
-  };
-  checkCatalogOrders();
-  const interval = setInterval(checkCatalogOrders, 3000);
-  return () => clearInterval(interval);
-}, [token, apiUrl, userProfile?.role]);
 
 const premiumAlert = (title, text, icon = 'info') => {
   return Swal.fire({
