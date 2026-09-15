@@ -77,10 +77,18 @@ export default function Dashboard({ auth }) {
   const [error, setError]     = useState(false);
   const [time, setTime]       = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 30000);
     return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -341,9 +349,22 @@ export default function Dashboard({ auth }) {
 
           {/* Business Name & User Greeting */}
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-            <span style={{ fontSize: 10, color: 'var(--color-accent)', fontWeight: 900, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-              {greeting()}, {auth.user?.username || 'Usuario'}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 10, color: 'var(--color-accent)', fontWeight: 900, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                {greeting()}, {auth.user?.username || 'Usuario'}
+              </span>
+              <span style={{ 
+                fontSize: 9, 
+                color: '#64748b', 
+                fontWeight: 700, 
+                fontFamily: 'monospace',
+                background: 'rgba(255, 255, 255, 0.05)',
+                padding: '2px 6px',
+                borderRadius: 4
+              }}>
+                {currentTime.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
             <h1 style={{ 
               fontSize: 17, 
               fontWeight: 950, 
@@ -359,6 +380,9 @@ export default function Dashboard({ auth }) {
             }}>
               {businessName}
             </h1>
+            <span style={{ fontSize: 10, color: '#64748b', fontWeight: 600, marginTop: 2, fontStyle: 'italic' }}>
+              Sistema Punto de Venta v1.0.0
+            </span>
           </div>
         </div>
 

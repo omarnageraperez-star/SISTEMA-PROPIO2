@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, Settings, LogOut, Shield, Server, ArrowRight, X, Save, Image, Mail, FileText, Landmark, Users, UserPlus, Trash2, Edit, Key, ShieldAlert, Database, QrCode, Box, Plus, MapPin, Calendar, Cpu, ChevronDown, ChevronUp, CreditCard } from 'lucide-react';
+import { BarChart3, Settings, LogOut, Shield, Server, ArrowRight, X, Save, Image, Mail, FileText, Landmark, Users, UserPlus, Trash2, Edit, Key, ShieldAlert, Database, QrCode, Box, Plus, MapPin, Calendar, Cpu, ChevronDown, ChevronUp, CreditCard, ShoppingBag } from 'lucide-react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import TopBar from '../components/TopBar';
 import { apiRequest, apiUrl, parseError, formatCurrency } from '../lib/api';
@@ -506,17 +506,7 @@ export default function More({ auth, onLogout, onSettingsUpdate }) {
   const roleName = roleNameMap[auth.user?.role] || auth.user?.role || 'Usuario';
 
   const handleConfirmLogout = async () => {
-    const res = await DarkSwal.fire({
-      title: '¿Cerrar Sesión?',
-      text: '¿Estás seguro de que deseas salir de tu cuenta?',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, salir',
-      cancelButtonText: 'Cancelar'
-    });
-    if (res.isConfirmed) {
-      onLogout();
-    }
+    onLogout();
   };
 
   return (
@@ -801,6 +791,30 @@ export default function More({ auth, onLogout, onSettingsUpdate }) {
                   <ArrowRight size={14} color="#475569" />
                 </button>
               )}
+
+              {/* Catalog Orders */}
+              <button
+                onClick={() => navigate('/catalog-orders')}
+                style={{
+                  background: 'rgba(30, 36, 53, 0.3)',
+                  border: '1px solid rgba(255, 255, 255, 0.03)',
+                  borderRadius: 12,
+                  padding: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  width: '100%',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(168, 85, 247, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <ShoppingBag size={14} color="#a855f7" style={{ margin: 'auto' }} />
+                </div>
+                <span style={{ fontSize: 14, fontWeight: 600, color: '#f1f5f9', flex: 1 }}>Pedidos del Catálogo</span>
+                <ArrowRight size={14} color="#475569" />
+              </button>
             </div>
           )}
         </div>

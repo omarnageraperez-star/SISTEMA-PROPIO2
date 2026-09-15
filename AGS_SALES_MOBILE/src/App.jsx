@@ -12,6 +12,7 @@ import Setup from './pages/Setup';
 import More from './pages/More';
 import CashControl from './pages/CashControl';
 import Credits from './pages/Credits';
+import CatalogOrders from './pages/CatalogOrders';
 import BottomNav from './components/BottomNav';
 import { storage } from './lib/storage';
 import { loadAndApplyTheme } from './lib/theme';
@@ -36,6 +37,7 @@ export default function App() {
   });
   const [userHasOpenShift, setUserHasOpenShift] = useState(null); // null = checking, true = has shift, false = no shift
   const [showOpenBoxModal, setShowOpenBoxModal] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const lastSaleIdRef = useRef(null);
   const notifiedProductsRef = useRef(new Set());
   const notifiedExpiringRef = useRef(new Set());
@@ -246,6 +248,14 @@ export default function App() {
     return () => clearInterval(interval);
   }, [auth.token, auth.apiUrl]); // solo depende del token y la URL, no de user/settings
 
+  // Update current time for splash screen
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Show modal to open box if user doesn't have an open shift (synchronized with desktop POS)
   useEffect(() => {
     if (auth.token && userHasOpenShift === false) {
@@ -437,10 +447,10 @@ export default function App() {
         // Redirect to cash control to close the box
         window.location.href = '/cash-control';
         return;
-      } else if (result.isDismissed || result.isDenied) {
-        // Proceed with logout
+      } else if (result.isDenied) {
+        // Proceed with logout (Salir sin cerrar)
       } else {
-        // Cancel - do nothing
+        // Cancel or dismiss - do nothing, keep session open
         return;
       }
     }
@@ -623,6 +633,29 @@ export default function App() {
             <Sparkles size={14} color="#f97316" />
             <span style={{ fontSize: 11, fontWeight: 900, color: '#f97316', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
               SISTEMA PUNTO DE VENTA POS
+            </span>
+          </div>
+
+          {/* Version & Tagline */}
+          <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.1em' }}>
+              v1.0.0 • Mobile Edition
+            </span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#cbd5e1', fontStyle: 'italic' }}>
+              "Tu negocio en tus manos"
+            </span>
+          </div>
+
+          {/* Current Time */}
+          <div style={{
+            marginTop: 12,
+            padding: '8px 16px',
+            background: 'rgba(255, 255, 255, 0.05)',
+            borderRadius: 20,
+            border: '1px solid rgba(255, 255, 255, 0.08)'
+          }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#f97316', fontFamily: 'monospace' }}>
+              {currentTime.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </span>
           </div>
         </div>
@@ -989,6 +1022,7 @@ function AppRoutes({ auth, onLogout, onSettingsUpdate, licenseStatusInfo, showWa
         <Route path="/reports" element={canAccessReports ? <Reports auth={auth} /> : <Navigate to="/" replace />} />
         <Route path="/cash-control" element={canAccessCash ? <CashControl auth={auth} onShiftOpened={onShiftOpened} /> : <Navigate to="/" replace />} />
         <Route path="/credits" element={hasPermission(user, 'sales.credits') ? <Credits auth={auth} /> : <Navigate to="/" replace />} />
+        <Route path="/catalog-orders" element={<CatalogOrders auth={auth} />} />
         <Route path="/more" element={<More auth={auth} onLogout={onLogout} onSettingsUpdate={onSettingsUpdate} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

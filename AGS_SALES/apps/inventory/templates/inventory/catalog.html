@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
-    <!-- Alpine.js (for simple interaction if needed) -->
+    <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f1f5f9; }
@@ -16,6 +16,8 @@
         .category-tab.active { background: linear-gradient(135deg, #f97316, #ea580c); color: white; border-color: transparent; }
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        .cart-badge { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
     </style>
     <script>
         tailwind.config = {
@@ -27,7 +29,7 @@
         }
     </script>
 </head>
-<body class="min-h-screen flex flex-col" x-data="{ search: '', selectedCategory: 'all' }">
+<body class="min-h-screen flex flex-col" x-data="catalogApp()" x-init="initTable({% if selected_table %}{{ selected_table.id }}{% else %}null{% endif %})">
     <!-- Header -->
     <header class="glass sticky top-0 z-50 px-4 py-4 rounded-b-2xl shadow-lg border-b border-gray-800">
         <div class="flex items-center gap-3 mb-4">
@@ -38,10 +40,15 @@
                 {{ store_name|slice:":1" }}
             </div>
             {% endif %}
-            <div>
+            <div class="flex-1">
                 <h1 class="text-xl font-black uppercase tracking-tight">{{ store_name }}</h1>
                 <p class="text-xs text-gray-400 font-semibold">Catálogo Digital</p>
             </div>
+            <!-- Cart Button -->
+            <button @click="showCart = true" class="relative bg-primary text-white p-3 rounded-xl shadow-lg hover:bg-orange-600 transition-all">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                <span x-show="cartItems.length > 0" x-text="cartItems.length" class="cart-badge absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center"></span>
+            </button>
         </div>
 
         <!-- Search -->
@@ -72,7 +79,7 @@
     </div>
 
     <!-- Products Grid -->
-    <main class="flex-1 px-4 pb-12">
+    <main class="flex-1 px-4 pb-24">
         <div class="grid grid-cols-2 gap-3" id="products-grid">
             {% for product in products %}
             <div class="glass rounded-2xl p-3 flex flex-col justify-between relative product-card"
@@ -102,15 +109,278 @@
                         <p class="text-[10px] text-gray-500 font-semibold mb-0.5">{{ currency_code }}</p>
                         <p class="text-lg font-black text-primary leading-none">{{ currency_symbol }}{{ product.price_sell|floatformat:"0" }}</p>
                     </div>
+                    <button @click="addToCart({{ product.id }}, '{{ product.name|escapejs }}', {{ product.price_sell }}, {{ product.category.id|default:'null' }})"
+                            {% if product.has_inventory_control and product.stock <= 0 %}disabled{% endif %}
+                            class="bg-primary text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-orange-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        + Agregar
+                    </button>
                 </div>
             </div>
             {% endfor %}
         </div>
     </main>
 
+    <!-- Cart Modal -->
+    <div x-show="showCart" x-transition.opacity class="fixed inset-0 bg-black/80 z-50 flex items-end justify-center" style="display: none;">
+        <div x-show="showCart" x-transition:enter="transform translate-y-full" x-transition:enter-end="transform translate-y-0" x-transition:leave="transform translate-y-0" x-transition:leave-end="transform translate-y-full" class="glass w-full max-w-lg rounded-t-3xl max-h-[90vh] overflow-hidden flex flex-col">
+            <!-- Cart Header -->
+            <div class="p-4 border-b border-gray-700 flex items-center justify-between">
+                <h2 class="text-xl font-black text-white">🛒 Tu Pedido</h2>
+                <button @click="showCart = false" class="text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Cart Items -->
+            <div class="flex-1 overflow-y-auto p-4">
+                <div x-show="cartItems.length === 0" class="text-center py-12">
+                    <svg class="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                    <p class="text-gray-400 font-semibold">Tu carrito está vacío</p>
+                </div>
+
+                <div x-show="cartItems.length > 0" class="space-y-3">
+                    <template x-for="(item, index) in cartItems" :key="index">
+                        <div class="bg-gray-800/50 rounded-xl p-3 flex items-center gap-3">
+                            <div class="flex-1">
+                                <p class="text-sm font-bold text-white" x-text="item.name"></p>
+                                <p class="text-xs text-gray-400">{{ currency_symbol }}<span x-text="item.price"></span></p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button @click="updateQuantity(index, -1)" class="w-8 h-8 bg-gray-700 rounded-lg text-white font-bold hover:bg-gray-600">-</button>
+                                <span class="w-8 text-center font-bold text-white" x-text="item.quantity"></span>
+                                <button @click="updateQuantity(index, 1)" class="w-8 h-8 bg-primary rounded-lg text-white font-bold hover:bg-orange-600">+</button>
+                            </div>
+                            <button @click="removeFromCart(index)" class="text-red-500 hover:text-red-400">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Cart Footer -->
+            <div x-show="cartItems.length > 0" class="p-4 border-t border-gray-700 bg-gray-900/50">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-gray-400 font-semibold">Subtotal:</span>
+                    <span class="text-white font-bold">{{ currency_symbol }}<span x-text="cartTotal"></span></span>
+                </div>
+                <button @click="showOrderForm = true; showCart = false" class="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-orange-600 transition-all">
+                    Continuar con el Pedido
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Form Modal -->
+    <div x-show="showOrderForm" x-transition.opacity class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" style="display: none;">
+        <div x-show="showOrderForm" x-transition:enter="transform scale-95 opacity-0" x-transition:enter-end="transform scale-100 opacity-100" x-transition:leave="transform scale-100 opacity-100" x-transition:leave-end="transform scale-95 opacity-0" class="glass w-full max-w-md rounded-2xl max-h-[90vh] overflow-y-auto">
+            <!-- Form Header -->
+            <div class="p-4 border-b border-gray-700 flex items-center justify-between">
+                <h2 class="text-xl font-black text-white">📝 Finalizar Pedido</h2>
+                <button @click="showOrderForm = false" class="text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Form Content -->
+            <form @submit.prevent="submitOrder" class="p-4 space-y-4">
+                <!-- Order Type -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-2">Tipo de Pedido</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" @click="orderForm.order_type = 'DINE_IN'" :class="orderForm.order_type === 'DINE_IN' ? 'bg-primary text-white' : 'bg-gray-800 text-gray-300'" class="px-3 py-2 rounded-lg text-xs font-bold border border-gray-700 transition-all">🍽️ Mesa</button>
+                        <button type="button" @click="orderForm.order_type = 'TAKEOUT'" :class="orderForm.order_type === 'TAKEOUT' ? 'bg-primary text-white' : 'bg-gray-800 text-gray-300'" class="px-3 py-2 rounded-lg text-xs font-bold border border-gray-700 transition-all">🥡 Llevar</button>
+                        <button type="button" @click="orderForm.order_type = 'DELIVERY'" :class="orderForm.order_type === 'DELIVERY' ? 'bg-primary text-white' : 'bg-gray-800 text-gray-300'" class="px-3 py-2 rounded-lg text-xs font-bold border border-gray-700 transition-all">🚗 Domicilio</button>
+                    </div>
+                </div>
+
+                <!-- Customer Name -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-2">Nombre *</label>
+                    <input x-model="orderForm.customer_name" type="text" required class="w-full bg-gray-800 text-white border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-sm" placeholder="Tu nombre">
+                </div>
+
+                <!-- Phone -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-2">Teléfono</label>
+                    <input x-model="orderForm.customer_phone" type="tel" class="w-full bg-gray-800 text-white border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-sm" placeholder="Tu teléfono">
+                </div>
+
+                <!-- Address (only for delivery) -->
+                <div x-show="orderForm.order_type === 'DELIVERY'">
+                    <label class="block text-xs font-bold text-gray-400 mb-2">Dirección *</label>
+                    <input x-model="orderForm.customer_address" type="text" x-bind:required="orderForm.order_type === 'DELIVERY'" class="w-full bg-gray-800 text-white border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-sm" placeholder="Tu dirección">
+                </div>
+
+                <!-- Table Selection (only for dine-in) -->
+                <div x-show="orderForm.order_type === 'DINE_IN'">
+                    <label class="block text-xs font-bold text-gray-400 mb-2">Mesa</label>
+                    <select x-model="orderForm.table_id" class="w-full bg-gray-800 text-white border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-sm">
+                        <option value="">Seleccionar mesa</option>
+                        {% for table in tables %}
+                        <option value="{{ table.id }}" {% if selected_table and selected_table.id == table.id %}selected{% endif %}>{{ table.name }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if selected_table %}
+                    <p class="text-xs text-primary mt-1 font-semibold">📍 Mesa seleccionada: {{ selected_table.name }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Notes -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-2">Notas</label>
+                    <textarea x-model="orderForm.notes" rows="2" class="w-full bg-gray-800 text-white border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-sm resize-none" placeholder="Instrucciones especiales..."></textarea>
+                </div>
+
+                <!-- Order Summary -->
+                <div class="bg-gray-800/50 rounded-xl p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-gray-400 text-sm">Subtotal:</span>
+                        <span class="text-white font-bold">{{ currency_symbol }}<span x-text="cartTotal"></span></span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-primary font-bold text-lg">Total:</span>
+                        <span class="text-primary font-black text-xl">{{ currency_symbol }}<span x-text="cartTotal"></span></span>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" :disabled="isSubmitting" class="w-full bg-primary text-white py-4 rounded-xl font-bold hover:bg-orange-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span x-show="!isSubmitting">🎉 Confirmar Pedido</span>
+                    <span x-show="isSubmitting">Procesando...</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div x-show="showSuccess" x-transition.opacity class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" style="display: none;">
+        <div x-show="showSuccess" class="glass w-full max-w-sm rounded-2xl p-6 text-center">
+            <div class="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <h2 class="text-2xl font-black text-white mb-2">¡Pedido Enviado!</h2>
+            <p class="text-gray-400 mb-4">Tu pedido #<span x-text="orderNumber"></span> ha sido recibido correctamente.</p>
+            <p class="text-sm text-gray-500 mb-6">Te notificaremos cuando esté listo.</p>
+            <button @click="showSuccess = false; cartItems = []" class="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-orange-600 transition-all">
+                Entendido
+            </button>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="bg-gray-900 border-t border-gray-800 py-4 px-4 text-center mt-auto">
         <p class="text-[10px] text-gray-600 font-semibold uppercase tracking-wider">Desarrollado con AGS SALES ERP</p>
     </footer>
+
+    <script>
+        function catalogApp() {
+            return {
+                search: '',
+                selectedCategory: 'all',
+                showCart: false,
+                showOrderForm: false,
+                showSuccess: false,
+                isSubmitting: false,
+                orderNumber: '',
+                cartItems: [],
+                orderForm: {
+                    order_type: 'DINE_IN',
+                    customer_name: '',
+                    customer_phone: '',
+                    customer_address: '',
+                    table_id: '',
+                    notes: ''
+                },
+                
+                initTable(tableId) {
+                    if (tableId) {
+                        this.orderForm.table_id = tableId;
+                    }
+                },
+                
+                get cartTotal() {
+                    return this.cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(0);
+                },
+                
+                addToCart(id, name, price, categoryId) {
+                    const existingItem = this.cartItems.find(item => item.id === id);
+                    if (existingItem) {
+                        existingItem.quantity++;
+                    } else {
+                        this.cartItems.push({ id, name, price, categoryId, quantity: 1 });
+                    }
+                },
+                
+                updateQuantity(index, change) {
+                    const item = this.cartItems[index];
+                    item.quantity += change;
+                    if (item.quantity <= 0) {
+                        this.cartItems.splice(index, 1);
+                    }
+                },
+                
+                removeFromCart(index) {
+                    this.cartItems.splice(index, 1);
+                },
+                
+                async submitOrder() {
+                    this.isSubmitting = true;
+                    
+                    try {
+                        const apiUrl = window.location.origin + '/api/catalog-orders/orders/';
+                        
+                        const payload = {
+                            table: this.orderForm.table_id || null,
+                            customer_name: this.orderForm.customer_name,
+                            customer_phone: this.orderForm.customer_phone,
+                            customer_address: this.orderForm.customer_address,
+                            order_type: this.orderForm.order_type,
+                            payment_method: 'CASH',
+                            notes: this.orderForm.notes,
+                            items: this.cartItems.map(item => ({
+                                product: item.id,
+                                product_name: item.name,
+                                quantity: item.quantity,
+                                unit_price: item.price
+                            }))
+                        };
+                        
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(payload)
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.orderNumber = data.order_number;
+                            this.showSuccess = true;
+                            this.showOrderForm = false;
+                            this.cartItems = [];
+                            this.orderForm = {
+                                order_type: 'DINE_IN',
+                                customer_name: '',
+                                customer_phone: '',
+                                customer_address: '',
+                                table_id: '',
+                                notes: ''
+                            };
+                        } else {
+                            const error = await response.json();
+                            alert('Error al crear pedido: ' + (error.error || 'Intenta nuevamente'));
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('Error de conexión. Intenta nuevamente.');
+                    } finally {
+                        this.isSubmitting = false;
+                    }
+                }
+            }
+        }
+    </script>
 </body>
 </html>

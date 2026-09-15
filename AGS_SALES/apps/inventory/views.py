@@ -206,6 +206,7 @@ class KardexViewSet(viewsets.ReadOnlyModelViewSet):
 
 from django.shortcuts import render
 from apps.users.models import SystemSetting
+from apps.catalog_orders.models import Table
 
 def catalog_view(request):
     """
@@ -213,6 +214,7 @@ def catalog_view(request):
     """
     products = Product.objects.filter(is_active=True)
     categories = Category.objects.all()
+    tables = Table.objects.filter(is_active=True)
     
     # Get settings for store logo/name
     settings = {s.key: s.value for s in SystemSetting.objects.all()}
@@ -221,12 +223,23 @@ def catalog_view(request):
     currency_code = settings.get('currency_code', 'COP')
     currency_symbol = settings.get('currency_symbol', '$')
     
+    # Process table QR parameter
+    table_qr = request.GET.get('table', '')
+    selected_table = None
+    if table_qr:
+        try:
+            selected_table = Table.objects.get(qr_code=table_qr, is_active=True)
+        except Table.DoesNotExist:
+            pass
+    
     context = {
         'products': products,
         'categories': categories,
+        'tables': tables,
         'store_name': store_name,
         'store_logo': store_logo,
         'currency_code': currency_code,
         'currency_symbol': currency_symbol,
+        'selected_table': selected_table,
     }
     return render(request, 'inventory/catalog.html', context)

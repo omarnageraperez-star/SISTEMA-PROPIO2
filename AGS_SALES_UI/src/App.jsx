@@ -16,6 +16,7 @@ import AssetsModule from './components/assets/AssetsModule';
 import UsersManagementModule from './components/settings/UsersManagementModule';
 import TicketEditorModule from './components/settings/TicketEditorModule';
 import CreditModule from './components/credits/CreditModule';
+import CatalogOrdersModule from './components/catalog/CatalogOrdersModule';
 import { hasPermission } from './lib/permissionsConfig';
 import { apiRequest } from './lib/api';
 import { printCashCut, generateCashCutHTML, printTicket } from './lib/print';
@@ -3284,6 +3285,7 @@ function App() {
           {hasPermission(userProfile, 'sales.credits') && (
             <li className={`sidebar-item ${appState === 'CREDITS' ? 'active' : ''} ${sidebarCollapsed ? 'justify-center w-12 h-12 p-0' : 'w-full'}`} onClick={() => setAppState('CREDITS')} title={sidebarCollapsed ? "Cuentas por Cobrar" : ""}><CreditCard size={18} className="shrink-0" /> {!sidebarCollapsed && <span className="truncate">Cuentas por Cobrar</span>}</li>
           )}
+          <li className={`sidebar-item ${appState === 'CATALOG_ORDERS' ? 'active' : ''} ${sidebarCollapsed ? 'justify-center w-12 h-12 p-0' : 'w-full'}`} onClick={() => setAppState('CATALOG_ORDERS')} title={sidebarCollapsed ? "Pedidos del Catálogo" : ""}><ShoppingBag size={18} className="shrink-0" /> {!sidebarCollapsed && <span className="truncate">Pedidos del Catálogo</span>}</li>
           <li className={`sidebar-item ${appState === 'ASSETS' ? 'active' : ''} ${sidebarCollapsed ? 'justify-center w-12 h-12 p-0' : 'w-full'}`} onClick={() => setAppState('ASSETS')} title={sidebarCollapsed ? "Activos de Empresa" : ""}><Briefcase size={18} className="shrink-0" /> {!sidebarCollapsed && <span className="truncate">Activos de Empresa</span>}</li>
           {hasPermission(userProfile, 'settings.access') && (
             <li className={`sidebar-item ${appState === 'SETTINGS' ? 'active' : ''} ${sidebarCollapsed ? 'justify-center w-12 h-12 p-0' : 'w-full'}`} onClick={() => { setAppState('SETTINGS'); loadPrinters(); fetchSystemSettings(); setActiveSettingTab(null); }} title={sidebarCollapsed ? "Ajustes del Sistema" : ""}><Settings size={18} className="shrink-0" /> {!sidebarCollapsed && <span className="truncate">Ajustes del Sistema</span>}</li>
@@ -5836,6 +5838,16 @@ function App() {
         {appState === 'CREDITS' && (
           <div className="flex-1 flex flex-col p-4 sm:p-8 overflow-hidden h-full">
             <CreditModule 
+              config={config} 
+              token={token} 
+              systemSettings={systemSettings} 
+            />
+          </div>
+        )}
+
+        {appState === 'CATALOG_ORDERS' && (
+          <div className="flex-1 flex flex-col p-4 sm:p-8 overflow-hidden h-full">
+            <CatalogOrdersModule 
               config={config} 
               token={token} 
               systemSettings={systemSettings} 

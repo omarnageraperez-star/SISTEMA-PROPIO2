@@ -67,11 +67,8 @@ def _send_email_async(subject, html_content, recipient=None):
         server = smtplib.SMTP(smtp_host, int(smtp_port or 587))
         server.starttls()
         server.login(smtp_user, smtp_password)
-        # Send to both customer and admin if customer email provided
-        all_recipients = [receiver]
-        if recipient and recipient != smtp_user:
-            all_recipients.append(smtp_user)
-        server.sendmail(smtp_user, all_recipients, msg.as_string())
+        # Send single email - admin is already in CC if customer email provided
+        server.sendmail(smtp_user, [receiver], msg.as_string())
         server.quit()
         
         return True
