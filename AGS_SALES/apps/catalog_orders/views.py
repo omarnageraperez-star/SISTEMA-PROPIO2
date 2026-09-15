@@ -193,7 +193,7 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
     from django.utils.decorators import method_decorator
 
     @method_decorator(never_cache)
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get'], url_path='check-new-orders')
     def check_new_orders(self, request):
         """Verificar si hay nuevos pedidos (para notificaciones en tiempo real)"""
         from apps.users.models import SystemSetting
