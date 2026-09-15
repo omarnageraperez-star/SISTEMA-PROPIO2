@@ -189,26 +189,40 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(active_orders, many=True)
         return Response(serializer.data)
     
+    from django.views.decorators.cache import never_cache
+    from django.utils.decorators import method_decorator
+
+    @method_decorator(never_cache)
     @action(detail=False, methods=['get'])
     def check_new_orders(self, request):
         """Verificar si hay nuevos pedidos (para notificaciones en tiempo real)"""
-        from django.utils import timezone
-        from datetime import timedelta
+        from apps.users.models import SystemSetting
         
-        # En Vercel (Serverless), LocMemCache no se comparte entre peticiones, 
-        # así que verificamos directamente la BD buscando pedidos creados en los últimos 20 segundos
-        recent_time = timezone.now() - timedelta(seconds=20)
-        
-        recent_order = self.queryset.filter(status='PENDING', created_at__gte=recent_time).order_by('-created_at').first()
+        # Obtener el último pedido pendiente
+        recent_order = self.queryset.filter(status='PENDING').order_by('-id').first()
         pending_count = self.queryset.filter(status='PENDING').count()
         
         if recent_order:
-            serializer = self.get_serializer(recent_order)
-            return Response({
-                'has_new': True,
-                'order': serializer.data,
-                'pending_count': pending_count
-            })
+            # Obtener el ID del último pedido notificado desde la DB
+            last_notified_setting, _ = SystemSetting.objects.get_or_create(
+                key='last_notified_order_id',
+                defaults={'value': '0'}
+            )
+            
+            last_notified_id = int(last_notified_setting.value)
+            
+            # Si el pedido actual es más nuevo que el último notificado
+            if recent_order.id > last_notified_id:
+                # Actualizar el setting para no notificar de nuevo
+                last_notified_setting.value = str(recent_order.id)
+                last_notified_setting.save()
+                
+                serializer = self.get_serializer(recent_order)
+                return Response({
+                    'has_new': True,
+                    'order': serializer.data,
+                    'pending_count': pending_count
+                })
             
         return Response({
             'has_new': False,
