@@ -103,7 +103,26 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
         setPendingCount(data.pending_count || 0);
         
         if (data.has_new && data.order) {
-          playNewOrderSound();
+          // Play sound
+            playNewOrderSound();
+
+            // Try Web Notification first
+            if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+              new Notification('🔔 Nuevo Pedido del Catálogo', {
+                body: `Pedido #${data.order.order_number} - ${data.order.customer_name} - Total ${formatCurrency(data.order.total)}`,
+              });
+            } else {
+              // Fallback to native Electron dialog via ipcRenderer if available
+              const ipc = window.require ? window.require('electron').ipcRenderer : null;
+              if (ipc) {
+                ipc.invoke('show-alert', {
+                  type: 'info',
+                  title: 'Nuevo Pedido del Catálogo',
+                  message: `Pedido #${data.order.order_number}\nCliente: ${data.order.customer_name}\nTotal: ${formatCurrency(data.order.total)}`,
+                });
+              }
+            }
+
         // Show native desktop notification if permitted
         if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
           new Notification('🔔 Nuevo Pedido del Catálogo', {
