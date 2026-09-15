@@ -56,29 +56,35 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         """Crear un nuevo pedido desde el catálogo web"""
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
-        # Validar stock antes de crear el pedido
-        items_data = serializer.validated_data.get('items', [])
-        for item in items_data:
-            product = item.get('product')
-            quantity = item.get('quantity')
+        try:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
             
-            if product and product.has_inventory_control:
-                if product.stock < quantity:
-                    return Response(
-                        {'error': f'Producto {product.name} no tiene suficiente stock. Disponible: {product.stock}, Solicitado: {quantity}'},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-        
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(
-            CatalogOrderSerializer(serializer.instance).data, 
-            status=status.HTTP_201_CREATED, 
-            headers=headers
-        )
+            # Validar stock antes de crear el pedido
+            items_data = serializer.validated_data.get('items', [])
+            for item in items_data:
+                product = item.get('product')
+                quantity = item.get('quantity')
+                
+                if product and product.has_inventory_control:
+                    if product.stock < quantity:
+                        return Response(
+                            {'error': f'Producto {product.name} no tiene suficiente stock. Disponible: {product.stock}, Solicitado: {quantity}'},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+            
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            return Response(
+                CatalogOrderSerializer(serializer.instance).data, 
+                status=status.HTTP_201_CREATED, 
+                headers=headers
+            )
+        except Exception as e:
+            return Response(
+                {'error': f'Error al crear pedido: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
     
     @action(detail=True, methods=['patch'], url_path='update-status')
     def update_status(self, request, pk=None):
