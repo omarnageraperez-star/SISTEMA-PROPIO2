@@ -106,7 +106,12 @@ if USE_SQLITE:
     }
 else:
     # Detectar si es Supabase (PostgreSQL) o Hostinger (MySQL)
-    db_engine = 'django.db.backends.postgresql' if DB_PORT == '5432' or os.environ.get('DB_ENGINE') == 'postgresql' else 'django.db.backends.mysql'
+    db_engine = 'django.db.backends.postgresql' if DB_PORT in ('5432', '6543') or os.environ.get('DB_ENGINE') == 'postgresql' else 'django.db.backends.mysql'
+    
+    # En Vercel (Serverless) o con Supabase Pooler, CONN_MAX_AGE debe ser 0 para no agotar las conexiones del pool (límite 15 en Session mode)
+    default_max_age = 0 if (os.environ.get('VERCEL') or os.environ.get('VERCEL_ENV') or DB_PORT == '6543') else 600
+    conn_max_age = int(os.environ.get('CONN_MAX_AGE', default_max_age))
+
     DATABASES = {
         'default': {
             'ENGINE': db_engine,
@@ -115,7 +120,7 @@ else:
             'PASSWORD': DB_PASSWORD,
             'HOST': DB_HOST,
             'PORT': DB_PORT,
-            'CONN_MAX_AGE': 600,  # Reutilizar conexiones por 10 minutos para reducir carga en Supabase
+            'CONN_MAX_AGE': conn_max_age,
             'OPTIONS': {} if db_engine == 'django.db.backends.postgresql' else {
                 'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
                 'charset': 'utf8mb4',
