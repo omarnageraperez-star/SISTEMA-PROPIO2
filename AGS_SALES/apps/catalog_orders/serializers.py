@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Table, CatalogOrder, CatalogOrderItem
+from apps.inventory.models import Product
 from apps.inventory.serializers import ProductSerializer
 
 class TableSerializer(serializers.ModelSerializer):
