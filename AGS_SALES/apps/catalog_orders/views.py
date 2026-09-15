@@ -42,17 +42,17 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
     serializer_class = CatalogOrderSerializer
     permission_classes = [IsAuthenticated]
     
+    def get_permissions(self):
+        if self.action == 'create':
+            return [AllowAny()]  # Público para el catálogo web
+        return super().get_permissions()
+    
     def get_serializer_class(self):
         if self.action == 'create':
             return CreateCatalogOrderSerializer
         elif self.action == 'update_status':
             return UpdateCatalogOrderStatusSerializer
         return super().get_serializer_class()
-    
-    def get_permissions(self):
-        if self.action == 'create':
-            return [AllowAny()]  # Público para el catálogo web
-        return super().get_permissions()
     
     def create(self, request, *args, **kwargs):
         """Crear un nuevo pedido desde el catálogo web"""
