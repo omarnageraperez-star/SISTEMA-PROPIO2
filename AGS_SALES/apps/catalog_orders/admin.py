@@ -40,6 +40,9 @@ class CatalogOrderAdmin(admin.ModelAdmin):
     readonly_fields = ('order_number', 'subtotal', 'tax', 'total', 'created_at', 'confirmed_at', 'delivered_at')
     inlines = [CatalogOrderItemInline]
     
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('table', 'processed_by').prefetch_related('items')
+    
     fieldsets = (
         ('Información del Pedido', {
             'fields': ('order_number', 'status', 'order_type', 'payment_method')
