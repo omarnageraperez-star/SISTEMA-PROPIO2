@@ -109,7 +109,7 @@
                         <p class="text-[10px] text-gray-500 font-semibold mb-0.5">{{ currency_code }}</p>
                         <p class="text-lg font-black text-primary leading-none">{{ currency_symbol }}{{ product.price_sell|floatformat:"0" }}</p>
                     </div>
-                    <button @click="addToCart({{ product.id }}, '{{ product.name|escapejs }}', {{ product.price_sell }}, {{ product.category.id|default:'null' }})"
+                    <button @click="addToCart({{ product.id }}, '{{ product.name|escapejs }}', {{ product.price_sell }}, {{ product.category.id|default:'null' }}, {{ product.stock|default:0 }}, {% if product.has_inventory_control %}true{% else %}false{% endif %})"
                             {% if product.has_inventory_control and product.stock <= 0 %}disabled{% endif %}
                             class="bg-primary text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-orange-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                         + Agregar
@@ -143,12 +143,17 @@
                         <div class="bg-gray-800/50 rounded-xl p-3 flex items-center gap-3">
                             <div class="flex-1">
                                 <p class="text-sm font-bold text-white" x-text="item.name"></p>
-                                <p class="text-xs text-gray-400">{{ currency_symbol }}<span x-text="item.price"></span></p>
+                                <div class="flex items-center gap-2">
+                                    <p class="text-xs text-gray-400">{{ currency_symbol }}<span x-text="item.price"></span></p>
+                                    <span x-show="item.has_inventory_control" class="text-[9px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded font-bold" x-text="'Max: ' + item.stock"></span>
+                                </div>
                             </div>
                             <div class="flex items-center gap-2">
                                 <button @click="updateQuantity(index, -1)" class="w-8 h-8 bg-gray-700 rounded-lg text-white font-bold hover:bg-gray-600">-</button>
                                 <span class="w-8 text-center font-bold text-white" x-text="item.quantity"></span>
-                                <button @click="updateQuantity(index, 1)" class="w-8 h-8 bg-primary rounded-lg text-white font-bold hover:bg-orange-600">+</button>
+                                <button @click="updateQuantity(index, 1)" 
+                                        :disabled="item.has_inventory_control && item.quantity >= item.stock"
+                                        class="w-8 h-8 bg-primary rounded-lg text-white font-bold hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed">+</button>
                             </div>
                             <button @click="removeFromCart(index)" class="text-red-500 hover:text-red-400">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -303,17 +308,28 @@
                     return this.cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(0);
                 },
                 
-                addToCart(id, name, price, categoryId) {
+                addToCart(id, name, price, categoryId, stock, has_inventory_control) {
                     const existingItem = this.cartItems.find(item => item.id === id);
                     if (existingItem) {
+                        if (has_inventory_control && existingItem.quantity >= stock) {
+                            alert(`Stock máximo alcanzado. Solo hay ${stock} unidades disponibles de ${name}.`);
+                            return;
+                        }
                         existingItem.quantity++;
                     } else {
-                        this.cartItems.push({ id, name, price, categoryId, quantity: 1 });
+                        if (has_inventory_control && stock <= 0) return;
+                        this.cartItems.push({ id, name, price, categoryId, quantity: 1, stock, has_inventory_control });
                     }
                 },
                 
                 updateQuantity(index, change) {
                     const item = this.cartItems[index];
+                    
+                    if (change > 0 && item.has_inventory_control && item.quantity >= item.stock) {
+                        alert(`Stock máximo alcanzado. Solo hay ${item.stock} unidades disponibles.`);
+                        return;
+                    }
+                    
                     item.quantity += change;
                     if (item.quantity <= 0) {
                         this.cartItems.splice(index, 1);

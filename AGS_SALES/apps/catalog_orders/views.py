@@ -74,6 +74,14 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
                         )
             
             self.perform_create(serializer)
+            
+            # --- START FIX: Set cache for real-time notification ---
+            from django.core.cache import cache
+            cache.set('new_catalog_order', CatalogOrderSerializer(serializer.instance).data, timeout=60)
+            pending_count = CatalogOrder.objects.filter(status='PENDING').count()
+            cache.set('pending_catalog_orders_count', pending_count, timeout=60*60)
+            # --- END FIX ---
+            
             headers = self.get_success_headers(serializer.data)
             return Response(
                 CatalogOrderSerializer(serializer.instance).data, 
