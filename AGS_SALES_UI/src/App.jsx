@@ -871,7 +871,8 @@ function App() {
     setErrorMsg('');
     setLoading(true);
     try {
-      const res = await apiRequest(`${config.apiUrl}users/login/`, {
+      // Usar apiUrl en lugar de config.apiUrl para asegurar sincronización
+      const res = await apiRequest(`${apiUrl}users/login/`, {
         method: 'POST',
         body: JSON.stringify(loginForm)
       });
@@ -882,7 +883,7 @@ function App() {
         
         // Fetch user profile
         try {
-          const profileRes = await fetch(`${config.apiUrl}users/profile/`, {
+          const profileRes = await fetch(`${apiUrl}users/profile/`, {
             headers: { Authorization: `Bearer ${data.access}` }
           });
           if (profileRes.ok) {
@@ -895,7 +896,7 @@ function App() {
 
         // Fetch System Settings globally upon login
         try {
-          const sysSettingsRes = await fetch(`${config.apiUrl}users/settings/`, {
+          const sysSettingsRes = await fetch(`${apiUrl}users/settings/`, {
             headers: { 'Authorization': `Bearer ${data.access}` }
           });
           if (sysSettingsRes.ok) {
