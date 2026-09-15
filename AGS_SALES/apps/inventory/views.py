@@ -214,7 +214,6 @@ def catalog_view(request):
     """
     products = Product.objects.filter(is_active=True)
     categories = Category.objects.all()
-    tables = Table.objects.filter(is_active=True)
     
     # Get settings for store logo/name
     settings = {s.key: s.value for s in SystemSetting.objects.all()}
@@ -224,13 +223,19 @@ def catalog_view(request):
     currency_symbol = settings.get('currency_symbol', '$')
     
     # Process table QR parameter
-    table_qr = request.GET.get('table', '')
+    tables = []
     selected_table = None
-    if table_qr:
-        try:
-            selected_table = Table.objects.get(qr_code=table_qr, is_active=True)
-        except Table.DoesNotExist:
-            pass
+    try:
+        tables = Table.objects.filter(is_active=True)
+        table_qr = request.GET.get('table', '')
+        if table_qr:
+            try:
+                selected_table = Table.objects.get(qr_code=table_qr, is_active=True)
+            except Table.DoesNotExist:
+                pass
+    except Exception as e:
+        # If catalog_orders app is not available, continue without tables
+        pass
     
     context = {
         'products': products,
