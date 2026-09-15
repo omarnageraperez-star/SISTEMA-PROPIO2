@@ -69,9 +69,13 @@ ipcMain.handle('get-config', () => {
   return null;
 });
 
-// IPC handler to get app version from package.json (always correct, never 0.0.0)
+// IPC handler to get app version from package.json/electron (always correct, never 0.0.0)
 ipcMain.handle('get-app-version', () => {
   try {
+    if (app && typeof app.getVersion === 'function') {
+      const ver = app.getVersion();
+      if (ver) return ver;
+    }
     const pkgPath = path.join(__dirname, 'package.json');
     const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
     return pkg.version || '0.0.0';
