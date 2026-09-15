@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from decimal import Decimal
 from .models import Table, CatalogOrder, CatalogOrderItem
 from apps.inventory.models import Product
 from apps.inventory.serializers import ProductSerializer
@@ -55,26 +56,32 @@ class CreateCatalogOrderSerializer(serializers.ModelSerializer):
         order = CatalogOrder.objects.create(**validated_data)
         
         # Calculate totals
-        subtotal = 0
-        tax = 0
+        subtotal = Decimal('0')
+        tax = Decimal('0')
         
         for item_data in items_data:
             product = item_data.get('product')
             quantity = item_data.get('quantity')
             unit_price = item_data.get('unit_price')
             
+            # Convert to Decimal if they are floats
+            if quantity is not None:
+                quantity = Decimal(str(quantity))
+            if unit_price is not None:
+                unit_price = Decimal(str(unit_price))
+            
             # Get product name from product or use provided name
             if product:
                 item_data['product_name'] = product.name
-                product_tax = product.tax_percent or 0
+                product_tax = Decimal(str(product.tax_percent or 0))
             else:
-                product_tax = 0
+                product_tax = Decimal('0')
             
             item = CatalogOrderItem.objects.create(order=order, **item_data)
             subtotal += item.subtotal
                                 
             # Calculate tax for this item
-            item_tax = item.subtotal * (product_tax / 100)
+            item_tax = item.subtotal * (product_tax / Decimal('100'))
             tax += item_tax
         
         order.subtotal = subtotal
