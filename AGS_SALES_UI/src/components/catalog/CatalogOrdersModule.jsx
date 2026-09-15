@@ -5,7 +5,9 @@ import {
   ChefHat, Truck, FileText, Check, ExternalLink, Calendar, MessageSquare
 } from 'lucide-react';
 import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
 import { apiRequest } from '../../lib/api';
+// import { ipcRenderer } from 'electron'; // Removed to avoid context isolation issues
 import { playNewOrderSound } from '../../lib/sound';
 
 const STATUS_CONFIG = {
@@ -83,6 +85,10 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
   };
 
   useEffect(() => {
+    // Request notification permission on first load
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
     fetchOrders();
     const interval = setInterval(checkNewOrders, 15000);
     return () => clearInterval(interval);
@@ -98,6 +104,13 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
         
         if (data.has_new && data.order) {
           playNewOrderSound();
+        // Show native desktop notification if permitted
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          new Notification('🔔 Nuevo Pedido del Catálogo', {
+            body: `Pedido #${data.order.order_number} - ${data.order.customer_name} - Total ${formatCurrency(data.order.total)}`,
+            // icon can be added if needed
+          });
+        }
           
           const formattedTotal = formatCurrency(data.order.total);
           Swal.fire({
