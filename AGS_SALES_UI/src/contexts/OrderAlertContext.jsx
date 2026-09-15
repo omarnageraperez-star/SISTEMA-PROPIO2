@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import { playNewOrderSound } from "../lib/sound";
+import Swal from 'sweetalert2';
 // Removed react-bootstrap Toast import; using custom toast
 
 const OrderAlertContext = createContext();
@@ -16,6 +17,21 @@ export const OrderAlertProvider = ({ children }) => {
   };
 
   const handleClose = () => setShow(false);
+useEffect(() => {
+  if (show && orderInfo) {
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      timer: 3000,
+      timerProgressBar: true,
+      title: 'Nuevo pedido de catálogo',
+      html: orderInfo?.client_name || 'Nuevo pedido recibido',
+      showConfirmButton: false,
+      customClass: { popup: 'premium-swal-toast' },
+    });
+    setShow(false);
+  }
+}, [show, orderInfo]);
 
   return (
     <OrderAlertContext.Provider value={{ triggerAlert }}>
