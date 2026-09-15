@@ -119,14 +119,14 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
   };
 
   useEffect(() => {
-    // Reiniciar el polling cuando cambian las configuraciones
+    // Reiniciar el polling cuando cambia el intervalo de actualización
     if (window.pollingInterval) {
       clearInterval(window.pollingInterval);
     }
     if (notificationSettings.autoRefresh) {
       startPolling();
     }
-  }, [notificationSettings]);
+  }, [notificationSettings.refreshInterval, notificationSettings.autoRefresh]);
 
   const checkNewOrders = async () => {
     try {
