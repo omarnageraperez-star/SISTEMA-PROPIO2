@@ -31,8 +31,15 @@ class CatalogOrderSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['order_number', 'subtotal', 'tax', 'total', 'created_at', 'confirmed_at', 'delivered_at']
 
+class CreateCatalogOrderItemSerializer(serializers.ModelSerializer):
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), required=False, allow_null=True)
+    
+    class Meta:
+        model = CatalogOrderItem
+        fields = ['product', 'product_name', 'quantity', 'unit_price', 'notes']
+
 class CreateCatalogOrderSerializer(serializers.ModelSerializer):
-    items = CatalogOrderItemSerializer(many=True, write_only=True)
+    items = CreateCatalogOrderItemSerializer(many=True, write_only=True)
     
     class Meta:
         model = CatalogOrder
