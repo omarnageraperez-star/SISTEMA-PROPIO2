@@ -34,6 +34,7 @@ class CatalogOrderSerializer(serializers.ModelSerializer):
 
 class CreateCatalogOrderItemSerializer(serializers.ModelSerializer):
     product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), required=False, allow_null=True)
+    product_name = serializers.CharField(required=True, allow_blank=False)
     
     class Meta:
         model = CatalogOrderItem

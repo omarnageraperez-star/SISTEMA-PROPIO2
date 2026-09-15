@@ -115,7 +115,7 @@ else:
             'PASSWORD': DB_PASSWORD,
             'HOST': DB_HOST,
             'PORT': DB_PORT,
-            'CONN_MAX_AGE': 0,  # Cerrar conexión al finalizar cada request
+            'CONN_MAX_AGE': 600,  # Reutilizar conexiones por 10 minutos para reducir carga en Supabase
             'OPTIONS': {} if db_engine == 'django.db.backends.postgresql' else {
                 'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
                 'charset': 'utf8mb4',

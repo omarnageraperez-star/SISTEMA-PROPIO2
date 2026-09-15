@@ -14,6 +14,7 @@ class TableAdmin(admin.ModelAdmin):
     list_filter = ('is_active', 'location')
     search_fields = ('name', 'qr_code', 'location')
     readonly_fields = ('created_at', 'qr_link')
+    list_per_page = 50  # Limitar registros por página para reducir conexiones
     
     def qr_link(self, obj):
         if obj.qr_code:
@@ -39,6 +40,7 @@ class CatalogOrderAdmin(admin.ModelAdmin):
     search_fields = ('order_number', 'customer_name', 'customer_phone')
     readonly_fields = ('order_number', 'subtotal', 'tax', 'total', 'created_at', 'confirmed_at', 'delivered_at')
     inlines = [CatalogOrderItemInline]
+    list_per_page = 20  # Limitar registros por página para reducir conexiones
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('table', 'processed_by').prefetch_related('items')

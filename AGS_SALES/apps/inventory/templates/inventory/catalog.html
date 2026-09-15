@@ -354,6 +354,9 @@
                             body: JSON.stringify(payload)
                         });
                         
+                        console.log('Response status:', response.status);
+                        console.log('Response ok:', response.ok);
+                        
                         if (response.ok) {
                             const data = await response.json();
                             this.orderNumber = data.order_number;
@@ -370,11 +373,12 @@
                             };
                         } else {
                             const error = await response.json();
-                            alert('Error al crear pedido: ' + (error.error || 'Intenta nuevamente'));
+                            console.error('Server error:', error);
+                            alert('Error al crear pedido: ' + (error.error || JSON.stringify(error) || 'Intenta nuevamente'));
                         }
                     } catch (error) {
-                        console.error('Error:', error);
-                        alert('Error de conexión. Intenta nuevamente.');
+                        console.error('Network error:', error);
+                        alert('Error de conexión: ' + error.message + '. Intenta nuevamente.');
                     } finally {
                         this.isSubmitting = false;
                     }
