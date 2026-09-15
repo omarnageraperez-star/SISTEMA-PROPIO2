@@ -2,6 +2,7 @@
 @import "tailwindcss";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
+@import "./styles/toast.css";
 
 @custom-variant dark (&:is(.dark *));
 

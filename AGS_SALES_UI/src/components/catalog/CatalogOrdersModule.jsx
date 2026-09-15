@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   ShoppingBag, Clock, CheckCircle, XCircle, AlertCircle, User, MapPin, Phone, 
   CreditCard, RefreshCw, Filter, Bell, ArrowRight, DollarSign, PackageCheck, 
-  ChefHat, Truck, FileText, Check, ExternalLink, Calendar, MessageSquare
+  ChefHat, Truck, FileText, Check, ExternalLink, Calendar, MessageSquare, Search
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
@@ -71,6 +71,7 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
   const [pendingCount, setPendingCount] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState(new Date());
+  const [searchTerm, setSearchTerm] = useState('');
 
   const symbol = systemSettings?.currency_symbol || '$';
   const decimals = parseInt(systemSettings?.currency_decimals ?? '2', 10);
@@ -163,12 +164,20 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
   };
 
   useEffect(() => {
-    if (statusFilter === 'ALL') {
-      setFilteredOrders(orders);
-    } else {
-      setFilteredOrders(orders.filter(order => order.status === statusFilter));
+    let filtered = orders;
+    if (statusFilter !== 'ALL') {
+      filtered = filtered.filter(order => order.status === statusFilter);
     }
-  }, [statusFilter, orders]);
+    if (searchTerm.trim() !== '') {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(order => 
+        (order.order_number && String(order.order_number).toLowerCase().includes(term)) ||
+        (order.customer_name && order.customer_name.toLowerCase().includes(term)) ||
+        (order.customer_phone && order.customer_phone.toLowerCase().includes(term))
+      );
+    }
+    setFilteredOrders(filtered);
+  }, [statusFilter, orders, searchTerm]);
 
   const fetchOrders = async () => {
     setIsRefreshing(true);
@@ -446,6 +455,25 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
         </div>
       </div>
 
+      {/* SEARCH BAR */}
+      <div className="glass-panel p-3 rounded-2xl border border-slate-150 shadow-sm flex items-center gap-3">
+        <div className="bg-slate-100 p-2 rounded-xl text-slate-400">
+          <Search size={18} />
+        </div>
+        <input 
+          type="text" 
+          placeholder="Buscar por cliente, teléfono o # de pedido..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="flex-1 bg-transparent border-none outline-none text-sm font-semibold text-slate-700 placeholder-slate-400"
+        />
+        {searchTerm && (
+          <button onClick={() => setSearchTerm('')} className="p-2 text-slate-400 hover:text-rose-500 transition-colors">
+            <XCircle size={18} />
+          </button>
+        )}
+      </div>
+
       {/* ORDERS GRID LIST */}
       {loading ? (
         <div className="glass-panel p-16 rounded-3xl text-center border border-slate-150">
@@ -459,7 +487,7 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
           <p className="text-xs text-slate-400">Los nuevos pedidos realizados por tus clientes en el catálogo web aparecerán aquí al instante.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
           {filteredOrders.map(order => {
             const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG['PENDING'];
             const StatusIcon = statusConfig.icon;

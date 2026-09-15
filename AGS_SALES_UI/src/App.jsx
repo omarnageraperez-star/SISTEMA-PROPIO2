@@ -21,6 +21,7 @@ import { hasPermission } from './lib/permissionsConfig';
 import { apiRequest } from './lib/api';
 import { printCashCut, generateCashCutHTML, printTicket } from './lib/print';
 import { playNewOrderSound } from './lib/sound';
+import { useToast } from './context/ToastContext';
 
 const normalizeText = (text) => text ? text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
 
@@ -230,6 +231,8 @@ function App() {
   const [salesHistoryTab, setSalesHistoryTab] = useState('sales');
   const [pendingUpdate, setPendingUpdate] = useState(null);
   const [appVersion, setAppVersion] = useState('0.0.0');
+
+  const { addToast } = useToast();
 
   // Load app version and machine id from electron on startup, and setup licensing listeners
   useEffect(() => {
@@ -1205,6 +1208,7 @@ function App() {
 
           if (data.has_new && data.order) {
             playNewOrderSound();
+            addToast('🔔 ¡NUEVO PEDIDO DEL CATÁLOGO!', { timeout: 5000 });
             
             const sym = systemSettings?.currency_symbol || '$';
             const formattedTotal = `${sym}${Number(data.order.total || 0).toLocaleString()}`;
