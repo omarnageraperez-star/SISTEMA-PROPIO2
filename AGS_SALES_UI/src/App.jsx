@@ -418,8 +418,8 @@ function App() {
   const lastSaleIdRef = useRef(null);
 
   useEffect(() => {
-    if (!token || !apiUrl || appState === 'LOGIN' || appState === 'SETUP_API') return;
-    const isAdmin = ['SUPERADMIN', 'ADMIN'].includes(userProfile?.role);
+    if (!token || !apiUrl || !userProfile || !config?.default_printer) return;
+    const isAdmin = ['SUPERADMIN', 'ADMIN'].includes(userProfile.role);
     if (!isAdmin) return;
 
     const checkAdminSales = async () => {
@@ -871,8 +871,7 @@ function App() {
     setErrorMsg('');
     setLoading(true);
     try {
-      // Usar apiUrl en lugar de config.apiUrl para asegurar sincronización
-      const res = await apiRequest(`${apiUrl}users/login/`, {
+      const res = await apiRequest(`${config.apiUrl}users/login/`, {
         method: 'POST',
         body: JSON.stringify(loginForm)
       });
@@ -883,7 +882,7 @@ function App() {
         
         // Fetch user profile
         try {
-          const profileRes = await fetch(`${apiUrl}users/profile/`, {
+          const profileRes = await fetch(`${config.apiUrl}users/profile/`, {
             headers: { Authorization: `Bearer ${data.access}` }
           });
           if (profileRes.ok) {
@@ -896,7 +895,7 @@ function App() {
 
         // Fetch System Settings globally upon login
         try {
-          const sysSettingsRes = await fetch(`${apiUrl}users/settings/`, {
+          const sysSettingsRes = await fetch(`${config.apiUrl}users/settings/`, {
             headers: { 'Authorization': `Bearer ${data.access}` }
           });
           if (sysSettingsRes.ok) {
@@ -942,7 +941,7 @@ function App() {
 
         // Auto-check if there is an active open shift (caja abierta)
         try {
-          const shiftsRes = await apiRequest(`${apiUrl}accounting/cash-shifts/?is_open=true`, {}, data.access);
+          const shiftsRes = await apiRequest(`${config.apiUrl}accounting/cash-shifts/?is_open=true`, {}, data.access);
           if (shiftsRes.ok) {
             const shiftsData = await shiftsRes.json();
             const activeShifts = shiftsData.results || shiftsData || [];
@@ -957,7 +956,7 @@ function App() {
               
               // Fetch Billing Config before entering DASHBOARD
               try {
-                const configRes = await apiRequest(`${apiUrl}configuracion/facturacion`, {}, data.access);
+                const configRes = await apiRequest(`${config.apiUrl}configuracion/facturacion`, {}, data.access);
                 if (configRes.ok) {
                   const bConfig = await configRes.json();
                   setBillingConfig(bConfig);
@@ -1019,11 +1018,11 @@ function App() {
 
   // Real-time User Profile & Permissions Sync Effect
   useEffect(() => {
-    if (!token || !apiUrl || appState === 'LOGIN' || appState === 'SETUP_API') return;
+    if (!token || !config?.apiUrl || appState === 'LOGIN' || appState === 'SETUP_API') return;
 
     const syncProfile = async () => {
       try {
-        const profileRes = await fetch(`${apiUrl}users/profile/`, {
+        const profileRes = await fetch(`${config.apiUrl}users/profile/`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (profileRes.ok) {
@@ -1042,15 +1041,15 @@ function App() {
       clearInterval(interval);
       window.removeEventListener('permissions-updated', handlePermUpdated);
     };
-  }, [token, apiUrl, appState]);
+  }, [token, config?.apiUrl, appState]);
 
   // Global Shifts Polling & Force Close Check Effect (every 3 seconds)
   useEffect(() => {
-    if (!token || !apiUrl || appState === 'LOGIN' || appState === 'SETUP_API') return;
+    if (!token || !config?.apiUrl || appState === 'LOGIN' || appState === 'SETUP_API') return;
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`${apiUrl}accounting/cash-shifts/?is_open=true`, {
+        const res = await fetch(`${config.apiUrl}accounting/cash-shifts/?is_open=true`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {
@@ -1092,17 +1091,17 @@ function App() {
     }, 60000); // Check every 60 seconds for real-time response
 
     return () => clearInterval(interval);
-  }, [token, appState, userProfile, apiUrl]);
+  }, [token, appState, userProfile, config?.apiUrl]);
 
   // Global Updates Polling (every 10 seconds)
   useEffect(() => {
-    if (!token || !apiUrl || appState === 'LOGIN' || appState === 'SETUP_API') return;
+    if (!token || !config?.apiUrl || appState === 'LOGIN' || appState === 'SETUP_API') return;
 
     // isNewerVersion is now global
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`${apiUrl}users/settings/`, {
+        const res = await fetch(`${config.apiUrl}users/settings/`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {

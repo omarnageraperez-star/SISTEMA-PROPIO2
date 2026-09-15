@@ -50,12 +50,10 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
 
   useEffect(() => {
     fetchOrders();
+    startPolling();
     
     // Cargar configuración de notificaciones
     loadNotificationSettings();
-    
-    // Iniciar polling simple
-    window.pollingInterval = setInterval(checkNewOrders, 30000);
     
     return () => {
       if (window.pollingInterval) {
@@ -113,6 +111,22 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
       console.error('Error playing notification sound:', e);
     }
   };
+
+  const startPolling = () => {
+    // Usar el intervalo configurado por el usuario
+    const interval = notificationSettings.refreshInterval * 1000;
+    window.pollingInterval = setInterval(checkNewOrders, interval);
+  };
+
+  useEffect(() => {
+    // Reiniciar el polling cuando cambia el intervalo de actualización
+    if (window.pollingInterval) {
+      clearInterval(window.pollingInterval);
+    }
+    if (notificationSettings.autoRefresh) {
+      startPolling();
+    }
+  }, [notificationSettings.refreshInterval, notificationSettings.autoRefresh]);
 
   const checkNewOrders = async () => {
     try {
