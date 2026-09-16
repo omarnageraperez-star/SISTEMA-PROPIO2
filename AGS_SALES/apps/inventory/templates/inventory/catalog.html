@@ -277,7 +277,7 @@
                         <div class="relative z-10 flex flex-col items-center">
                             <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shadow-lg transition-colors duration-500"
                                  :class="isStepActive(2) ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-500 border-2 border-gray-700'">2</div>
-                            <span class="text-[9px] font-bold mt-2 text-center w-14" :class="isStepActive(2) ? 'text-blue-400' : 'text-gray-600'">En Cocina</span>
+                            <span class="text-[9px] font-bold mt-2 text-center w-14" :class="isStepActive(2) ? 'text-blue-400' : 'text-gray-600'">Preparando</span>
                         </div>
                         <div class="relative z-10 flex flex-col items-center">
                             <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shadow-lg transition-colors duration-500"
@@ -321,7 +321,7 @@
                 </template>
                 
                 <p class="text-center mt-8 text-sm text-gray-300 font-medium leading-relaxed">
-                    <span x-show="['PENDING', 'CONFIRMED'].includes(trackData.status)">Hemos recibido tu pedido. Pronto comenzaremos a prepararlo en cocina.</span>
+                    <span x-show="['PENDING', 'CONFIRMED'].includes(trackData.status)">Hemos recibido tu pedido. Pronto comenzaremos a prepararlo.</span>
                     <span x-show="trackData.status === 'PREPARING'">👨‍🍳 Estamos preparando tus productos ahora mismo.</span>
                     <span x-show="trackData.status === 'READY' && trackData.order_type === 'DELIVERY'">🛵 El domiciliario ya está en despacho con tu pedido hacia tu dirección.</span>
                     <span x-show="trackData.status === 'READY' && trackData.order_type !== 'DELIVERY'">🛍️ Tu pedido está listo para ser retirado en caja o servido en mesa.</span>
