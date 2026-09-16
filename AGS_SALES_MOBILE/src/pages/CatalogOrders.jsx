@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ShoppingBag, Clock, CheckCircle, XCircle, AlertCircle, User, MapPin, Phone, 
-  CreditCard, ChevronRight, RefreshCw, Filter, Bell, Navigation, CheckCircle2 
+  CreditCard, ChevronRight, RefreshCw, Filter, Bell, Navigation, CheckCircle2, LogOut
 } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import { apiRequest, apiUrl, parseError, formatCurrency } from '../lib/api';
@@ -24,7 +24,7 @@ const ORDER_TYPE_CONFIG = {
   'DELIVERY': { label: '🛵 Domicilio', icon: '🛵' },
 };
 
-export default function CatalogOrders({ auth }) {
+export default function CatalogOrders({ auth, onLogout }) {
   const navigate = useNavigate();
   const isDeliveryDriver = auth.user?.role === 'DELIVERY';
 
@@ -250,23 +250,46 @@ export default function CatalogOrders({ auth }) {
       <TopBar 
         title={isDeliveryDriver ? "Ruta de Domicilios" : "Pedidos del Catálogo"} 
         subtitle={isDeliveryDriver ? "Despacho y entrega de pedidos" : "Gestiona pedidos web"}
-        rightContent={
-          pendingCount > 0 && !isDeliveryDriver && (
-            <div style={{
-              background: '#ef4444',
-              color: 'white',
-              padding: '4px 8px',
-              borderRadius: 12,
-              fontSize: 12,
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4
-            }}>
-              <Bell size={14} />
-              {pendingCount} nuevos
-            </div>
-          )
+        rightAction={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {pendingCount > 0 && !isDeliveryDriver && (
+              <div style={{
+                background: '#ef4444',
+                color: 'white',
+                padding: '4px 8px',
+                borderRadius: 12,
+                fontSize: 12,
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4
+              }}>
+                <Bell size={14} />
+                {pendingCount} nuevos
+              </div>
+            )}
+            {isDeliveryDriver && (
+              <button 
+                onClick={onLogout}
+                style={{
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  padding: '6px 12px',
+                  borderRadius: 12,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  color: '#f87171',
+                  fontWeight: 'bold',
+                  fontSize: 12,
+                  cursor: 'pointer'
+                }}
+              >
+                <LogOut size={14} />
+                Salir
+              </button>
+            )}
+          </div>
         }
       />
 

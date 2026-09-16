@@ -8,6 +8,7 @@ import {
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import { apiRequest } from '../../lib/api';
+import { printTicket } from '../../lib/print';
 // import { ipcRenderer } from 'electron'; // Removed to avoid context isolation issues
 import { playOrderDineIn, playOrderTakeout, playOrderDelivery } from '../../lib/sound';
 
@@ -268,6 +269,22 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
       );
 
       if (res.ok) {
+        const updatedOrder = await res.json();
+
+        // Auto-print ticket when order is confirmed (sale is created)
+        if (newStatus === 'CONFIRMED' && updatedOrder.related_sale) {
+          try {
+            const cleanBaseUrl = config.apiUrl.endsWith('/') ? config.apiUrl : config.apiUrl + '/';
+            const saleRes = await apiRequest(`${cleanBaseUrl}sales/sales/${updatedOrder.related_sale}/`, {}, token);
+            if (saleRes.ok) {
+              const saleData = await saleRes.json();
+              printTicket(saleData, systemSettings, systemSettings?.ticket_logo, { silent: true, printerName: config?.default_printer, apiUrl: config?.apiUrl });
+            }
+          } catch (printErr) {
+            console.error('Error al imprimir ticket del pedido:', printErr);
+          }
+        }
+
         Swal.fire({
           icon: 'success',
           title: 'Estado Actualizado',

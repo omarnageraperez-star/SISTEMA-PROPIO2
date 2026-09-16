@@ -22,7 +22,7 @@ export default function BottomNav({ user }) {
 
   // Roles that can see each tab
   const canAccess = (path) => {
-    if (path === '/') return true;
+    if (path === '/') return user?.role !== 'DELIVERY';
     if (path === '/catalog-orders') return hasPermission(user, 'catalog_orders.access') || user?.role === 'DELIVERY';
     if (path === '/inventory') return hasPermission(user, 'inventory.access');
     if (path === '/pos') return hasPermission(user, 'pos.access');

@@ -258,12 +258,16 @@ export default function App() {
 
   // Show modal to open box if user doesn't have an open shift (synchronized with desktop POS)
   useEffect(() => {
+    if (auth.user?.role === 'DELIVERY') {
+      setShowOpenBoxModal(false);
+      return;
+    }
     if (auth.token && userHasOpenShift === false) {
       setShowOpenBoxModal(true);
     } else if (userHasOpenShift === true) {
       setShowOpenBoxModal(false);
     }
-  }, [userHasOpenShift, auth.token]);
+  }, [userHasOpenShift, auth.token, auth.user]);
 
   // Monitor Real-time Sales for Admin Push Notifications (every 60 seconds)
   useEffect(() => {
@@ -1022,7 +1026,7 @@ function AppRoutes({ auth, onLogout, onSettingsUpdate, licenseStatusInfo, showWa
         <Route path="/reports" element={canAccessReports ? <Reports auth={auth} /> : <Navigate to="/" replace />} />
         <Route path="/cash-control" element={canAccessCash ? <CashControl auth={auth} onShiftOpened={onShiftOpened} /> : <Navigate to="/" replace />} />
         <Route path="/credits" element={hasPermission(user, 'sales.credits') ? <Credits auth={auth} /> : <Navigate to="/" replace />} />
-        <Route path="/catalog-orders" element={<CatalogOrders auth={auth} />} />
+        <Route path="/catalog-orders" element={<CatalogOrders auth={auth} onLogout={onLogout} />} />
         <Route path="/more" element={<More auth={auth} onLogout={onLogout} onSettingsUpdate={onSettingsUpdate} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
