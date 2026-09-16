@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { 
   ShoppingBag, Clock, CheckCircle, XCircle, AlertCircle, User, MapPin, Phone, 
   CreditCard, RefreshCw, Filter, Bell, ArrowRight, DollarSign, PackageCheck, 
-  ChefHat, Truck, FileText, Check, ExternalLink, Calendar, MessageSquare, Search
+  ChefHat, Truck, FileText, Check, ExternalLink, Calendar, MessageSquare, Search,
+  Navigation
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
@@ -540,9 +541,23 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
                     )}
 
                     {order.customer_address && (
-                      <div className="flex items-center gap-2 text-xs text-slate-600">
-                        <MapPin size={14} className="text-slate-400 shrink-0" />
-                        <span className="truncate">{order.customer_address}</span>
+                      <div className="flex items-center justify-between gap-2 text-xs text-slate-600 bg-slate-50/80 p-2 rounded-xl border border-slate-100">
+                        <div className="flex items-center gap-1.5 truncate">
+                          <MapPin size={14} className="text-rose-500 shrink-0" />
+                          <span className="truncate">{order.customer_address}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.customer_address)}`, '_blank');
+                          }}
+                          className="shrink-0 flex items-center gap-1 px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-[11px] font-bold border border-rose-200 transition-all active:scale-95"
+                          title="Abrir en Google Maps"
+                        >
+                          <Navigation size={12} />
+                          <span>GPS</span>
+                        </button>
                       </div>
                     )}
                   </div>
@@ -654,9 +669,21 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
                   )}
 
                   {selectedOrder.customer_address && (
-                    <div className="flex items-center gap-2 text-slate-700 md:col-span-2">
-                      <MapPin size={16} className="text-rose-500 shrink-0" />
-                      <span>{selectedOrder.customer_address}</span>
+                    <div className="flex items-center justify-between gap-3 text-slate-700 md:col-span-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                      <div className="flex items-center gap-2">
+                        <MapPin size={16} className="text-rose-500 shrink-0" />
+                        <span className="font-semibold">{selectedOrder.customer_address}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedOrder.customer_address)}`, '_blank');
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 shrink-0"
+                      >
+                        <Navigation size={14} />
+                        <span>Abrir en Maps</span>
+                      </button>
                     </div>
                   )}
 

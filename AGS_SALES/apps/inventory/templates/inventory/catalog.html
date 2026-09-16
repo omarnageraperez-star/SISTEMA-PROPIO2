@@ -231,19 +231,19 @@
                     <template x-if="trackData.status === 'PREPARING'">
                         <div class="text-center">
                             <span class="text-7xl">🔥</span>
-                            <p class="text-white font-black mt-2 text-xl drop-shadow-md">Preparando</p>
+                            <p class="text-white font-black mt-2 text-xl drop-shadow-md">Preparando en Cocina</p>
                         </div>
                     </template>
                     <template x-if="trackData.status === 'READY'">
                         <div class="text-center">
-                            <span class="text-7xl">🛍️</span>
-                            <p class="text-white font-black mt-2 text-xl drop-shadow-md">¡Listo!</p>
+                            <span class="text-7xl" x-text="trackData.order_type === 'DELIVERY' ? '🛵' : '🛍️'"></span>
+                            <p class="text-white font-black mt-2 text-xl drop-shadow-md" x-text="trackData.order_type === 'DELIVERY' ? '¡En Reparto!' : '¡Listo para Retirar!'"></p>
                         </div>
                     </template>
                     <template x-if="trackData.status === 'DELIVERED'">
                         <div class="text-center">
                             <span class="text-7xl">🎉</span>
-                            <p class="text-white font-black mt-2 text-xl drop-shadow-md">Entregado</p>
+                            <p class="text-white font-black mt-2 text-xl drop-shadow-md">Entregado con Éxito</p>
                         </div>
                     </template>
                     <template x-if="trackData.status === 'CANCELLED'">
@@ -259,36 +259,74 @@
             <div class="w-full max-w-md bg-gray-800/80 p-6 rounded-3xl backdrop-blur-xl border border-gray-700 shadow-2xl">
                 <h3 class="text-center text-gray-400 font-bold mb-6 uppercase tracking-widest text-xs">Progreso del Pedido</h3>
                 
-                <div class="relative flex justify-between">
-                    <!-- Progress Line Background -->
-                    <div class="absolute top-1/2 left-0 w-full h-1 bg-gray-700 -translate-y-1/2 z-0 rounded-full"></div>
-                    <!-- Progress Line Active -->
-                    <div class="absolute top-1/2 left-0 h-1 bg-gradient-to-r from-orange-500 via-blue-500 to-emerald-500 -translate-y-1/2 z-0 rounded-full progress-line"
-                         :style="'width: ' + getProgressPercentage() + '%'"></div>
+                <!-- If DELIVERY: 4 Steps (Confirmado -> Preparando -> En Reparto -> Entregado) -->
+                <template x-if="trackData.order_type === 'DELIVERY'">
+                    <div class="relative flex justify-between">
+                        <!-- Progress Line Background -->
+                        <div class="absolute top-1/2 left-0 w-full h-1 bg-gray-700 -translate-y-1/2 z-0 rounded-full"></div>
+                        <!-- Progress Line Active -->
+                        <div class="absolute top-1/2 left-0 h-1 bg-gradient-to-r from-orange-500 via-blue-500 to-emerald-500 -translate-y-1/2 z-0 rounded-full progress-line"
+                             :style="'width: ' + getProgressPercentage() + '%'"></div>
 
-                    <!-- Steps -->
-                    <div class="relative z-10 flex flex-col items-center">
-                        <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-lg transition-colors duration-500"
-                             :class="isStepActive(1) ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-500 border-2 border-gray-700'">1</div>
-                        <span class="text-[10px] font-bold mt-2 text-center w-16" :class="isStepActive(1) ? 'text-orange-400' : 'text-gray-600'">Confirmado</span>
+                        <!-- Steps -->
+                        <div class="relative z-10 flex flex-col items-center">
+                            <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shadow-lg transition-colors duration-500"
+                                 :class="isStepActive(1) ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-500 border-2 border-gray-700'">1</div>
+                            <span class="text-[9px] font-bold mt-2 text-center w-14" :class="isStepActive(1) ? 'text-orange-400' : 'text-gray-600'">Confirmado</span>
+                        </div>
+                        <div class="relative z-10 flex flex-col items-center">
+                            <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shadow-lg transition-colors duration-500"
+                                 :class="isStepActive(2) ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-500 border-2 border-gray-700'">2</div>
+                            <span class="text-[9px] font-bold mt-2 text-center w-14" :class="isStepActive(2) ? 'text-blue-400' : 'text-gray-600'">En Cocina</span>
+                        </div>
+                        <div class="relative z-10 flex flex-col items-center">
+                            <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shadow-lg transition-colors duration-500"
+                                 :class="isStepActive(3) ? 'bg-purple-500 text-white' : 'bg-gray-800 text-gray-500 border-2 border-gray-700'">3</div>
+                            <span class="text-[9px] font-bold mt-2 text-center w-14" :class="isStepActive(3) ? 'text-purple-400' : 'text-gray-600'">En Reparto</span>
+                        </div>
+                        <div class="relative z-10 flex flex-col items-center">
+                            <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shadow-lg transition-colors duration-500"
+                                 :class="isStepActive(4) ? 'bg-emerald-500 text-white' : 'bg-gray-800 text-gray-500 border-2 border-gray-700'">4</div>
+                            <span class="text-[9px] font-bold mt-2 text-center w-14" :class="isStepActive(4) ? 'text-emerald-400' : 'text-gray-600'">Entregado</span>
+                        </div>
                     </div>
-                    <div class="relative z-10 flex flex-col items-center">
-                        <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-lg transition-colors duration-500"
-                             :class="isStepActive(2) ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-500 border-2 border-gray-700'">2</div>
-                        <span class="text-[10px] font-bold mt-2 text-center w-16" :class="isStepActive(2) ? 'text-blue-400' : 'text-gray-600'">Preparando</span>
+                </template>
+
+                <!-- If DINE_IN or TAKEOUT: 3 Steps (Confirmado -> Preparando -> Listo / Servido) -->
+                <template x-if="trackData.order_type !== 'DELIVERY'">
+                    <div class="relative flex justify-between">
+                        <!-- Progress Line Background -->
+                        <div class="absolute top-1/2 left-0 w-full h-1 bg-gray-700 -translate-y-1/2 z-0 rounded-full"></div>
+                        <!-- Progress Line Active -->
+                        <div class="absolute top-1/2 left-0 h-1 bg-gradient-to-r from-orange-500 via-blue-500 to-emerald-500 -translate-y-1/2 z-0 rounded-full progress-line"
+                             :style="'width: ' + getProgressPercentage() + '%'"></div>
+
+                        <!-- Steps -->
+                        <div class="relative z-10 flex flex-col items-center">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-lg transition-colors duration-500"
+                                 :class="isStepActive(1) ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-500 border-2 border-gray-700'">1</div>
+                            <span class="text-[10px] font-bold mt-2 text-center w-16" :class="isStepActive(1) ? 'text-orange-400' : 'text-gray-600'">Confirmado</span>
+                        </div>
+                        <div class="relative z-10 flex flex-col items-center">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-lg transition-colors duration-500"
+                                 :class="isStepActive(2) ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-500 border-2 border-gray-700'">2</div>
+                            <span class="text-[10px] font-bold mt-2 text-center w-16" :class="isStepActive(2) ? 'text-blue-400' : 'text-gray-600'">Preparando</span>
+                        </div>
+                        <div class="relative z-10 flex flex-col items-center">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-lg transition-colors duration-500"
+                                 :class="isStepActive(3) ? 'bg-emerald-500 text-white' : 'bg-gray-800 text-gray-500 border-2 border-gray-700'">3</div>
+                            <span class="text-[10px] font-bold mt-2 text-center w-16" :class="isStepActive(3) ? 'text-emerald-400' : 'text-gray-600'">Listo</span>
+                        </div>
                     </div>
-                    <div class="relative z-10 flex flex-col items-center">
-                        <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-lg transition-colors duration-500"
-                             :class="isStepActive(3) ? 'bg-emerald-500 text-white' : 'bg-gray-800 text-gray-500 border-2 border-gray-700'">3</div>
-                        <span class="text-[10px] font-bold mt-2 text-center w-16" :class="isStepActive(3) ? 'text-emerald-400' : 'text-gray-600'">Listo / Entregado</span>
-                    </div>
-                </div>
+                </template>
                 
-                <p class="text-center mt-8 text-sm text-gray-400 italic">
-                    <span x-show="['PENDING', 'CONFIRMED'].includes(trackData.status)">Hemos recibido tu pedido. Pronto comenzaremos a prepararlo.</span>
-                    <span x-show="trackData.status === 'PREPARING'">Estamos trabajando en tu pedido ahora mismo.</span>
-                    <span x-show="trackData.status === 'READY'">Tu pedido está listo para ser entregado.</span>
-                    <span x-show="trackData.status === 'DELIVERED'">Tu pedido ha sido entregado. ¡Gracias por tu compra!</span>
+                <p class="text-center mt-8 text-sm text-gray-300 font-medium leading-relaxed">
+                    <span x-show="['PENDING', 'CONFIRMED'].includes(trackData.status)">Hemos recibido tu pedido. Pronto comenzaremos a prepararlo en cocina.</span>
+                    <span x-show="trackData.status === 'PREPARING'">👨‍🍳 Estamos preparando tus productos ahora mismo.</span>
+                    <span x-show="trackData.status === 'READY' && trackData.order_type === 'DELIVERY'">🛵 El domiciliario ya está en despacho con tu pedido hacia tu dirección.</span>
+                    <span x-show="trackData.status === 'READY' && trackData.order_type !== 'DELIVERY'">🛍️ Tu pedido está listo para ser retirado en caja o servido en mesa.</span>
+                    <span x-show="trackData.status === 'DELIVERED' && trackData.order_type === 'DELIVERY'">🎉 ¡Tu pedido ha sido entregado en tu dirección! ¡Buen provecho!</span>
+                    <span x-show="trackData.status === 'DELIVERED' && trackData.order_type !== 'DELIVERY'">🎉 ¡Tu pedido ha sido entregado! ¡Gracias por tu compra!</span>
                 </p>
 
                 <!-- Cancellation Reason Box -->
@@ -595,18 +633,29 @@
                 
                 getProgressPercentage() {
                     const st = this.trackData.status;
+                    const isDelivery = this.trackData.order_type === 'DELIVERY';
                     if (st === 'PENDING' || st === 'CONFIRMED') return 10;
-                    if (st === 'PREPARING') return 50;
-                    if (st === 'READY' || st === 'DELIVERED') return 100;
+                    if (st === 'PREPARING') return isDelivery ? 38 : 50;
+                    if (st === 'READY') return isDelivery ? 70 : 100;
+                    if (st === 'DELIVERED') return 100;
                     return 0;
                 },
                 
                 isStepActive(step) {
                     const st = this.trackData.status;
-                    if (step === 1 && ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'DELIVERED'].includes(st)) return true;
-                    if (step === 2 && ['PREPARING', 'READY', 'DELIVERED'].includes(st)) return true;
-                    if (step === 3 && ['READY', 'DELIVERED'].includes(st)) return true;
-                    return false;
+                    const isDelivery = this.trackData.order_type === 'DELIVERY';
+                    if (isDelivery) {
+                        if (step === 1 && ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'DELIVERED'].includes(st)) return true;
+                        if (step === 2 && ['PREPARING', 'READY', 'DELIVERED'].includes(st)) return true;
+                        if (step === 3 && ['READY', 'DELIVERED'].includes(st)) return true;
+                        if (step === 4 && st === 'DELIVERED') return true;
+                        return false;
+                    } else {
+                        if (step === 1 && ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'DELIVERED'].includes(st)) return true;
+                        if (step === 2 && ['PREPARING', 'READY', 'DELIVERED'].includes(st)) return true;
+                        if (step === 3 && ['READY', 'DELIVERED'].includes(st)) return true;
+                        return false;
+                    }
                 }
             }
         }

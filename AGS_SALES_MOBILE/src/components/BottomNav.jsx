@@ -1,18 +1,19 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Home, Package, ShoppingCart, FileText, BarChart3
+  Home, Package, ShoppingCart, FileText, BarChart3, Truck
 } from 'lucide-react';
 import { triggerHaptic } from '../lib/notifications';
 
 import { hasPermission } from '../lib/permissionsConfig';
 
 const NAV_ITEMS = [
-  { path: '/',          icon: Home,         label: 'Inicio'      },
-  { path: '/inventory', icon: Package,      label: 'Productos'   },
-  { path: '/pos',       icon: ShoppingCart, label: 'Vender'      },
-  { path: '/sales',     icon: FileText,     label: 'Pedidos'     },
-  { path: '/reports',   icon: BarChart3,    label: 'Estadísticas'},
+  { path: '/',               icon: Home,         label: 'Inicio'      },
+  { path: '/catalog-orders', icon: Truck,        label: 'Despachos'   },
+  { path: '/inventory',      icon: Package,      label: 'Productos'   },
+  { path: '/pos',            icon: ShoppingCart, label: 'Vender'      },
+  { path: '/sales',          icon: FileText,     label: 'Historial'   },
+  { path: '/reports',        icon: BarChart3,    label: 'Estadísticas'},
 ];
 
 export default function BottomNav({ user }) {
@@ -22,6 +23,7 @@ export default function BottomNav({ user }) {
   // Roles that can see each tab
   const canAccess = (path) => {
     if (path === '/') return true;
+    if (path === '/catalog-orders') return hasPermission(user, 'catalog_orders.access') || user?.role === 'DELIVERY';
     if (path === '/inventory') return hasPermission(user, 'inventory.access');
     if (path === '/pos') return hasPermission(user, 'pos.access');
     if (path === '/sales') return hasPermission(user, 'sales.view_history');

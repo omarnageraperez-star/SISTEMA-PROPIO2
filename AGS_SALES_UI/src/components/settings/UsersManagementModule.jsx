@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
 import { 
   Users, Plus, Shield, ShieldAlert, Edit, X, Zap, Sliders, AlertCircle, 
   RotateCcw, Check, ShoppingCart, Package, Wallet, Users as UsersIcon, 
-  Truck, BarChart2, Settings, Lock, Eye, CheckCircle2, ChevronRight 
+  Truck, BarChart2, Settings, Lock, Eye, CheckCircle2, ChevronRight, ShoppingBag
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { ROLE_CHOICES, PERMISSION_MODULES, ROLE_PRESETS } from '../../lib/permissionsConfig';
 
 const MODULE_ICONS = {
   pos: ShoppingCart,
+  catalog_orders: ShoppingBag,
   inventory: Package,
   cash: Wallet,
   sales_crm: UsersIcon,

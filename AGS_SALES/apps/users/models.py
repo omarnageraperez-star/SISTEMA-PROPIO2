@@ -8,6 +8,7 @@ class User(AbstractUser):
         ('CASHIER', 'Cajero'),
         ('USER', 'Usuario'),
         ('SUPPLIER', 'Proveedor'),
+        ('DELIVERY', 'Domiciliario'),
     ]
     
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='USER')

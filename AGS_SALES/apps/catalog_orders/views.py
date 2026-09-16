@@ -247,9 +247,13 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
         return Response({
             'order_number': order.order_number,
             'status': order.status,
+            'order_type': order.order_type,
             'customer_name': order.customer_name,
+            'customer_address': order.customer_address or '',
             'total': order.total,
             'created_at': order.created_at,
+            'confirmed_at': order.confirmed_at,
+            'delivered_at': order.delivered_at,
             'notes': order.notes or '',
         })
     

@@ -1005,7 +1005,7 @@ function AppRoutes({ auth, onLogout, onSettingsUpdate, licenseStatusInfo, showWa
         </div>
       )}
       <Routes>
-        <Route path="/" element={<Dashboard auth={auth} />} />
+        <Route path="/" element={user?.role === 'DELIVERY' ? <Navigate to="/catalog-orders" replace /> : <Dashboard auth={auth} />} />
         <Route path="/inventory" element={canAccessInventory ? <Inventory auth={auth} /> : <Navigate to="/" replace />} />
         <Route path="/pos" element={
           canAccessPOS ? (
