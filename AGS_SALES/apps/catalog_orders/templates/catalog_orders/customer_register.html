@@ -81,13 +81,14 @@
     </div>
 
     <script>
-        const API_URL = '/api/catalog-orders/';
+        const API_URL = '/api/catalog-orders/customer-auth/';
         
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const password = document.getElementById('password').value;
             const password_confirm = document.getElementById('password_confirm').value;
             const errorDiv = document.getElementById('error');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
             
             if (password !== password_confirm) {
                 errorDiv.textContent = 'Las contraseñas no coinciden';
@@ -106,18 +107,23 @@
                 password_confirm: password_confirm
             };
             
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creando cuenta...';
+            
             try {
-                const response = await fetch(API_URL + 'auth/register/', {
+                const response = await fetch(API_URL + 'register/', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    credentials: 'include',
                     body: JSON.stringify(data)
                 });
                 
                 const result = await response.json();
                 
                 if (response.ok) {
-                    localStorage.setItem('customerToken', result.token);
-                    localStorage.setItem('customerUser', JSON.stringify(result.user));
                     window.location.href = '/catalogo/cliente/';
                 } else {
                     errorDiv.textContent = result.error || Object.values(result).flat().join(', ');
@@ -126,8 +132,17 @@
             } catch (err) {
                 errorDiv.textContent = 'Error de conexión';
                 errorDiv.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Crear Cuenta';
             }
         });
+        
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
     </script>
 </body>
 </html>

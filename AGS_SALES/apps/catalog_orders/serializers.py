@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from decimal import Decimal
+from django.contrib.auth import authenticate
 from .models import Table, CatalogOrder, CatalogOrderItem, CustomerUser
 from apps.inventory.models import Product
 from apps.inventory.serializers import ProductSerializer
@@ -112,3 +113,53 @@ class UpdateCatalogOrderStatusSerializer(serializers.ModelSerializer):
         if self.instance and self.instance.status == value:
             raise serializers.ValidationError(f"El pedido ya está en estado {value}")
         return value
+
+class CustomerRegisterSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+    password_confirm = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+    
+    class Meta:
+        model = CustomerUser
+        fields = ['username', 'email', 'first_name', 'last_name', 'phone', 'address', 'password', 'password_confirm']
+        extra_kwargs = {
+            'email': {'required': True}
+        }
+    
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password_confirm']:
+            raise serializers.ValidationError({"password_confirm": "Las contraseñas no coinciden"})
+        return attrs
+    
+    def create(self, validated_data):
+        validated_data.pop('password_confirm')
+        password = validated_data.pop('password')
+        user = CustomerUser.objects.create_user(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user
+
+class CustomerLoginSerializer(serializers.Serializer):
+    username = serializers.CharField(required=True)
+    password = serializers.CharField(required=True, write_only=True, style={'input_type': 'password'})
+    
+    def validate(self, attrs):
+        username = attrs.get('username')
+        password = attrs.get('password')
+        
+        if username and password:
+            user = authenticate(username=username, password=password)
+            if not user:
+                raise serializers.ValidationError({"username": "Credenciales inválidas"})
+            if not user.is_active:
+                raise serializers.ValidationError({"username": "Usuario inactivo"})
+            attrs['user'] = user
+        else:
+            raise serializers.ValidationError({"username": "Se requieren username y password"})
+        
+        return attrs
+
+class CustomerProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomerUser
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone', 'address', 'is_verified', 'created_at']
+        read_only_fields = ['id', 'is_verified', 'created_at']

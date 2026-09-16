@@ -106,25 +106,19 @@
             return {
                 loading: true,
                 orders: [],
-                token: localStorage.getItem('customerToken'),
                 
                 async initDashboard() {
-                    if (!this.token) {
-                        window.location.href = '/catalogo/login/';
-                        return;
-                    }
-                    
                     await this.fetchOrders();
                 },
                 
                 async fetchOrders() {
                     try {
-                        const response = await fetch('/api/catalog-orders/orders/?customer_user=' + this.getUserId(), {
-                            headers: { 'Authorization': `Token ${this.token}` }
+                        const response = await fetch('/api/catalog-orders/customer-auth/my-orders/', {
+                            credentials: 'include'
                         });
                         
                         if (response.status === 401) {
-                            this.logout();
+                            window.location.href = '/catalogo/login/';
                             return;
                         }
                         
@@ -135,11 +129,6 @@
                     } finally {
                         this.loading = false;
                     }
-                },
-                
-                getUserId() {
-                    const user = JSON.parse(localStorage.getItem('customerUser') || '{}');
-                    return user.id;
                 },
                 
                 formatDate(dateStr) {
@@ -183,9 +172,7 @@
                 },
                 
                 logout() {
-                    localStorage.removeItem('customerToken');
-                    localStorage.removeItem('customerUser');
-                    window.location.href = '/catalogo/login/';
+                    window.location.href = '/catalogo/logout/';
                 }
             }
         }

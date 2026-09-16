@@ -6,12 +6,16 @@ from django.utils import timezone
 from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import login
 from .models import Table, CatalogOrder, CatalogOrderItem, CustomerUser
 from .serializers import (
     TableSerializer, 
     CatalogOrderSerializer, 
     CreateCatalogOrderSerializer,
-    UpdateCatalogOrderStatusSerializer
+    UpdateCatalogOrderStatusSerializer,
+    CustomerRegisterSerializer,
+    CustomerLoginSerializer,
+    CustomerProfileSerializer
 )
 from apps.inventory.models import Product
 from apps.users.models import SystemSetting
@@ -494,10 +498,89 @@ def customer_dashboard_view(request):
         from django.http import HttpResponseForbidden
         return HttpResponseForbidden("Acceso no autorizado")
     
+    # Obtener pedidos del cliente
+    orders = CatalogOrder.objects.filter(customer_user=request.user).order_by('-created_at')[:10]
     settings = SystemSetting.objects.first()
+    
     context = {
         'store_name': settings.store_name if settings else 'AGS SALES',
         'store_logo': settings.store_logo if settings else None,
+        'orders': orders,
         'customer': request.user
     }
     return render(request, 'catalog_orders/customer_dashboard.html', context)
+
+def customer_logout_view(request):
+    """Logout de cliente"""
+    from django.contrib.auth import logout
+    logout(request)
+    from django.shortcuts import redirect
+    return redirect('/catalogo/login/')
+
+class CustomerAuthViewSet(viewsets.ViewSet):
+    """ViewSet para autenticación de clientes"""
+    permission_classes = [AllowAny]
+    
+    @action(detail=False, methods=['post'], url_path='register')
+    def register(self, request):
+        """Registrar nuevo cliente"""
+        serializer = CustomerRegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            # Auto login después del registro
+            login(request, user)
+            return Response({
+                'message': 'Registro exitoso',
+                'user': CustomerProfileSerializer(user).data
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['post'], url_path='login')
+    def login(self, request):
+        """Login de cliente"""
+        serializer = CustomerLoginSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data['user']
+            login(request, user)
+            return Response({
+                'message': 'Login exitoso',
+                'user': CustomerProfileSerializer(user).data
+            })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'], url_path='profile')
+    def profile(self, request):
+        """Obtener perfil del cliente autenticado"""
+        if not request.user.is_authenticated or not isinstance(request.user, CustomerUser):
+            return Response(
+                {'error': 'No autenticado'}, 
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        serializer = CustomerProfileSerializer(request.user)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['put'], url_path='profile')
+    def update_profile(self, request):
+        """Actualizar perfil del cliente autenticado"""
+        if not request.user.is_authenticated or not isinstance(request.user, CustomerUser):
+            return Response(
+                {'error': 'No autenticado'}, 
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        serializer = CustomerProfileSerializer(request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'], url_path='my-orders')
+    def my_orders(self, request):
+        """Obtener pedidos del cliente autenticado"""
+        if not request.user.is_authenticated or not isinstance(request.user, CustomerUser):
+            return Response(
+                {'error': 'No autenticado'}, 
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        orders = CatalogOrder.objects.filter(customer_user=request.user).order_by('-created_at')
+        serializer = CatalogOrderSerializer(orders, many=True)
+        return Response(serializer.data)

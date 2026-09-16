@@ -128,6 +128,17 @@
                     <p class="text-sm text-orange-400 font-bold tracking-wide">Catálogo Premium</p>
                 </div>
                 <div class="flex gap-2">
+                    <!-- Customer Auth Button -->
+                    <template x-if="!isAuthenticated">
+                        <button @click="window.location.href='/catalogo/login/'" class="bg-gradient-to-br from-emerald-500 to-emerald-600 border border-emerald-400 text-white px-4 py-3.5 rounded-2xl shadow-xl hover:border-emerald-300 transition-all font-bold text-sm">
+                            Iniciar Sesión
+                        </button>
+                    </template>
+                    <template x-if="isAuthenticated">
+                        <button @click="window.location.href='/catalogo/cliente/'" class="bg-gradient-to-br from-emerald-500 to-emerald-600 border border-emerald-400 text-white px-4 py-3.5 rounded-2xl shadow-xl hover:border-emerald-300 transition-all font-bold text-sm">
+                            Mis Pedidos
+                        </button>
+                    </template>
                     <!-- History Button -->
                     <button @click="showHistory = true" class="relative bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 text-white p-3.5 rounded-2xl shadow-xl hover:border-orange-500 transition-all group">
                         <svg class="w-6 h-6 text-gray-300 group-hover:text-orange-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -641,7 +652,7 @@
                 showCart: false,
                 showOrderForm: false,
                 isSubmitting: false,
-                isAuthenticated: !!localStorage.getItem('customerToken'),
+                isAuthenticated: false,
                 
                 // History State
                 showHistory: false,
@@ -681,6 +692,7 @@
                 },
                 
                 initApp(tableId) {
+                    this.checkAuth();
                     this.checkBusinessHours();
                     setInterval(() => this.checkBusinessHours(), 60000); // Re-check every minute
 
@@ -719,6 +731,29 @@
                         // Same time (e.g. 00:00 to 00:00) -> 24 hours open
                         this.isClosed = false;
                     }
+                },
+
+                async checkAuth() {
+                    try {
+                        const response = await fetch('/api/catalog-orders/customer-auth/profile/', {
+                            credentials: 'include'
+                        });
+                        if (response.ok) {
+                            this.isAuthenticated = true;
+                        } else {
+                            this.isAuthenticated = false;
+                        }
+                    } catch (e) {
+                        this.isAuthenticated = false;
+                    }
+                },
+
+                getCsrfToken() {
+                    const name = 'csrftoken';
+                    const value = `; ${document.cookie}`;
+                    const parts = value.split(`; ${name}=`);
+                    if (parts.length === 2) return parts.pop().split(';').shift();
+                    return '';
                 },
                 
                 get cartTotal() {
@@ -759,10 +794,26 @@
                     this.isSubmitting = true;
                     try {
                         const apiUrl = window.location.origin + '/api/catalog-orders/orders/';
-                        const customerUser = JSON.parse(localStorage.getItem('customerUser') || 'null');
+                        
+                        // Obtener perfil del cliente autenticado si existe
+                        let customerUserId = null;
+                        if (this.isAuthenticated) {
+                            try {
+                                const profileResponse = await fetch('/api/catalog-orders/customer-auth/profile/', {
+                                    credentials: 'include'
+                                });
+                                if (profileResponse.ok) {
+                                    const profileData = await profileResponse.json();
+                                    customerUserId = profileData.id;
+                                }
+                            } catch (e) {
+                                console.error('Error getting customer profile:', e);
+                            }
+                        }
+                        
                         const payload = {
                             table: this.orderForm.table_id || null,
-                            customer_user: customerUser ? customerUser.id : null,
+                            customer_user: customerUserId,
                             customer_name: this.orderForm.customer_name,
                             customer_phone: this.orderForm.customer_phone,
                             customer_address: this.orderForm.customer_address,
@@ -777,14 +828,13 @@
                             }))
                         };
                         
-                        const headers = { 'Content-Type': 'application/json' };
-                        if (localStorage.getItem('customerToken')) {
-                            headers['Authorization'] = `Token ${localStorage.getItem('customerToken')}`;
-                        }
-                        
                         const response = await fetch(apiUrl, {
                             method: 'POST',
-                            headers: headers,
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': this.getCsrfToken()
+                            },
+                            credentials: 'include',
                             body: JSON.stringify(payload)
                         });
                         
