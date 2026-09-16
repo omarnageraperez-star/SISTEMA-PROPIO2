@@ -8,6 +8,7 @@ import TopBar from '../components/TopBar';
 import { apiRequest, apiUrl, parseError, formatCurrency } from '../lib/api';
 import { DarkSwal, Toast } from '../lib/swal';
 import { sendNativeNotification } from '../lib/notifications';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 const STATUS_CONFIG = {
   'PENDING': { color: '#f59e0b', label: 'Pendiente', icon: Clock },
@@ -137,14 +138,55 @@ export default function CatalogOrders({ auth, onLogout }) {
     if (!result.isConfirmed) return;
 
     try {
-      const res = await apiRequest(
-        apiUrl(auth.apiUrl, `catalog-orders/orders/${order.id}/update-status/`),
-        {
+      let requestBody;
+      let headers = {
+        'Authorization': `Token ${auth.token}`,
+      };
+
+      if (isDeliverAction) {
+        try {
+          const photo = await Camera.getPhoto({
+            quality: 70,
+            allowEditing: false,
+            resultType: CameraResultType.Uri,
+            source: CameraSource.Camera,
+          });
+
+          if (photo.webPath) {
+            const response = await fetch(photo.webPath);
+            const blob = await response.blob();
+            requestBody = new FormData();
+            requestBody.append('status', newStatus);
+            requestBody.append('processed_by', auth.user?.id);
+            requestBody.append('delivery_photo', blob, 'delivery.jpg');
+          }
+        } catch (e) {
+          console.log('User cancelled camera or error:', e);
+          // Opcional: ¿forzar la foto? Si es requerida:
+          // DarkSwal.fire('Error', 'La foto de evidencia es obligatoria', 'error');
+          // return;
+        }
+      }
+
+      let res;
+      if (requestBody instanceof FormData) {
+        // Enviar FormData
+        res = await fetch(apiUrl(auth.apiUrl, `catalog-orders/orders/${order.id}/update-status/`), {
           method: 'PATCH',
-          body: JSON.stringify({ status: newStatus, processed_by: auth.user?.id }),
-        },
-        auth.token
-      );
+          headers: headers,
+          body: requestBody,
+        });
+      } else {
+        // Fallback a JSON normal si no hay foto o es otro estado
+        res = await apiRequest(
+          apiUrl(auth.apiUrl, `catalog-orders/orders/${order.id}/update-status/`),
+          {
+            method: 'PATCH',
+            body: JSON.stringify({ status: newStatus, processed_by: auth.user?.id }),
+          },
+          auth.token
+        );
+      }
 
       if (res.ok) {
         Toast.fire({ icon: 'success', title: isDeliverAction ? '¡Pedido marcado como Entregado!' : 'Estado actualizado' });
@@ -157,6 +199,7 @@ export default function CatalogOrders({ auth, onLogout }) {
         DarkSwal.fire('Error', err, 'error');
       }
     } catch (e) {
+      console.error(e);
       DarkSwal.fire('Error', 'Error de conexión', 'error');
     }
   };

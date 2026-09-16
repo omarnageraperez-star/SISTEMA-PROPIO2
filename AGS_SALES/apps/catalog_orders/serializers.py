@@ -29,7 +29,7 @@ class CatalogOrderSerializer(serializers.ModelSerializer):
             'customer_phone', 'customer_address', 'order_type', 'status', 
             'payment_method', 'notes', 'subtotal', 'tax', 'total', 
             'created_at', 'confirmed_at', 'delivered_at', 'processed_by', 
-            'related_sale', 'items'
+            'related_sale', 'items', 'delivery_photo', 'rating', 'customer_feedback'
         ]
         read_only_fields = ['order_number', 'subtotal', 'tax', 'total', 'created_at', 'confirmed_at', 'delivered_at']
 

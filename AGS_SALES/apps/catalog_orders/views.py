@@ -116,6 +116,10 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
             old_notes = order.notes or ''
             prefix = '\n' if old_notes else ''
             order.notes = f"{old_notes}{prefix}CANCELADO: {cancel_reason}"
+
+        # Evidencia de entrega (Opcional, puede venir en la misma request PATCH)
+        if request.FILES.get('delivery_photo'):
+            order.delivery_photo = request.FILES['delivery_photo']
         
         # Si se confirma el pedido, descontar inventario y convertir a venta
         if new_status == 'CONFIRMED' and old_status == 'PENDING':
@@ -233,6 +237,29 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
         
         return Response(CatalogOrderSerializer(order).data)
     
+    @action(detail=True, methods=['post'], url_path='submit-rating', permission_classes=[AllowAny])
+    def submit_rating(self, request, pk=None):
+        """Endpoint público para calificar un pedido entregado"""
+        try:
+            order = self.get_object()
+            
+            if order.status != 'DELIVERED':
+                return Response({'error': 'Solo se pueden calificar pedidos entregados'}, status=status.HTTP_400_BAD_REQUEST)
+                
+            rating = request.data.get('rating')
+            feedback = request.data.get('customer_feedback', '')
+            
+            if not rating or not str(rating).isdigit() or int(rating) < 1 or int(rating) > 5:
+                return Response({'error': 'La calificación debe ser un número del 1 al 5'}, status=status.HTTP_400_BAD_REQUEST)
+                
+            order.rating = int(rating)
+            order.customer_feedback = feedback
+            order.save(update_fields=['rating', 'customer_feedback'])
+            
+            return Response({'message': 'Calificación enviada con éxito'})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     @action(detail=False, methods=['get'], permission_classes=[])
     def track(self, request):
         """Endpoint público para consultar estado del pedido sin auth"""
