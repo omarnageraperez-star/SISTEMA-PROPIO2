@@ -74,6 +74,16 @@ class Sale(models.Model):
     class Meta:
         verbose_name = "Venta (POS)"
         verbose_name_plural = "Ventas (POS)"
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['customer']),
+            models.Index(fields=['warehouse']),
+            models.Index(fields=['is_credit']),
+            models.Index(fields=['credit_status']),
+            models.Index(fields=['created_at']),
+            models.Index(fields=['-created_at']),
+            models.Index(fields=['invoice_number']),
+        ]
 
     def __str__(self):
         return f"Sale {self.id} - {self.total}"

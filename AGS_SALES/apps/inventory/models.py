@@ -57,8 +57,13 @@ class Product(models.Model):
     def save(self, *args, **kwargs):
         try:
             from apps.users.models import SystemSetting
-            decimals_setting = SystemSetting.objects.filter(key='currency_decimals').first()
-            decimals = int(decimals_setting.value) if decimals_setting and decimals_setting.value.isdigit() else 2
+            from django.core.cache import cache
+            decimals_cache_key = 'currency_decimals'
+            decimals = cache.get(decimals_cache_key)
+            if decimals is None:
+                decimals_setting = SystemSetting.objects.filter(key='currency_decimals').first()
+                decimals = int(decimals_setting.value) if decimals_setting and decimals_setting.value.isdigit() else 2
+                cache.set(decimals_cache_key, decimals, timeout=300)  # Cache for 5 minutes
         except Exception:
             decimals = 2
             
@@ -130,6 +135,13 @@ class Kardex(models.Model):
     class Meta:
         verbose_name = "Movimiento Kardex"
         verbose_name_plural = "Movimientos Kardex"
+        indexes = [
+            models.Index(fields=['product']),
+            models.Index(fields=['warehouse']),
+            models.Index(fields=['movement_type']),
+            models.Index(fields=['date']),
+            models.Index(fields=['-date']),
+        ]
 
     def __str__(self):
         return f"{self.movement_type} - {self.product.name} ({self.quantity})"

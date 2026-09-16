@@ -24,6 +24,11 @@ class Customer(models.Model):
     class Meta:
         verbose_name = "Cliente"
         verbose_name_plural = "Clientes"
+        indexes = [
+            models.Index(fields=['email']),
+            models.Index(fields=['document_number']),
+            models.Index(fields=['is_active']),
+        ]
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"

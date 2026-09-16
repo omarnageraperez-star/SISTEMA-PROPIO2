@@ -32,7 +32,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 class ProductViewSet(viewsets.ModelViewSet):
-    queryset = Product.objects.all().select_related('category', 'brand', 'provider')
+    queryset = Product.objects.all().select_related('category', 'brand', 'provider').prefetch_related('stocks')
     serializer_class = ProductSerializer
     permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['category', 'brand', 'is_active']
@@ -151,7 +151,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             has_inventory_control=True
         ).filter(
             models.Q(stock__lte=models.F('min_stock')) | models.Q(stock__lte=5)
-        )
+        ).select_related('category', 'brand', 'provider')
         serializer = self.get_serializer(products, many=True)
         return Response(serializer.data)
 
@@ -212,11 +212,17 @@ def catalog_view(request):
     """
     Public view that renders the Digital Catalog HTML template
     """
-    products = Product.objects.filter(is_active=True)
+    products = Product.objects.filter(is_active=True).select_related('category', 'brand', 'provider')
     categories = Category.objects.all()
     
-    # Get settings for store logo/name
-    settings = {s.key: s.value for s in SystemSetting.objects.all()}
+    # Get settings for store logo/name - optimized with only() to reduce data transfer
+    from django.core.cache import cache
+    settings_cache_key = 'catalog_settings'
+    settings = cache.get(settings_cache_key)
+    if settings is None:
+        settings = {s.key: s.value for s in SystemSetting.objects.all().only('key', 'value')}
+        cache.set(settings_cache_key, settings, timeout=300)  # Cache for 5 minutes
+    
     store_name = settings.get('store_name', 'Mi Tienda')
     store_logo = settings.get('company_logo', '')
     currency_code = settings.get('currency_code', 'COP')

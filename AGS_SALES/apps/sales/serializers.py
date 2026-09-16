@@ -53,8 +53,13 @@ class SaleSerializer(serializers.ModelSerializer):
         # Prevent 400 validation error if the frontend sends a CashRegister ID instead of a valid Warehouse ID
         if 'warehouse' in data and data['warehouse'] is not None:
             from apps.inventory.models import Warehouse
-            if not Warehouse.objects.filter(id=data['warehouse']).exists():
+            from django.core.cache import cache
+            warehouse_cache_key = 'default_warehouse'
+            first_wh = cache.get(warehouse_cache_key)
+            if first_wh is None:
                 first_wh = Warehouse.objects.first()
+                cache.set(warehouse_cache_key, first_wh, timeout=300)  # Cache for 5 minutes
+            if not Warehouse.objects.filter(id=data['warehouse']).exists():
                 data['warehouse'] = first_wh.id if first_wh else None
         return super().to_internal_value(data)
 
@@ -106,10 +111,15 @@ class SaleSerializer(serializers.ModelSerializer):
             
             # Generate automated invoice number
             from apps.billing.models import DIANResolution
-            resolution = DIANResolution.objects.filter(
-                resolution_type=sale.invoice_type,
-                is_active=True
-            ).first()
+            from django.core.cache import cache
+            resolution_cache_key = f'dian_resolution_{sale.invoice_type}'
+            resolution = cache.get(resolution_cache_key)
+            if resolution is None:
+                resolution = DIANResolution.objects.filter(
+                    resolution_type=sale.invoice_type,
+                    is_active=True
+                ).first()
+                cache.set(resolution_cache_key, resolution, timeout=60)  # Cache for 1 minute
             
             if resolution:
                 if resolution.current_number == 0:
