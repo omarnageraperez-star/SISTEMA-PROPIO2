@@ -150,8 +150,8 @@ export default function CatalogOrders({ auth, onLogout }) {
   }, []);
 
   const startPolling = () => {
-    // Verificar nuevos pedidos cada 15 segundos
-    pollingRef.current = setInterval(checkNewOrders, 15000);
+    // Verificar nuevos pedidos cada 5 segundos para actualización más rápida
+    pollingRef.current = setInterval(checkNewOrders, 5000);
   };
 
   const checkNewOrders = async () => {
