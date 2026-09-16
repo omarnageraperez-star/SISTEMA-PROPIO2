@@ -83,7 +83,18 @@
                 if (response.ok) {
                     window.location.href = '/catalogo/cliente/';
                 } else {
-                    errorDiv.textContent = data.error || data.non_field_errors?.[0] || 'Error al iniciar sesión';
+                    console.error('Login error:', data);
+                    let errorMsg = 'Error al iniciar sesión';
+                    if (data.username) {
+                        errorMsg = data.username;
+                    } else if (data.error) {
+                        errorMsg = data.error;
+                    } else if (data.non_field_errors && data.non_field_errors.length > 0) {
+                        errorMsg = data.non_field_errors[0];
+                    } else if (data.detail) {
+                        errorMsg = data.detail;
+                    }
+                    errorDiv.textContent = errorMsg;
                     errorDiv.classList.remove('hidden');
                 }
             } catch (err) {
