@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { 
   Users, Plus, Shield, ShieldAlert, Edit, X, Zap, Sliders, AlertCircle, 
   RotateCcw, Check, ShoppingCart, Package, Wallet, Users as UsersIcon, 
