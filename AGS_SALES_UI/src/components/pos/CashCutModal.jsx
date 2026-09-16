@@ -84,8 +84,17 @@ export default function CashCutModal({ isOpen, onClose, config, token, systemSet
                 const amt = parseFloat(sale.total || 0);
                 salesSum += amt;
                 salesCount++;
-                if (sale.payment_method === 'CARD') cardSum += amt;
-                else if (sale.payment_method === 'TRANSFER') transferSum += amt;
+                // Check payment methods from payments array
+                if (sale.payments && sale.payments.length > 0) {
+                  sale.payments.forEach(payment => {
+                    const pmName = payment.payment_method_name?.toLowerCase() || '';
+                    if (pmName.includes('tarjeta') || pmName.includes('card')) {
+                      cardSum += parseFloat(payment.amount || 0);
+                    } else if (pmName.includes('transferencia') || pmName.includes('transfer')) {
+                      transferSum += parseFloat(payment.amount || 0);
+                    }
+                  });
+                }
               }
             });
             setSalesTotal(salesSum);
