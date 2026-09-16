@@ -97,8 +97,11 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['patch'], url_path='update-status')
     def update_status(self, request, pk=None):
         """Actualizar estado de un pedido"""
+        from django.db import transaction
+        
         try:
-            order = self.get_object()
+            # Usar select_for_update para bloquear la fila y prevenir condiciones de carrera
+            order = CatalogOrder.objects.select_for_update().get(pk=pk)
             serializer = self.get_serializer(order, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
             
@@ -140,6 +143,9 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
             
             serializer.save()
             order.save()
+            
+            # Commit explícito de la transacción
+            transaction.commit()
             
             # WhatsApp Notification
             if new_status != old_status:
@@ -196,7 +202,9 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
         Crea una Venta completa igual que si el cajero la hubiera generado desde el POS.
         Usa el SaleSerializer para garantizar: número de factura, Kardex, turno de caja, etc.
         """
-        # Verificar que el pedido no tenga ya una venta relacionada
+        # Verificar que el pedido no tenga ya una venta relacionada (recargar desde DB para estar seguro)
+        from django.db import transaction
+        order = CatalogOrder.objects.select_for_update().get(pk=order.pk)
         if order.related_sale:
             print(f"Pedido {order.order_number} ya tiene venta relacionada {order.related_sale.id}, no se creará otra")
             return order.related_sale
@@ -274,7 +282,7 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
         # 8. Vincular la venta al pedido
         order.related_sale = sale
         order.processed_by = user
-        order.save()
+        order.save(update_fields=['related_sale', 'processed_by'])
         return sale
 
 
