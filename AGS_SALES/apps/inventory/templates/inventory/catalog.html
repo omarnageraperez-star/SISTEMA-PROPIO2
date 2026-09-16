@@ -128,17 +128,6 @@
                     <p class="text-sm text-orange-400 font-bold tracking-wide">Catálogo Premium</p>
                 </div>
                 <div class="flex gap-2">
-                    <!-- Customer Auth Button -->
-                    <template x-if="!isAuthenticated">
-                        <button @click="window.location.href='/catalogo/login/'" class="bg-gradient-to-br from-emerald-500 to-emerald-600 border border-emerald-400 text-white px-4 py-3.5 rounded-2xl shadow-xl hover:border-emerald-300 transition-all font-bold text-sm">
-                            Iniciar Sesión
-                        </button>
-                    </template>
-                    <template x-if="isAuthenticated">
-                        <button @click="window.location.href='/catalogo/cliente/'" class="bg-gradient-to-br from-emerald-500 to-emerald-600 border border-emerald-400 text-white px-4 py-3.5 rounded-2xl shadow-xl hover:border-emerald-300 transition-all font-bold text-sm">
-                            Mis Pedidos
-                        </button>
-                    </template>
                     <!-- History Button -->
                     <button @click="showHistory = true" class="relative bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 text-white p-3.5 rounded-2xl shadow-xl hover:border-orange-500 transition-all group">
                         <svg class="w-6 h-6 text-gray-300 group-hover:text-orange-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
