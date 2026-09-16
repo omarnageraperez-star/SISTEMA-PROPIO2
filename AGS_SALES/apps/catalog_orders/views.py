@@ -136,7 +136,52 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
                     pass # Evitar romper el flujo si falla la venta automática
         
         serializer.save()
+        
+        # WhatsApp Notification
+        if new_status != old_status:
+            try:
+                self._send_whatsapp_notification(order, new_status)
+            except Exception as e:
+                pass # Non-blocking
+                
         return Response(CatalogOrderSerializer(order).data)
+        
+    def _send_whatsapp_notification(self, order, status):
+        """Simula o envía notificación por WhatsApp al cliente usando un webhook configurado en sistema"""
+        if not order.customer_phone:
+            return
+            
+        import requests
+        from apps.users.models import SystemSetting
+        
+        webhook_setting = SystemSetting.objects.filter(key='whatsapp_webhook_url').first()
+        if not webhook_setting or not webhook_setting.value:
+            return
+            
+        status_msgs = {
+            'CONFIRMED': f"¡Hola {order.customer_name}! Tu pedido #{order.order_number} ha sido CONFIRMADO. Lo estamos preparando.",
+            'PREPARING': f"¡Hola {order.customer_name}! Tu pedido #{order.order_number} ya está EN COCINA.",
+            'READY': f"¡Tu pedido #{order.order_number} está LISTO! {'El domiciliario va en camino' if order.order_type == 'DELIVERY' else 'Ya puedes pasar a recogerlo'}.",
+            'DELIVERED': f"¡Tu pedido #{order.order_number} ha sido ENTREGADO! Esperamos lo disfrutes.",
+            'CANCELLED': f"Hola {order.customer_name}, lamentablemente tu pedido #{order.order_number} ha sido CANCELADO. Motivo: {order.notes}"
+        }
+        
+        msg = status_msgs.get(status)
+        if not msg:
+            return
+            
+        payload = {
+            "phone": order.customer_phone,
+            "message": msg,
+            "order_number": order.order_number,
+            "status": status
+        }
+        
+        try:
+            # Hacemos la peticion al webhook externo de WhatsApp (ej. Twilio, Meta API, Make.com)
+            requests.post(webhook_setting.value, json=payload, timeout=2)
+        except:
+            pass
     
     def _auto_convert_to_sale(self, order, user):
         """
@@ -297,6 +342,21 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
         active_orders = self.queryset.exclude(status__in=['DELIVERED', 'CANCELLED'])
         serializer = self.get_serializer(active_orders, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny])
+    def history(self, request):
+        """Endpoint público para consultar el historial de pedidos por número de teléfono"""
+        phone = request.query_params.get('phone')
+        if not phone:
+            return Response({'error': 'Número de teléfono requerido'}, status=400)
+            
+        # Buscar todos los pedidos asociados a este teléfono
+        orders = self.queryset.filter(customer_phone=phone).order_by('-created_at')
+        
+        if not orders.exists():
+            return Response({'error': 'No se encontraron pedidos con este número'}, status=404)
+            
+        return Response(CatalogOrderSerializer(orders, many=True).data)
     
     from django.views.decorators.cache import never_cache
     from django.utils.decorators import method_decorator

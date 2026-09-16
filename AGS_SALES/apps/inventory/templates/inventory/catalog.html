@@ -124,11 +124,17 @@
                     <h1 class="text-2xl font-black uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">{{ store_name }}</h1>
                     <p class="text-sm text-orange-400 font-bold tracking-wide">Catálogo Premium</p>
                 </div>
-                <!-- Cart Button -->
-                <button @click="showCart = true" class="relative bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 text-white p-3.5 rounded-2xl shadow-xl hover:border-orange-500 transition-all group">
-                    <svg class="w-6 h-6 text-gray-300 group-hover:text-orange-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                    <span x-show="cartItems.length > 0" x-text="cartItems.length" class="cart-badge absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-black w-6 h-6 rounded-full flex items-center justify-center shadow-lg shadow-red-500/40 border-2 border-gray-900"></span>
-                </button>
+                <div class="flex gap-2">
+                    <!-- History Button -->
+                    <button @click="showHistory = true" class="relative bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 text-white p-3.5 rounded-2xl shadow-xl hover:border-orange-500 transition-all group">
+                        <svg class="w-6 h-6 text-gray-300 group-hover:text-orange-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </button>
+                    <!-- Cart Button -->
+                    <button @click="showCart = true" class="relative bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 text-white p-3.5 rounded-2xl shadow-xl hover:border-orange-500 transition-all group">
+                        <svg class="w-6 h-6 text-gray-300 group-hover:text-orange-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        <span x-show="cartItems.length > 0" x-text="cartItems.length" class="cart-badge absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-black w-6 h-6 rounded-full flex items-center justify-center shadow-lg shadow-red-500/40 border-2 border-gray-900"></span>
+                    </button>
+                </div>
             </div>
 
             <!-- Search -->
@@ -414,6 +420,65 @@
             </div>
         </main>
     </div>
+    <!-- History Modal -->
+    <div x-show="showHistory" x-transition.opacity class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4" style="display: none;">
+        <div x-show="showHistory" @click.away="showHistory = false" x-transition:enter="transform scale-95 opacity-0" x-transition:enter-end="transform scale-100 opacity-100" class="glass w-full max-w-lg rounded-3xl max-h-[85vh] flex flex-col shadow-2xl border border-gray-700">
+            <div class="px-6 py-5 border-b border-gray-800/50 flex items-center justify-between">
+                <h2 class="text-xl font-black text-white tracking-tight flex items-center gap-2">
+                    <svg class="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Historial de Pedidos
+                </h2>
+                <button @click="showHistory = false" class="bg-gray-800/50 p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700 transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto flex-1">
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-gray-300 mb-2">Ingresa tu número de teléfono</label>
+                    <div class="flex gap-2">
+                        <input x-model="historyPhone" type="tel" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition-colors" placeholder="Ej: 3001234567" @keyup.enter="fetchHistory()">
+                        <button @click="fetchHistory()" :disabled="isFetchingHistory" class="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-3 rounded-xl transition-colors whitespace-nowrap">
+                            <span x-show="!isFetchingHistory">Buscar</span>
+                            <span x-show="isFetchingHistory">...</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div x-show="historyOrders.length === 0 && historyPhone !== '' && !isFetchingHistory" class="text-center py-8 text-gray-400 text-sm" style="display: none;">
+                    No encontramos pedidos con este número.
+                </div>
+
+                <div class="space-y-4">
+                    <template x-for="order in historyOrders" :key="order.id">
+                        <div class="bg-gray-800/50 border border-gray-700/50 rounded-2xl p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <span class="text-xs font-black text-orange-400 uppercase tracking-widest" x-text="'Pedido #' + order.order_number"></span>
+                                    <p class="text-white font-bold" x-text="new Date(order.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })"></p>
+                                </div>
+                                <span class="px-3 py-1 text-xs font-bold rounded-full"
+                                      :class="{
+                                          'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30': order.status === 'DELIVERED',
+                                          'bg-red-500/20 text-red-400 border border-red-500/30': order.status === 'CANCELLED',
+                                          'bg-blue-500/20 text-blue-400 border border-blue-500/30': !['DELIVERED', 'CANCELLED'].includes(order.status)
+                                      }" x-text="order.status === 'DELIVERED' ? 'Entregado' : (order.status === 'CANCELLED' ? 'Cancelado' : 'Activo')">
+                                </span>
+                            </div>
+                            <div class="text-sm text-gray-300">
+                                <p><span class="font-bold text-gray-500">Tipo:</span> <span x-text="order.order_type === 'DELIVERY' ? 'Domicilio' : (order.order_type === 'TAKEAWAY' ? 'Para llevar' : 'En mesa')"></span></p>
+                                <p><span class="font-bold text-gray-500">Total:</span> $<span x-text="order.total"></span></p>
+                            </div>
+                            <!-- Botón para ver seguimiento si está activo -->
+                            <button x-show="!['DELIVERED', 'CANCELLED'].includes(order.status)" @click="trackOrderNumber = order.order_number; isTracking = true; pollOrder(); showHistory = false" class="mt-3 w-full bg-gray-700 hover:bg-gray-600 text-white text-xs font-bold py-2 rounded-lg transition-colors">
+                                Ver Seguimiento en Vivo
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Cart Modal (Glassmorphism) -->
     <div x-show="showCart && !isTracking" x-transition.opacity class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end justify-center" style="display: none;">
@@ -552,6 +617,12 @@
                 showCart: false,
                 showOrderForm: false,
                 isSubmitting: false,
+                
+                // History State
+                showHistory: false,
+                historyPhone: '',
+                historyOrders: [],
+                isFetchingHistory: false,
                 
                 // Business Hours State
                 isClosed: false,
@@ -765,6 +836,25 @@
                         alert('Error de conexión.');
                     } finally {
                         this.isSubmittingRating = false;
+                    }
+                },
+                
+                async fetchHistory() {
+                    if (!this.historyPhone) return;
+                    this.isFetchingHistory = true;
+                    this.historyOrders = [];
+                    try {
+                        const apiUrl = window.location.origin + `/api/catalog-orders/orders/history/?phone=${encodeURIComponent(this.historyPhone)}`;
+                        const response = await fetch(apiUrl);
+                        if (response.ok) {
+                            this.historyOrders = await response.json();
+                        } else {
+                            this.historyOrders = []; // Vacío indicará que no se encontraron
+                        }
+                    } catch (error) {
+                        alert('Error de conexión al buscar historial.');
+                    } finally {
+                        this.isFetchingHistory = false;
                     }
                 },
                 

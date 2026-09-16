@@ -5328,6 +5328,20 @@ function App() {
                       </div>
                     </div>
 
+                    <div className="pt-4 border-t border-slate-200 mt-2">
+                      <h4 className="text-sm font-bold text-emerald-600 mb-2 flex items-center gap-2">
+                        <Phone size={16} /> Webhook WhatsApp (Notificaciones)
+                      </h4>
+                      <p className="text-xs text-slate-500 mb-2">Ingresa la URL del Webhook (Make.com, Twilio, etc) para enviar alertas automáticas al cliente cuando cambie el estado de su pedido.</p>
+                      <input 
+                        type="url" 
+                        className="glass-input w-full" 
+                        placeholder="https://hook.us1.make.com/..." 
+                        value={systemSettings.whatsapp_webhook_url || ''} 
+                        onChange={e => setSystemSettings({...systemSettings, whatsapp_webhook_url: e.target.value})} 
+                      />
+                    </div>
+
                     <button type="submit" className="btn-premium mt-4"><Save size={18}/> Guardar y Sincronizar</button>
                   </form>
                 </div>
