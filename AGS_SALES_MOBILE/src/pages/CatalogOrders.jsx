@@ -140,7 +140,7 @@ export default function CatalogOrders({ auth, onLogout }) {
     try {
       let requestBody;
       let headers = {
-        'Authorization': `Token ${auth.token}`,
+        'Authorization': `Bearer ${auth.token}`,
       };
 
       if (isDeliverAction) {

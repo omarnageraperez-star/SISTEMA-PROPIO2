@@ -473,6 +473,11 @@
                             <button x-show="!['DELIVERED', 'CANCELLED'].includes(order.status)" @click="trackOrderNumber = order.order_number; isTracking = true; pollOrder(); showHistory = false" class="mt-3 w-full bg-gray-700 hover:bg-gray-600 text-white text-xs font-bold py-2 rounded-lg transition-colors">
                                 Ver Seguimiento en Vivo
                             </button>
+                            <!-- Botón Volver a pedir -->
+                            <button x-show="['DELIVERED', 'CANCELLED'].includes(order.status)" @click="reorderFromHistory(order)" class="mt-3 w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white text-xs font-bold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                Volver a Pedir
+                            </button>
                         </div>
                     </template>
                 </div>
@@ -849,13 +854,34 @@
                         if (response.ok) {
                             this.historyOrders = await response.json();
                         } else {
-                            this.historyOrders = []; // Vacío indicará que no se encontraron
+                            this.historyOrders = [];
                         }
                     } catch (error) {
                         alert('Error de conexión al buscar historial.');
                     } finally {
                         this.isFetchingHistory = false;
                     }
+                },
+                
+                reorderFromHistory(order) {
+                    if (!order.items || order.items.length === 0) {
+                        alert('Este pedido no tiene productos para copiar.');
+                        return;
+                    }
+                    this.cartItems = [];
+                    order.items.forEach(item => {
+                        this.cartItems.push({
+                            id: item.product,
+                            name: item.product_name,
+                            price: parseFloat(item.unit_price),
+                            categoryId: null,
+                            quantity: item.quantity,
+                            stock: 999,
+                            has_inventory_control: false
+                        });
+                    });
+                    this.showHistory = false;
+                    this.showCart = true;
                 },
                 
                 getProgressPercentage() {

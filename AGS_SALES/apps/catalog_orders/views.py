@@ -160,7 +160,7 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
             
         status_msgs = {
             'CONFIRMED': f"¡Hola {order.customer_name}! Tu pedido #{order.order_number} ha sido CONFIRMADO. Lo estamos preparando.",
-            'PREPARING': f"¡Hola {order.customer_name}! Tu pedido #{order.order_number} ya está EN COCINA.",
+            'PREPARING': f"¡Hola {order.customer_name}! Tu pedido #{order.order_number} ya está en preparación de su pedido.",
             'READY': f"¡Tu pedido #{order.order_number} está LISTO! {'El domiciliario va en camino' if order.order_type == 'DELIVERY' else 'Ya puedes pasar a recogerlo'}.",
             'DELIVERED': f"¡Tu pedido #{order.order_number} ha sido ENTREGADO! Esperamos lo disfrutes.",
             'CANCELLED': f"Hola {order.customer_name}, lamentablemente tu pedido #{order.order_number} ha sido CANCELADO. Motivo: {order.notes}"

@@ -79,6 +79,11 @@ class CatalogOrder(models.Model):
     delivery_photo = models.ImageField(upload_to='delivery_evidence/', blank=True, null=True, verbose_name="Foto de Entrega")
     rating = models.IntegerField(blank=True, null=True, verbose_name="Calificación (1-5)")
     customer_feedback = models.TextField(blank=True, null=True, verbose_name="Comentario del Cliente")
+    
+    # Geolocalización del domiciliario (Mapa en vivo)
+    driver_lat = models.FloatField(blank=True, null=True, verbose_name="Latitud Domiciliario")
+    driver_lng = models.FloatField(blank=True, null=True, verbose_name="Longitud Domiciliario")
+    last_location_update = models.DateTimeField(blank=True, null=True, verbose_name="Última Actualización GPS")
 
     class Meta:
         verbose_name = "Pedido del Catálogo"
