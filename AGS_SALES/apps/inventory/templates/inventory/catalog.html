@@ -7,160 +7,337 @@
     <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f1f5f9; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .category-tab.active { background: linear-gradient(135deg, #f97316, #ea580c); color: white; border-color: transparent; }
+        :root {
+            --primary: #f97316;
+            --primary-dark: #ea580c;
+            --bg-color: #0f172a;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+        body { 
+            font-family: 'Outfit', sans-serif; 
+            background-color: var(--bg-color); 
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(249, 115, 22, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(14, 165, 233, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: #f8fafc; 
+        }
+        .glass { 
+            background: var(--glass-bg); 
+            backdrop-filter: blur(16px); 
+            -webkit-backdrop-filter: blur(16px); 
+            border: 1px solid var(--glass-border); 
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+        .glass-card {
+            background: linear-gradient(145deg, rgba(30,41,59,0.9) 0%, rgba(15,23,42,0.9) 100%);
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.7);
+            border-color: rgba(249, 115, 22, 0.3);
+        }
+        .category-tab {
+            background: rgba(30,41,59,0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+        .category-tab.active { 
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark)); 
+            color: white; 
+            border-color: transparent; 
+            box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
+            transform: scale(1.05);
+        }
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
         .cart-badge { animation: pulse 2s infinite; }
+        
+        /* Tracker Animations */
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes bounce-subtle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+        
+        .progress-line {
+            transition: width 1s ease-in-out, background-color 0.5s ease;
+        }
+        .step-icon {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .step-active {
+            animation: bounce-subtle 2s infinite;
+            filter: drop-shadow(0 0 10px rgba(249,115,22,0.6));
+        }
     </style>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: { primary: '#f97316' }
+                    colors: { primary: '#f97316' },
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] }
                 }
             }
         }
     </script>
 </head>
-<body class="min-h-screen flex flex-col" x-data="catalogApp()" x-init="initTable({% if selected_table %}{{ selected_table.id }}{% else %}null{% endif %})">
-    <!-- Header -->
-    <header class="glass sticky top-0 z-50 px-4 py-4 rounded-b-2xl shadow-lg border-b border-gray-800">
-        <div class="flex items-center gap-3 mb-4">
-            {% if store_logo %}
-            <img src="{{ store_logo }}" alt="Logo" class="w-12 h-12 object-contain rounded-full bg-white p-1">
-            {% else %}
-            <div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-bold text-xl">
-                {{ store_name|slice:":1" }}
-            </div>
-            {% endif %}
-            <div class="flex-1">
-                <h1 class="text-xl font-black uppercase tracking-tight">{{ store_name }}</h1>
-                <p class="text-xs text-gray-400 font-semibold">Catálogo Digital</p>
-            </div>
-            <!-- Cart Button -->
-            <button @click="showCart = true" class="relative bg-primary text-white p-3 rounded-xl shadow-lg hover:bg-orange-600 transition-all">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                <span x-show="cartItems.length > 0" x-text="cartItems.length" class="cart-badge absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center"></span>
-            </button>
-        </div>
-
-        <!-- Search -->
-        <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            </div>
-            <input x-model="search" type="text" class="w-full bg-gray-900/50 text-white border border-gray-700 rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-medium transition-all" placeholder="Buscar producto...">
-        </div>
-    </header>
-
-    <!-- Categories -->
-    <div class="px-4 py-4">
-        <div class="flex gap-2 overflow-x-auto hide-scroll pb-2">
-            <button @click="selectedCategory = 'all'" 
-                    :class="{'active': selectedCategory === 'all'}"
-                    class="category-tab px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap bg-gray-800 text-gray-300 border border-gray-700 transition-all shadow-sm">
-                🏷️ Todos
-            </button>
-            {% for cat in categories %}
-            <button @click="selectedCategory = '{{ cat.id }}'" 
-                    :class="{'active': selectedCategory === '{{ cat.id }}'}"
-                    class="category-tab px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap bg-gray-800 text-gray-300 border border-gray-700 transition-all shadow-sm">
-                📦 {{ cat.name }}
-            </button>
-            {% endfor %}
-        </div>
-    </div>
-
-    <!-- Products Grid -->
-    <main class="flex-1 px-4 pb-24">
-        <div class="grid grid-cols-2 gap-3" id="products-grid">
-            {% for product in products %}
-            <div class="glass rounded-2xl p-3 flex flex-col justify-between relative product-card"
-                 x-show="(selectedCategory === 'all' || selectedCategory === '{{ product.category.id }}') && ('{{ product.name|lower }}'.includes(search.toLowerCase()))">
-                
-                {% if product.has_inventory_control and product.stock <= 0 %}
-                <div class="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md z-10 uppercase tracking-widest">
-                    Agotado
+<body class="min-h-screen flex flex-col" x-data="catalogApp()" x-init="initApp({% if selected_table %}{{ selected_table.id }}{% else %}null{% endif %})">
+    
+    <!-- MAIN CATALOG VIEW -->
+    <div x-show="!isTracking" x-transition.opacity.duration.500ms class="flex-1 flex flex-col">
+        <!-- Header -->
+        <header class="glass sticky top-0 z-40 px-4 py-5 rounded-b-3xl mb-4">
+            <div class="flex items-center gap-4 mb-5">
+                {% if store_logo %}
+                <img src="{{ store_logo }}" alt="Logo" class="w-14 h-14 object-contain rounded-2xl bg-white/5 p-1 border border-white/10 shadow-lg">
+                {% else %}
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-orange-500/30">
+                    {{ store_name|slice:":1" }}
                 </div>
                 {% endif %}
-
-                <div class="mb-3 {% if product.has_inventory_control and product.stock <= 0 %}opacity-40 grayscale{% endif %}">
-                    {% if product.image %}
-                    <div class="w-full h-24 bg-white rounded-xl mb-2 flex items-center justify-center p-1 overflow-hidden">
-                        <img src="{{ product.image }}" alt="{{ product.name }}" class="w-full h-full object-contain">
-                    </div>
-                    {% else %}
-                    <div class="w-full h-24 bg-gray-800 rounded-xl mb-2 flex items-center justify-center border border-gray-700">
-                        <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                    </div>
-                    {% endif %}
-                    <div class="flex justify-between items-start mt-2">
-                        <h3 class="text-sm font-bold text-gray-100 leading-tight pr-2">{{ product.name }}</h3>
-                        {% if product.has_inventory_control %}
-                        <span class="text-[9px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded font-bold whitespace-nowrap">Stock: {{ product.stock }}</span>
-                        {% endif %}
-                    </div>
+                <div class="flex-1">
+                    <h1 class="text-2xl font-black uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">{{ store_name }}</h1>
+                    <p class="text-sm text-orange-400 font-bold tracking-wide">Catálogo Premium</p>
                 </div>
-                
-                <div class="flex items-end justify-between {% if product.has_inventory_control and product.stock <= 0 %}opacity-40 grayscale{% endif %}">
-                    <div>
-                        <p class="text-[10px] text-gray-500 font-semibold mb-0.5">{{ currency_code }}</p>
-                        <p class="text-lg font-black text-primary leading-none">{{ currency_symbol }}{{ product.price_sell|floatformat:"0" }}</p>
-                    </div>
-                    <button @click="addToCart({{ product.id }}, '{{ product.name|escapejs }}', {{ product.price_sell }}, {{ product.category.id|default:'null' }}, {{ product.stock|default:0 }}, {% if product.has_inventory_control %}true{% else %}false{% endif %})"
-                            {% if product.has_inventory_control and product.stock <= 0 %}disabled{% endif %}
-                            class="bg-primary text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-orange-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                        + Agregar
-                    </button>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </main>
-
-    <!-- Cart Modal -->
-    <div x-show="showCart" x-transition.opacity class="fixed inset-0 bg-black/80 z-50 flex items-end justify-center" style="display: none;">
-        <div x-show="showCart" x-transition:enter="transform translate-y-full" x-transition:enter-end="transform translate-y-0" x-transition:leave="transform translate-y-0" x-transition:leave-end="transform translate-y-full" class="glass w-full max-w-lg rounded-t-3xl max-h-[90vh] overflow-hidden flex flex-col">
-            <!-- Cart Header -->
-            <div class="p-4 border-b border-gray-700 flex items-center justify-between">
-                <h2 class="text-xl font-black text-white">🛒 Tu Pedido</h2>
-                <button @click="showCart = false" class="text-gray-400 hover:text-white">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                <!-- Cart Button -->
+                <button @click="showCart = true" class="relative bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 text-white p-3.5 rounded-2xl shadow-xl hover:border-orange-500 transition-all group">
+                    <svg class="w-6 h-6 text-gray-300 group-hover:text-orange-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    <span x-show="cartItems.length > 0" x-text="cartItems.length" class="cart-badge absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-black w-6 h-6 rounded-full flex items-center justify-center shadow-lg shadow-red-500/40 border-2 border-gray-900"></span>
                 </button>
             </div>
 
-            <!-- Cart Items -->
-            <div class="flex-1 overflow-y-auto p-4">
-                <div x-show="cartItems.length === 0" class="text-center py-12">
-                    <svg class="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
-                    <p class="text-gray-400 font-semibold">Tu carrito está vacío</p>
+            <!-- Search -->
+            <div class="relative group">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <svg class="w-5 h-5 text-gray-400 group-focus-within:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+                <input x-model="search" type="text" class="w-full bg-gray-900/60 text-white border border-gray-700/50 rounded-2xl pl-12 pr-4 py-3.5 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm font-medium transition-all shadow-inner backdrop-blur-md placeholder-gray-500" placeholder="¿Qué se te antoja hoy?">
+            </div>
+        </header>
+
+        <!-- Categories -->
+        <div class="px-4 py-2 mb-2">
+            <div class="flex gap-3 overflow-x-auto hide-scroll pb-4 pt-2">
+                <button @click="selectedCategory = 'all'" 
+                        :class="{'active': selectedCategory === 'all'}"
+                        class="category-tab px-5 py-2.5 rounded-2xl text-sm font-bold whitespace-nowrap text-gray-300">
+                    ✨ Todos
+                </button>
+                {% for cat in categories %}
+                <button @click="selectedCategory = '{{ cat.id }}'" 
+                        :class="{'active': selectedCategory === '{{ cat.id }}'}"
+                        class="category-tab px-5 py-2.5 rounded-2xl text-sm font-bold whitespace-nowrap text-gray-300">
+                    {{ cat.name }}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Products Grid -->
+        <main class="flex-1 px-4 pb-28">
+            <div class="grid grid-cols-2 gap-4" id="products-grid">
+                {% for product in products %}
+                <div class="glass-card rounded-3xl p-3.5 flex flex-col justify-between relative"
+                     x-show="(selectedCategory === 'all' || selectedCategory === '{{ product.category.id }}') && ('{{ product.name|lower }}'.includes(search.toLowerCase()))"
+                     x-transition>
+                    
+                    {% if product.has_inventory_control and product.stock <= 0 %}
+                    <div class="absolute top-3 right-3 bg-red-500/90 backdrop-blur-sm text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg z-10 uppercase tracking-widest border border-red-400">
+                        Agotado
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-4 {% if product.has_inventory_control and product.stock <= 0 %}opacity-50 grayscale{% endif %} relative group">
+                        {% if product.image %}
+                        <div class="w-full h-32 bg-white/5 rounded-2xl mb-3 flex items-center justify-center p-2 overflow-hidden border border-white/5 group-hover:border-white/20 transition-colors">
+                            <img src="{{ product.image }}" alt="{{ product.name }}" class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 drop-shadow-2xl">
+                        </div>
+                        {% else %}
+                        <div class="w-full h-32 bg-gray-800/50 rounded-2xl mb-3 flex items-center justify-center border border-gray-700">
+                            <svg class="w-10 h-10 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        </div>
+                        {% endif %}
+                        <div class="flex justify-between items-start mt-2">
+                            <h3 class="text-sm font-bold text-gray-100 leading-tight pr-2 line-clamp-2">{{ product.name }}</h3>
+                        </div>
+                        {% if product.has_inventory_control %}
+                        <div class="mt-1.5">
+                            <span class="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">Quedan {{ product.stock }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="flex items-center justify-between {% if product.has_inventory_control and product.stock <= 0 %}opacity-50 grayscale{% endif %}">
+                        <div>
+                            <p class="text-[10px] text-gray-400 font-bold mb-0.5">{{ currency_code }}</p>
+                            <p class="text-xl font-black text-white leading-none">{{ currency_symbol }}{{ product.price_sell|floatformat:"0" }}</p>
+                        </div>
+                        <button @click="addToCart({{ product.id }}, '{{ product.name|escapejs }}', {{ product.price_sell }}, {{ product.category.id|default:'null' }}, {{ product.stock|default:0 }}, {% if product.has_inventory_control %}true{% else %}false{% endif %})"
+                                {% if product.has_inventory_control and product.stock <= 0 %}disabled{% endif %}
+                                class="w-10 h-10 rounded-xl bg-orange-500 text-white font-black text-xl flex items-center justify-center hover:bg-orange-400 hover:shadow-lg hover:shadow-orange-500/50 hover:scale-110 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none">
+                            +
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </main>
+    </div>
+
+    <!-- TRACKING VIEW -->
+    <div x-show="isTracking" x-transition.opacity.duration.800ms class="fixed inset-0 z-50 flex flex-col bg-gray-900" style="display: none;">
+        <div class="absolute inset-0 bg-gradient-to-b from-orange-900/20 to-gray-900 pointer-events-none"></div>
+        
+        <!-- Track Header -->
+        <header class="glass p-5 flex items-center justify-between border-b border-gray-800 z-10">
+            <div>
+                <h2 class="text-xl font-black text-white">Estado de tu Pedido</h2>
+                <p class="text-sm text-orange-400 font-bold tracking-widest">#<span x-text="trackData.order_number"></span></p>
+            </div>
+            <button @click="exitTracking()" class="p-2 bg-gray-800 rounded-xl text-gray-400 hover:text-white transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </header>
+
+        <!-- Track Content -->
+        <main class="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center relative z-10">
+            
+            <!-- Dynamic Main Animation Area -->
+            <div class="relative w-64 h-64 mb-10 flex items-center justify-center">
+                <!-- Outer glowing ring -->
+                <div class="absolute inset-0 rounded-full border-4 border-dashed border-gray-700 animate-[spin-slow_10s_linear_infinite]" 
+                     :class="{'border-orange-500/50': ['PENDING', 'CONFIRMED'].includes(trackData.status), 'border-blue-500/50': trackData.status === 'PREPARING', 'border-emerald-500/50': ['READY', 'DELIVERED'].includes(trackData.status)}"></div>
+                
+                <!-- Inner pulse -->
+                <div class="absolute inset-4 rounded-full bg-gradient-to-tr opacity-20 cart-badge"
+                     :class="{'from-orange-500 to-yellow-500': ['PENDING', 'CONFIRMED'].includes(trackData.status), 'from-blue-500 to-indigo-500': trackData.status === 'PREPARING', 'from-emerald-500 to-teal-500': ['READY', 'DELIVERED'].includes(trackData.status)}"></div>
+                
+                <!-- Icon based on status -->
+                <div class="relative z-10 step-icon step-active">
+                    <template x-if="trackData.status === 'PENDING' || trackData.status === 'CONFIRMED'">
+                        <div class="text-center">
+                            <span class="text-7xl">🧾</span>
+                            <p class="text-white font-black mt-2 text-xl drop-shadow-md">Recibido</p>
+                        </div>
+                    </template>
+                    <template x-if="trackData.status === 'PREPARING'">
+                        <div class="text-center">
+                            <span class="text-7xl">🔥</span>
+                            <p class="text-white font-black mt-2 text-xl drop-shadow-md">Preparando</p>
+                        </div>
+                    </template>
+                    <template x-if="trackData.status === 'READY'">
+                        <div class="text-center">
+                            <span class="text-7xl">🛍️</span>
+                            <p class="text-white font-black mt-2 text-xl drop-shadow-md">¡Listo!</p>
+                        </div>
+                    </template>
+                    <template x-if="trackData.status === 'DELIVERED'">
+                        <div class="text-center">
+                            <span class="text-7xl">🎉</span>
+                            <p class="text-white font-black mt-2 text-xl drop-shadow-md">Entregado</p>
+                        </div>
+                    </template>
+                    <template x-if="trackData.status === 'CANCELLED'">
+                        <div class="text-center">
+                            <span class="text-7xl">❌</span>
+                            <p class="text-red-400 font-black mt-2 text-xl drop-shadow-md">Cancelado</p>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Progress Bar Tracker -->
+            <div class="w-full max-w-md bg-gray-800/80 p-6 rounded-3xl backdrop-blur-xl border border-gray-700 shadow-2xl">
+                <h3 class="text-center text-gray-400 font-bold mb-6 uppercase tracking-widest text-xs">Progreso del Pedido</h3>
+                
+                <div class="relative flex justify-between">
+                    <!-- Progress Line Background -->
+                    <div class="absolute top-1/2 left-0 w-full h-1 bg-gray-700 -translate-y-1/2 z-0 rounded-full"></div>
+                    <!-- Progress Line Active -->
+                    <div class="absolute top-1/2 left-0 h-1 bg-gradient-to-r from-orange-500 via-blue-500 to-emerald-500 -translate-y-1/2 z-0 rounded-full progress-line"
+                         :style="'width: ' + getProgressPercentage() + '%'"></div>
+
+                    <!-- Steps -->
+                    <div class="relative z-10 flex flex-col items-center">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-lg transition-colors duration-500"
+                             :class="isStepActive(1) ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-500 border-2 border-gray-700'">1</div>
+                        <span class="text-[10px] font-bold mt-2 text-center w-16" :class="isStepActive(1) ? 'text-orange-400' : 'text-gray-600'">Confirmado</span>
+                    </div>
+                    <div class="relative z-10 flex flex-col items-center">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-lg transition-colors duration-500"
+                             :class="isStepActive(2) ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-500 border-2 border-gray-700'">2</div>
+                        <span class="text-[10px] font-bold mt-2 text-center w-16" :class="isStepActive(2) ? 'text-blue-400' : 'text-gray-600'">Preparando</span>
+                    </div>
+                    <div class="relative z-10 flex flex-col items-center">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-lg transition-colors duration-500"
+                             :class="isStepActive(3) ? 'bg-emerald-500 text-white' : 'bg-gray-800 text-gray-500 border-2 border-gray-700'">3</div>
+                        <span class="text-[10px] font-bold mt-2 text-center w-16" :class="isStepActive(3) ? 'text-emerald-400' : 'text-gray-600'">Listo / Entregado</span>
+                    </div>
+                </div>
+                
+                <p class="text-center mt-8 text-sm text-gray-400 italic">
+                    <span x-show="['PENDING', 'CONFIRMED'].includes(trackData.status)">Hemos recibido tu pedido. Pronto comenzaremos a prepararlo.</span>
+                    <span x-show="trackData.status === 'PREPARING'">Estamos trabajando en tu pedido ahora mismo.</span>
+                    <span x-show="trackData.status === 'READY'">Tu pedido está listo para ser entregado.</span>
+                    <span x-show="trackData.status === 'DELIVERED'">Tu pedido ha sido entregado. ¡Gracias por tu compra!</span>
+                </p>
+                
+                <button x-show="['DELIVERED', 'CANCELLED'].includes(trackData.status)" @click="exitTracking()" class="mt-6 w-full py-3 bg-gray-700 hover:bg-gray-600 rounded-xl text-white font-bold transition-colors">
+                    Hacer Nuevo Pedido
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Cart Modal (Glassmorphism) -->
+    <div x-show="showCart && !isTracking" x-transition.opacity class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end justify-center" style="display: none;">
+        <div x-show="showCart" @click.away="showCart = false" x-transition:enter="transform translate-y-full" x-transition:enter-end="transform translate-y-0" x-transition:leave="transform translate-y-0" x-transition:leave-end="transform translate-y-full" class="glass w-full max-w-lg rounded-t-[2.5rem] max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border-t border-gray-700">
+            
+            <div class="w-12 h-1.5 bg-gray-600 rounded-full mx-auto mt-4 mb-2"></div>
+            
+            <div class="px-6 pb-4 pt-2 border-b border-gray-800/50 flex items-center justify-between">
+                <h2 class="text-2xl font-black text-white tracking-tight">🛒 Tu Canasta</h2>
+                <button @click="showCart = false" class="bg-gray-800/50 p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700 transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6">
+                <div x-show="cartItems.length === 0" class="text-center py-16">
+                    <div class="w-24 h-24 bg-gray-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <svg class="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-300 mb-2">Canasta vacía</h3>
+                    <p class="text-gray-500 text-sm">Añade productos del catálogo para continuar.</p>
                 </div>
 
-                <div x-show="cartItems.length > 0" class="space-y-3">
+                <div x-show="cartItems.length > 0" class="space-y-4">
                     <template x-for="(item, index) in cartItems" :key="index">
-                        <div class="bg-gray-800/50 rounded-xl p-3 flex items-center gap-3">
+                        <div class="bg-gray-900/40 border border-gray-700/50 rounded-2xl p-4 flex items-center gap-4 hover:border-gray-600 transition-colors">
                             <div class="flex-1">
-                                <p class="text-sm font-bold text-white" x-text="item.name"></p>
-                                <div class="flex items-center gap-2">
-                                    <p class="text-xs text-gray-400">{{ currency_symbol }}<span x-text="item.price"></span></p>
-                                    <span x-show="item.has_inventory_control" class="text-[9px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded font-bold" x-text="'Max: ' + item.stock"></span>
+                                <p class="text-base font-bold text-white mb-1" x-text="item.name"></p>
+                                <div class="flex items-center gap-3">
+                                    <p class="text-orange-400 font-black">{{ currency_symbol }}<span x-text="item.price"></span></p>
+                                    <span x-show="item.has_inventory_control" class="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full font-bold" x-text="'Max: ' + item.stock"></span>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <button @click="updateQuantity(index, -1)" class="w-8 h-8 bg-gray-700 rounded-lg text-white font-bold hover:bg-gray-600">-</button>
-                                <span class="w-8 text-center font-bold text-white" x-text="item.quantity"></span>
+                            <div class="flex items-center gap-3 bg-gray-800/80 p-1.5 rounded-xl border border-gray-700/50">
+                                <button @click="updateQuantity(index, -1)" class="w-8 h-8 rounded-lg text-gray-300 hover:bg-gray-700 font-bold transition-colors">-</button>
+                                <span class="w-6 text-center font-black text-white" x-text="item.quantity"></span>
                                 <button @click="updateQuantity(index, 1)" 
                                         :disabled="item.has_inventory_control && item.quantity >= item.stock"
-                                        class="w-8 h-8 bg-primary rounded-lg text-white font-bold hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed">+</button>
+                                        class="w-8 h-8 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg text-white font-bold shadow-md hover:from-orange-400 hover:to-orange-500 disabled:opacity-50 transition-all">+</button>
                             </div>
-                            <button @click="removeFromCart(index)" class="text-red-500 hover:text-red-400">
+                            <button @click="removeFromCart(index)" class="p-2 text-red-500/70 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                             </button>
                         </div>
@@ -168,120 +345,86 @@
                 </div>
             </div>
 
-            <!-- Cart Footer -->
-            <div x-show="cartItems.length > 0" class="p-4 border-t border-gray-700 bg-gray-900/50">
-                <div class="flex justify-between items-center mb-4">
-                    <span class="text-gray-400 font-semibold">Subtotal:</span>
-                    <span class="text-white font-bold">{{ currency_symbol }}<span x-text="cartTotal"></span></span>
+            <div x-show="cartItems.length > 0" class="p-6 bg-gray-900/80 backdrop-blur-md border-t border-gray-800">
+                <div class="flex justify-between items-center mb-6">
+                    <span class="text-gray-400 font-bold uppercase tracking-wider text-sm">Total a Pagar</span>
+                    <span class="text-3xl text-white font-black">{{ currency_symbol }}<span x-text="cartTotal"></span></span>
                 </div>
-                <button @click="showOrderForm = true; showCart = false" class="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-orange-600 transition-all">
-                    Continuar con el Pedido
+                <button @click="showOrderForm = true; showCart = false" class="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white py-4 rounded-2xl font-black text-lg shadow-lg shadow-orange-500/30 transform active:scale-[0.98] transition-all">
+                    Continuar al Pago →
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Order Form Modal -->
-    <div x-show="showOrderForm" x-transition.opacity class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" style="display: none;">
-        <div x-show="showOrderForm" x-transition:enter="transform scale-95 opacity-0" x-transition:enter-end="transform scale-100 opacity-100" x-transition:leave="transform scale-100 opacity-100" x-transition:leave-end="transform scale-95 opacity-0" class="glass w-full max-w-md rounded-2xl max-h-[90vh] overflow-y-auto">
-            <!-- Form Header -->
-            <div class="p-4 border-b border-gray-700 flex items-center justify-between">
+    <!-- Order Form Modal (Glassmorphism) -->
+    <div x-show="showOrderForm && !isTracking" x-transition.opacity class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" style="display: none;">
+        <div x-show="showOrderForm" @click.away="showOrderForm = false" x-transition:enter="transform scale-95 opacity-0" x-transition:enter-end="transform scale-100 opacity-100" x-transition:leave="transform scale-100 opacity-100" x-transition:leave-end="transform scale-95 opacity-0" class="glass w-full max-w-md rounded-[2rem] max-h-[95vh] overflow-y-auto shadow-2xl border border-gray-700">
+            
+            <div class="p-6 border-b border-gray-800 flex items-center justify-between sticky top-0 bg-gray-900/90 backdrop-blur-md z-10">
                 <h2 class="text-xl font-black text-white">📝 Finalizar Pedido</h2>
-                <button @click="showOrderForm = false" class="text-gray-400 hover:text-white">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                <button @click="showOrderForm = false" class="bg-gray-800/50 p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700 transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
 
-            <!-- Form Content -->
-            <form @submit.prevent="submitOrder" class="p-4 space-y-4">
-                <!-- Order Type -->
+            <form @submit.prevent="submitOrder" class="p-6 space-y-5">
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-2">Tipo de Pedido</label>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button type="button" @click="orderForm.order_type = 'DINE_IN'" :class="orderForm.order_type === 'DINE_IN' ? 'bg-primary text-white' : 'bg-gray-800 text-gray-300'" class="px-3 py-2 rounded-lg text-xs font-bold border border-gray-700 transition-all">🍽️ Mesa</button>
-                        <button type="button" @click="orderForm.order_type = 'TAKEOUT'" :class="orderForm.order_type === 'TAKEOUT' ? 'bg-primary text-white' : 'bg-gray-800 text-gray-300'" class="px-3 py-2 rounded-lg text-xs font-bold border border-gray-700 transition-all">🥡 Llevar</button>
-                        <button type="button" @click="orderForm.order_type = 'DELIVERY'" :class="orderForm.order_type === 'DELIVERY' ? 'bg-primary text-white' : 'bg-gray-800 text-gray-300'" class="px-3 py-2 rounded-lg text-xs font-bold border border-gray-700 transition-all">🚗 Domicilio</button>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Tipo de Entrega</label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <button type="button" @click="orderForm.order_type = 'DINE_IN'" :class="orderForm.order_type === 'DINE_IN' ? 'bg-orange-500/20 text-orange-400 border-orange-500' : 'bg-gray-800/50 text-gray-400 border-gray-700'" class="p-3 rounded-xl text-xs font-bold border-2 transition-all flex flex-col items-center gap-1"><span class="text-xl">🍽️</span> Mesa</button>
+                        <button type="button" @click="orderForm.order_type = 'TAKEOUT'" :class="orderForm.order_type === 'TAKEOUT' ? 'bg-orange-500/20 text-orange-400 border-orange-500' : 'bg-gray-800/50 text-gray-400 border-gray-700'" class="p-3 rounded-xl text-xs font-bold border-2 transition-all flex flex-col items-center gap-1"><span class="text-xl">🥡</span> Llevar</button>
+                        <button type="button" @click="orderForm.order_type = 'DELIVERY'" :class="orderForm.order_type === 'DELIVERY' ? 'bg-orange-500/20 text-orange-400 border-orange-500' : 'bg-gray-800/50 text-gray-400 border-gray-700'" class="p-3 rounded-xl text-xs font-bold border-2 transition-all flex flex-col items-center gap-1"><span class="text-xl">🚗</span> Domicilio</button>
                     </div>
                 </div>
 
-                <!-- Customer Name -->
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-2">Nombre *</label>
-                    <input x-model="orderForm.customer_name" type="text" required class="w-full bg-gray-800 text-white border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-sm" placeholder="Tu nombre">
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Nombre *</label>
+                    <input x-model="orderForm.customer_name" type="text" required class="w-full bg-gray-900/60 text-white border border-gray-700 rounded-xl px-4 py-3.5 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm font-medium transition-all" placeholder="Ej. Juan Pérez">
                 </div>
 
-                <!-- Phone -->
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-2">Teléfono</label>
-                    <input x-model="orderForm.customer_phone" type="tel" class="w-full bg-gray-800 text-white border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-sm" placeholder="Tu teléfono">
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">WhatsApp / Teléfono</label>
+                    <input x-model="orderForm.customer_phone" type="tel" class="w-full bg-gray-900/60 text-white border border-gray-700 rounded-xl px-4 py-3.5 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm font-medium transition-all" placeholder="Para contactarte">
                 </div>
 
-                <!-- Address (only for delivery) -->
-                <div x-show="orderForm.order_type === 'DELIVERY'">
-                    <label class="block text-xs font-bold text-gray-400 mb-2">Dirección *</label>
-                    <input x-model="orderForm.customer_address" type="text" x-bind:required="orderForm.order_type === 'DELIVERY'" class="w-full bg-gray-800 text-white border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-sm" placeholder="Tu dirección">
+                <div x-show="orderForm.order_type === 'DELIVERY'" x-collapse>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 mt-2">Dirección de Entrega *</label>
+                    <input x-model="orderForm.customer_address" type="text" x-bind:required="orderForm.order_type === 'DELIVERY'" class="w-full bg-gray-900/60 text-white border border-gray-700 rounded-xl px-4 py-3.5 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm font-medium transition-all" placeholder="Tu dirección exacta">
                 </div>
 
-                <!-- Table Selection (only for dine-in) -->
-                <div x-show="orderForm.order_type === 'DINE_IN'">
-                    <label class="block text-xs font-bold text-gray-400 mb-2">Mesa</label>
-                    <select x-model="orderForm.table_id" class="w-full bg-gray-800 text-white border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-sm">
-                        <option value="">Seleccionar mesa</option>
+                <div x-show="orderForm.order_type === 'DINE_IN'" x-collapse>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 mt-2">Seleccionar Mesa</label>
+                    <select x-model="orderForm.table_id" class="w-full bg-gray-900/60 text-white border border-gray-700 rounded-xl px-4 py-3.5 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm font-medium transition-all appearance-none">
+                        <option value="">-- Elige una mesa --</option>
                         {% for table in tables %}
                         <option value="{{ table.id }}" {% if selected_table and selected_table.id == table.id %}selected{% endif %}>{{ table.name }}</option>
                         {% endfor %}
                     </select>
-                    {% if selected_table %}
-                    <p class="text-xs text-primary mt-1 font-semibold">📍 Mesa seleccionada: {{ selected_table.name }}</p>
-                    {% endif %}
                 </div>
 
-                <!-- Notes -->
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-2">Notas</label>
-                    <textarea x-model="orderForm.notes" rows="2" class="w-full bg-gray-800 text-white border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-sm resize-none" placeholder="Instrucciones especiales..."></textarea>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Instrucciones Especiales</label>
+                    <textarea x-model="orderForm.notes" rows="2" class="w-full bg-gray-900/60 text-white border border-gray-700 rounded-xl px-4 py-3.5 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm font-medium transition-all resize-none" placeholder="Sin cebolla, extra salsa, etc..."></textarea>
                 </div>
 
-                <!-- Order Summary -->
-                <div class="bg-gray-800/50 rounded-xl p-4">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-gray-400 text-sm">Subtotal:</span>
-                        <span class="text-white font-bold">{{ currency_symbol }}<span x-text="cartTotal"></span></span>
-                    </div>
+                <div class="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-2xl p-5 shadow-inner mt-4">
                     <div class="flex justify-between items-center">
-                        <span class="text-primary font-bold text-lg">Total:</span>
-                        <span class="text-primary font-black text-xl">{{ currency_symbol }}<span x-text="cartTotal"></span></span>
+                        <span class="text-gray-400 font-bold uppercase tracking-widest text-xs">Total a Pagar</span>
+                        <span class="text-orange-400 font-black text-2xl">{{ currency_symbol }}<span x-text="cartTotal"></span></span>
                     </div>
                 </div>
 
-                <!-- Submit Button -->
-                <button type="submit" :disabled="isSubmitting" class="w-full bg-primary text-white py-4 rounded-xl font-bold hover:bg-orange-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span x-show="!isSubmitting">🎉 Confirmar Pedido</span>
-                    <span x-show="isSubmitting">Procesando...</span>
+                <button type="submit" :disabled="isSubmitting" class="w-full mt-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white py-4 rounded-2xl font-black text-lg shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 transform active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span x-show="!isSubmitting">🎉 Enviar Pedido Ahora</span>
+                    <span x-show="isSubmitting" class="flex items-center justify-center gap-2">
+                        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        Procesando...
+                    </span>
                 </button>
             </form>
         </div>
     </div>
-
-    <!-- Success Modal -->
-    <div x-show="showSuccess" x-transition.opacity class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" style="display: none;">
-        <div x-show="showSuccess" class="glass w-full max-w-sm rounded-2xl p-6 text-center">
-            <div class="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-            </div>
-            <h2 class="text-2xl font-black text-white mb-2">¡Pedido Enviado!</h2>
-            <p class="text-gray-400 mb-4">Tu pedido #<span x-text="orderNumber"></span> ha sido recibido correctamente.</p>
-            <p class="text-sm text-gray-500 mb-6">Te notificaremos cuando esté listo.</p>
-            <button @click="showSuccess = false; cartItems = []" class="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-orange-600 transition-all">
-                Entendido
-            </button>
-        </div>
-    </div>
-
-    <!-- Footer -->
-    <footer class="bg-gray-900 border-t border-gray-800 py-4 px-4 text-center mt-auto">
-        <p class="text-[10px] text-gray-600 font-semibold uppercase tracking-wider">Desarrollado con AGS SALES ERP</p>
-    </footer>
 
     <script>
         function catalogApp() {
@@ -290,9 +433,14 @@
                 selectedCategory: 'all',
                 showCart: false,
                 showOrderForm: false,
-                showSuccess: false,
                 isSubmitting: false,
-                orderNumber: '',
+                
+                // Tracker State
+                isTracking: false,
+                trackOrderNumber: '',
+                trackData: { status: 'PENDING', order_number: '' },
+                trackerInterval: null,
+                
                 cartItems: [],
                 orderForm: {
                     order_type: 'DINE_IN',
@@ -303,9 +451,17 @@
                     notes: ''
                 },
                 
-                initTable(tableId) {
+                initApp(tableId) {
                     if (tableId) {
                         this.orderForm.table_id = tableId;
+                    }
+                    
+                    // Comprobar si hay un pedido activo guardado
+                    const savedOrder = localStorage.getItem('ags_active_order');
+                    if (savedOrder) {
+                        this.trackOrderNumber = savedOrder;
+                        this.isTracking = true;
+                        this.pollOrder();
                     }
                 },
                 
@@ -329,12 +485,10 @@
                 
                 updateQuantity(index, change) {
                     const item = this.cartItems[index];
-                    
                     if (change > 0 && item.has_inventory_control && item.quantity >= item.stock) {
                         alert(`Stock máximo alcanzado. Solo hay ${item.stock} unidades disponibles.`);
                         return;
                     }
-                    
                     item.quantity += change;
                     if (item.quantity <= 0) {
                         this.cartItems.splice(index, 1);
@@ -347,10 +501,8 @@
                 
                 async submitOrder() {
                     this.isSubmitting = true;
-                    
                     try {
                         const apiUrl = window.location.origin + '/api/catalog-orders/orders/';
-                        
                         const payload = {
                             table: this.orderForm.table_id || null,
                             customer_name: this.orderForm.customer_name,
@@ -369,40 +521,82 @@
                         
                         const response = await fetch(apiUrl, {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(payload)
                         });
                         
-                        console.log('Response status:', response.status);
-                        console.log('Response ok:', response.ok);
-                        
                         if (response.ok) {
                             const data = await response.json();
-                            this.orderNumber = data.order_number;
-                            this.showSuccess = true;
+                            
+                            // Save to local storage for tracking
+                            localStorage.setItem('ags_active_order', data.order_number);
+                            
+                            // Reset cart and form
                             this.showOrderForm = false;
                             this.cartItems = [];
-                            this.orderForm = {
-                                order_type: 'DINE_IN',
-                                customer_name: '',
-                                customer_phone: '',
-                                customer_address: '',
-                                table_id: '',
-                                notes: ''
-                            };
+                            this.orderForm = { order_type: 'DINE_IN', customer_name: '', customer_phone: '', customer_address: '', table_id: '', notes: '' };
+                            
+                            // Start Tracking
+                            this.trackOrderNumber = data.order_number;
+                            this.isTracking = true;
+                            this.pollOrder();
                         } else {
                             const error = await response.json();
-                            console.error('Server error:', error);
                             alert('Error al crear pedido: ' + (error.error || JSON.stringify(error) || 'Intenta nuevamente'));
                         }
                     } catch (error) {
-                        console.error('Network error:', error);
-                        alert('Error de conexión: ' + error.message + '. Intenta nuevamente.');
+                        alert('Error de conexión. Intenta nuevamente.');
                     } finally {
                         this.isSubmitting = false;
                     }
+                },
+                
+                async pollOrder() {
+                    if (this.trackerInterval) clearTimeout(this.trackerInterval);
+                    
+                    try {
+                        const apiUrl = window.location.origin + `/api/catalog-orders/orders/track/?order_number=${this.trackOrderNumber}`;
+                        const response = await fetch(apiUrl);
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.trackData = data;
+                            
+                            // Continue polling if not finished
+                            if (!['DELIVERED', 'CANCELLED'].includes(data.status)) {
+                                this.trackerInterval = setTimeout(() => this.pollOrder(), 5000); // Check every 5s
+                            }
+                        } else if (response.status === 404) {
+                            // Order not found, maybe deleted. Stop tracking.
+                            this.exitTracking();
+                        }
+                    } catch (e) {
+                        // Retry on network error silently
+                        this.trackerInterval = setTimeout(() => this.pollOrder(), 10000);
+                    }
+                },
+                
+                exitTracking() {
+                    localStorage.removeItem('ags_active_order');
+                    this.isTracking = false;
+                    this.trackData = { status: 'PENDING', order_number: '' };
+                    if (this.trackerInterval) clearTimeout(this.trackerInterval);
+                },
+                
+                getProgressPercentage() {
+                    const st = this.trackData.status;
+                    if (st === 'PENDING' || st === 'CONFIRMED') return 10;
+                    if (st === 'PREPARING') return 50;
+                    if (st === 'READY' || st === 'DELIVERED') return 100;
+                    return 0;
+                },
+                
+                isStepActive(step) {
+                    const st = this.trackData.status;
+                    if (step === 1 && ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'DELIVERED'].includes(st)) return true;
+                    if (step === 2 && ['PREPARING', 'READY', 'DELIVERED'].includes(st)) return true;
+                    if (step === 3 && ['READY', 'DELIVERED'].includes(st)) return true;
+                    return false;
                 }
             }
         }

@@ -1208,35 +1208,13 @@ function App() {
 
           if (data.has_new && data.order) {
             playNewOrderSound();
-            addToast('🔔 ¡NUEVO PEDIDO DEL CATÁLOGO!', { timeout: 5000 });
             
             const sym = systemSettings?.currency_symbol || '$';
             const formattedTotal = `${sym}${Number(data.order.total || 0).toLocaleString()}`;
-
-            Swal.fire({
-              icon: 'info',
-              title: '🔔 ¡NUEVO PEDIDO DEL CATÁLOGO!',
-              html: `
-                <div style="text-align: left; font-size: 14px; margin-top: 10px; line-height: 1.6;">
-                  <p><b>Pedido #:</b> #${data.order.order_number}</p>
-                  <p><b>Cliente:</b> ${data.order.customer_name}</p>
-                  <p><b>Total:</b> <span style="color: #10b981; font-weight: bold; font-size: 16px;">${formattedTotal}</span></p>
-                  <p><b>Tipo:</b> ${data.order.order_type === 'DELIVERY' ? '🚗 Domicilio' : data.order.order_type === 'TAKEOUT' ? '🥡 Llevar' : '🍽️ Mesa'}</p>
-                </div>
-              `,
-              showCancelButton: true,
-              confirmButtonText: '📦 Ver Pedidos del Catálogo',
-              cancelButtonText: 'Entendido',
-              customClass: {
-                popup: 'premium-swal',
-                title: 'premium-swal-title text-amber-600 font-bold',
-                confirmButton: 'premium-swal-confirm bg-amber-600 hover:bg-amber-700',
-                cancelButton: 'premium-swal-cancel'
-              }
-            }).then((result) => {
-              if (result.isConfirmed) {
-                setAppState('CATALOG_ORDERS');
-              }
+            
+            addToast(`🔔 NUEVO PEDIDO: #${data.order.order_number} | Cliente: ${data.order.customer_name} | Total: ${formattedTotal}`, { 
+              type: 'success',
+              timeout: 10000 
             });
           }
         }
@@ -1246,7 +1224,7 @@ function App() {
     };
 
     checkGlobalCatalogOrders();
-    const interval = setInterval(checkGlobalCatalogOrders, 15000);
+    const interval = setInterval(checkGlobalCatalogOrders, 3000); // Changed to 3 seconds for near-instant notification
     return () => clearInterval(interval);
   }, [token, config?.apiUrl, appState, systemSettings]);
 

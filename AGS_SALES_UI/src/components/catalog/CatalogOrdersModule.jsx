@@ -85,13 +85,13 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
     }).format(amount || 0).replace('COP', symbol);
   };
 
-  useEffect(() => {
+    useEffect(() => {
     // Request notification permission on first load
     if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
       Notification.requestPermission();
     }
     fetchOrders();
-    const interval = setInterval(checkNewOrders, 15000);
+    const interval = setInterval(checkNewOrders, 3000); // Polling every 3s
     return () => clearInterval(interval);
   }, []);
 
@@ -124,34 +124,28 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
               }
             }
 
-        // Show native desktop notification if permitted
-        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-          new Notification('🔔 Nuevo Pedido del Catálogo', {
-            body: `Pedido #${data.order.order_number} - ${data.order.customer_name} - Total ${formatCurrency(data.order.total)}`,
-            // icon can be added if needed
-          });
-        }
+          // Show native desktop notification if permitted
+          if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            new Notification('🔔 Nuevo Pedido del Catálogo', {
+              body: `Pedido #${data.order.order_number} - ${data.order.customer_name} - Total ${formatCurrency(data.order.total)}`,
+            });
+          }
           
           const formattedTotal = formatCurrency(data.order.total);
+          
+          // Toast Notification (Floating, Non-intrusive)
           Swal.fire({
+            toast: true,
+            position: 'top-end',
             icon: 'info',
-            title: '🔔 ¡NUEVO PEDIDO DEL CATÁLOGO!',
-            html: `
-              <div style="text-align: left; font-size: 14px; margin-top: 10px; line-height: 1.6;">
-                <p><b>Pedido #:</b> #${data.order.order_number}</p>
-                <p><b>Cliente:</b> ${data.order.customer_name}</p>
-                <p><b>Total:</b> <span style="color: #10b981; font-weight: bold; font-size: 16px;">${formattedTotal}</span></p>
-                <p><b>Tipo:</b> ${data.order.order_type === 'DELIVERY' ? '🚗 Domicilio' : data.order.order_type === 'TAKEOUT' ? '🥡 Llevar' : '🍽️ Mesa'}</p>
-              </div>
-            `,
-            showCancelButton: true,
-            confirmButtonText: '📦 Ver Pedido',
-            cancelButtonText: 'Entendido',
+            title: `🔔 NUEVO PEDIDO: #${data.order.order_number}`,
+            text: `${data.order.customer_name} - ${formattedTotal}`,
+            showConfirmButton: false,
+            timer: 8000,
+            timerProgressBar: true,
             customClass: {
               popup: 'premium-swal',
-              title: 'premium-swal-title text-amber-600 font-bold',
-              confirmButton: 'premium-swal-confirm bg-amber-600 hover:bg-amber-700',
-              cancelButton: 'premium-swal-cancel'
+              title: 'text-amber-600 font-bold',
             }
           });
           
@@ -184,7 +178,7 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
     setLoading(true);
     try {
       const cleanBaseUrl = config.apiUrl.endsWith('/') ? config.apiUrl : config.apiUrl + '/';
-      const res = await apiRequest(`${cleanBaseUrl}catalog-orders/orders/active/`, {}, token);
+      const res = await apiRequest(`${cleanBaseUrl}catalog-orders/orders/`, {}, token);
       if (res.ok) {
         const data = await res.json();
         const ordersList = Array.isArray(data) ? data : data.results || [];

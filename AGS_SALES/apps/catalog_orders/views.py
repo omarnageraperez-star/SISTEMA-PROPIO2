@@ -110,32 +110,27 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
         elif new_status == 'DELIVERED' and old_status != 'DELIVERED':
             order.delivered_at = timezone.now()
         
-        # Si se confirma el pedido, descontar inventario
+        # Si se confirma el pedido, descontar inventario y convertir a venta
         if new_status == 'CONFIRMED' and old_status == 'PENDING':
             for item in order.items.all():
                 if item.product and item.product.has_inventory_control:
                     item.product.stock -= item.quantity
                     item.product.save()
+            
+            # Autoconvertir a Venta POS si no tiene
+            if not order.related_sale:
+                try:
+                    self._auto_convert_to_sale(order, request.user)
+                except Exception as e:
+                    pass # Evitar romper el flujo si falla la venta automática
         
         serializer.save()
         return Response(CatalogOrderSerializer(order).data)
     
-    @action(detail=True, methods=['post'], url_path='convert-to-sale')
-    def convert_to_sale(self, request, pk=None):
-        """Convertir pedido del catálogo a venta del sistema POS"""
-        order = self.get_object()
-        
-        if order.related_sale:
-            return Response(
-                {'error': 'Este pedido ya está asociado a una venta'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Crear venta desde el pedido
-        from apps.sales.models import Sale, SaleItem
+    def _auto_convert_to_sale(self, order, user):
+        from apps.sales.models import Sale, SaleDetail
         from apps.crm.models import Customer
         
-        # Crear o buscar cliente
         customer, created = Customer.objects.get_or_create(
             name=order.customer_name,
             defaults={
@@ -144,9 +139,8 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
             }
         )
         
-        # Crear venta
         sale = Sale.objects.create(
-            user=request.user,
+            user=user,
             customer=customer,
             status='COMPLETED',
             subtotal=order.subtotal,
@@ -155,25 +149,59 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
             payment_method=order.payment_method
         )
         
-        # Crear items de venta
         for order_item in order.items.all():
-            SaleItem.objects.create(
-                sale=sale,
-                product=order_item.product,
-                product_name=order_item.product_name,
-                quantity=order_item.quantity,
-                unit_price=order_item.unit_price,
-                subtotal=order_item.subtotal
+            if order_item.product:
+                SaleDetail.objects.create(
+                    sale=sale,
+                    product=order_item.product,
+                    quantity=order_item.quantity,
+                    unit_price=order_item.unit_price,
+                    discount=0,
+                    subtotal=order_item.subtotal
+                )
+        
+        order.related_sale = sale
+        order.processed_by = user
+        order.save()
+        return sale
+
+    @action(detail=True, methods=['post'], url_path='convert-to-sale')
+    def convert_to_sale(self, request, pk=None):
+        """Convertir pedido del catálogo a venta del sistema POS manualmente"""
+        order = self.get_object()
+        
+        if order.related_sale:
+            return Response(
+                {'error': 'Este pedido ya está asociado a una venta'},
+                status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Asociar venta al pedido
-        order.related_sale = sale
-        order.processed_by = request.user
+        self._auto_convert_to_sale(order, request.user)
+        # Update status to delivered if converted manually
         order.status = 'DELIVERED'
         order.delivered_at = timezone.now()
         order.save()
         
         return Response(CatalogOrderSerializer(order).data)
+    
+    @action(detail=False, methods=['get'], permission_classes=[])
+    def track(self, request):
+        """Endpoint público para consultar estado del pedido sin auth"""
+        order_number = request.query_params.get('order_number')
+        if not order_number:
+            return Response({'error': 'Número de pedido requerido'}, status=400)
+            
+        order = self.queryset.filter(order_number=order_number).first()
+        if not order:
+            return Response({'error': 'Pedido no encontrado'}, status=404)
+            
+        return Response({
+            'order_number': order.order_number,
+            'status': order.status,
+            'customer_name': order.customer_name,
+            'total': order.total,
+            'created_at': order.created_at
+        })
     
     @action(detail=False, methods=['get'])
     def pending(self, request):
