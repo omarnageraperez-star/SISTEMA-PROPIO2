@@ -14,7 +14,7 @@ from .serializers import (
     UpdateCatalogOrderStatusSerializer
 )
 from apps.inventory.models import Product
-from apps.core.models import SystemSettings
+from apps.users.models import SystemSetting
 
 class TableViewSet(viewsets.ModelViewSet):
     """ViewSet para gestionar mesas"""
@@ -470,7 +470,7 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
 @require_http_methods(["GET", "POST"])
 def customer_login_view(request):
     """Página de login para clientes"""
-    settings = SystemSettings.objects.first()
+    settings = SystemSetting.objects.first()
     context = {
         'store_name': settings.store_name if settings else 'AGS SALES',
         'store_logo': settings.store_logo if settings else None
@@ -480,7 +480,7 @@ def customer_login_view(request):
 @require_http_methods(["GET", "POST"])
 def customer_register_view(request):
     """Página de registro para clientes"""
-    settings = SystemSettings.objects.first()
+    settings = SystemSetting.objects.first()
     context = {
         'store_name': settings.store_name if settings else 'AGS SALES',
         'store_logo': settings.store_logo if settings else None
@@ -494,7 +494,7 @@ def customer_dashboard_view(request):
         from django.http import HttpResponseForbidden
         return HttpResponseForbidden("Acceso no autorizado")
     
-    settings = SystemSettings.objects.first()
+    settings = SystemSetting.objects.first()
     context = {
         'store_name': settings.store_name if settings else 'AGS SALES',
         'store_logo': settings.store_logo if settings else None,
