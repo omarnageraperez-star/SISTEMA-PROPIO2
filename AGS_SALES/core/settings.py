@@ -162,6 +162,12 @@ AUTH_PASSWORD_VALIDATORS = [
 # Custom User Model
 AUTH_USER_MODEL = 'users.User'
 
+# Authentication Backends - Incluir backend personalizado para CustomerUser
+AUTHENTICATION_BACKENDS = [
+    'apps.catalog_orders.views.CustomerUserBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 # Authentication URLs
 LOGIN_URL = '/catalogo/login/'
 LOGIN_REDIRECT_URL = '/catalogo/cliente/'

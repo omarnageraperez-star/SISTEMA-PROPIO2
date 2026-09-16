@@ -7,6 +7,8 @@ from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
+from django.contrib.auth.backends import ModelBackend
+from django.contrib.auth import get_user_model
 from .models import Table, CatalogOrder, CatalogOrderItem, CustomerUser
 from .serializers import (
     TableSerializer, 
@@ -19,6 +21,19 @@ from .serializers import (
 )
 from apps.inventory.models import Product
 from apps.users.models import SystemSetting
+
+class CustomerUserBackend(ModelBackend):
+    """Backend de autenticación personalizado para CustomerUser"""
+    def authenticate(self, request, username=None, password=None, **kwargs):
+        try:
+            # Primero intentar con CustomerUser
+            user = CustomerUser.objects.get(username=username)
+            if user.check_password(password) and self.user_can_authenticate(user):
+                return user
+        except CustomerUser.DoesNotExist:
+            # Si no existe en CustomerUser, intentar con el User por defecto
+            pass
+        return super().authenticate(request, username=username, password=password, **kwargs)
 
 class TableViewSet(viewsets.ModelViewSet):
     """ViewSet para gestionar mesas"""
@@ -509,12 +524,11 @@ def customer_register_view(request):
     }
     return render(request, 'catalog_orders/customer_register.html', context)
 
-@login_required
 def customer_dashboard_view(request):
     """Dashboard del cliente autenticado"""
-    if not isinstance(request.user, CustomerUser):
-        from django.http import HttpResponseForbidden
-        return HttpResponseForbidden("Acceso no autorizado")
+    if not request.user.is_authenticated or not isinstance(request.user, CustomerUser):
+        from django.shortcuts import redirect
+        return redirect('/catalogo/login/')
     
     # Obtener pedidos del cliente
     orders = CatalogOrder.objects.filter(customer_user=request.user).order_by('-created_at')[:10]
