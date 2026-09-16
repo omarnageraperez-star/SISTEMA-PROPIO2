@@ -652,7 +652,7 @@
                 showCart: false,
                 showOrderForm: false,
                 isSubmitting: false,
-                isAuthenticated: false,
+                isAuthenticated: !!localStorage.getItem('customerToken'),
                 
                 // History State
                 showHistory: false,
@@ -692,7 +692,6 @@
                 },
                 
                 initApp(tableId) {
-                    this.checkAuth();
                     this.checkBusinessHours();
                     setInterval(() => this.checkBusinessHours(), 60000); // Re-check every minute
 
@@ -732,29 +731,6 @@
                         this.isClosed = false;
                     }
                 },
-
-                async checkAuth() {
-                    try {
-                        const response = await fetch('/catalogo/api/customer-auth/profile/', {
-                            credentials: 'include'
-                        });
-                        if (response.ok) {
-                            this.isAuthenticated = true;
-                        } else {
-                            this.isAuthenticated = false;
-                        }
-                    } catch (e) {
-                        this.isAuthenticated = false;
-                    }
-                },
-
-                getCsrfToken() {
-                    const name = 'csrftoken';
-                    const value = `; ${document.cookie}`;
-                    const parts = value.split(`; ${name}=`);
-                    if (parts.length === 2) return parts.pop().split(';').shift();
-                    return '';
-                },
                 
                 get cartTotal() {
                     return this.cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(0);
@@ -793,27 +769,11 @@
                 async submitOrder() {
                     this.isSubmitting = true;
                     try {
-                        const apiUrl = window.location.origin + '/catalogo/api/orders/';
-                        
-                        // Obtener perfil del cliente autenticado si existe
-                        let customerUserId = null;
-                        if (this.isAuthenticated) {
-                            try {
-                                const profileResponse = await fetch('/catalogo/api/customer-auth/profile/', {
-                                    credentials: 'include'
-                                });
-                                if (profileResponse.ok) {
-                                    const profileData = await profileResponse.json();
-                                    customerUserId = profileData.id;
-                                }
-                            } catch (e) {
-                                console.error('Error getting customer profile:', e);
-                            }
-                        }
-                        
+                        const apiUrl = window.location.origin + '/api/catalog-orders/orders/';
+                        const customerUser = JSON.parse(localStorage.getItem('customerUser') || 'null');
                         const payload = {
                             table: this.orderForm.table_id || null,
-                            customer_user: customerUserId,
+                            customer_user: customerUser ? customerUser.id : null,
                             customer_name: this.orderForm.customer_name,
                             customer_phone: this.orderForm.customer_phone,
                             customer_address: this.orderForm.customer_address,
@@ -828,13 +788,14 @@
                             }))
                         };
                         
+                        const headers = { 'Content-Type': 'application/json' };
+                        if (localStorage.getItem('customerToken')) {
+                            headers['Authorization'] = `Token ${localStorage.getItem('customerToken')}`;
+                        }
+                        
                         const response = await fetch(apiUrl, {
                             method: 'POST',
-                            headers: { 
-                                'Content-Type': 'application/json',
-                                'X-CSRFToken': this.getCsrfToken()
-                            },
-                            credentials: 'include',
+                            headers: headers,
                             body: JSON.stringify(payload)
                         });
                         
@@ -868,7 +829,7 @@
                     if (this.trackerInterval) clearTimeout(this.trackerInterval);
                     
                     try {
-                        const apiUrl = window.location.origin + `/catalogo/api/orders/track/?order_number=${this.trackOrderNumber}`;
+                        const apiUrl = window.location.origin + `/api/catalog-orders/orders/track/?order_number=${this.trackOrderNumber}`;
                         const response = await fetch(apiUrl);
                         
                         if (response.ok) {
@@ -955,7 +916,7 @@
                     if (this.rating === 0) return;
                     this.isSubmittingRating = true;
                     try {
-                        const apiUrl = window.location.origin + `/catalogo/api/orders/${this.trackData.id}/submit-rating/`;
+                        const apiUrl = window.location.origin + `/api/catalog-orders/orders/${this.trackData.id}/submit-rating/`;
                         const response = await fetch(apiUrl, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -982,7 +943,7 @@
                     this.isFetchingHistory = true;
                     this.historyOrders = [];
                     try {
-                        const apiUrl = window.location.origin + `/catalogo/api/orders/history/?phone=${encodeURIComponent(this.historyPhone)}`;
+                        const apiUrl = window.location.origin + `/api/catalog-orders/orders/history/?phone=${encodeURIComponent(this.historyPhone)}`;
                         const response = await fetch(apiUrl);
                         if (response.ok) {
                             this.historyOrders = await response.json();
