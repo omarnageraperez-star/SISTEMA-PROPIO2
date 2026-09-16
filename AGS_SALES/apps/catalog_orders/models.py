@@ -89,6 +89,14 @@ class CatalogOrder(models.Model):
         verbose_name = "Pedido del Catálogo"
         verbose_name_plural = "Pedidos del Catálogo"
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['created_at']),
+            models.Index(fields=['-created_at']),
+            models.Index(fields=['order_number']),
+            models.Index(fields=['customer_phone']),
+            models.Index(fields=['related_sale']),
+        ]
 
     def __str__(self):
         return f"Pedido #{self.order_number} - {self.customer_name}"

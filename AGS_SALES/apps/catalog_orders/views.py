@@ -38,7 +38,7 @@ class TableViewSet(viewsets.ModelViewSet):
 
 class CatalogOrderViewSet(viewsets.ModelViewSet):
     """ViewSet para gestionar pedidos del catálogo"""
-    queryset = CatalogOrder.objects.select_related('table', 'processed_by').prefetch_related('items')
+    queryset = CatalogOrder.objects.select_related('table', 'processed_by', 'related_sale').prefetch_related('items', 'items__product')
     serializer_class = CatalogOrderSerializer
     permission_classes = [IsAuthenticated]
     
@@ -124,13 +124,8 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
             if request.data.get('delivery_photo'):
                 order.delivery_photo = request.data.get('delivery_photo')
             
-            # Si se confirma el pedido, descontar inventario y convertir a venta
+            # Si se confirma el pedido, convertir a venta (el SaleSerializer maneja el stock)
             if new_status == 'CONFIRMED' and old_status == 'PENDING':
-                for item in order.items.all():
-                    if item.product and item.product.has_inventory_control:
-                        item.product.stock -= item.quantity
-                        item.product.save()
-                
                 # Autoconvertir a Venta POS si no tiene
                 if not order.related_sale:
                     try:
@@ -366,14 +361,14 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def pending(self, request):
         """Listar pedidos pendientes"""
-        pending_orders = self.queryset.filter(status='PENDING')
+        pending_orders = self.queryset.filter(status='PENDING').select_related('table', 'processed_by', 'related_sale').prefetch_related('items', 'items__product')
         serializer = self.get_serializer(pending_orders, many=True)
         return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
     def active(self, request):
         """Listar pedidos activos (no entregados ni cancelados)"""
-        active_orders = self.queryset.exclude(status__in=['DELIVERED', 'CANCELLED'])
+        active_orders = self.queryset.exclude(status__in=['DELIVERED', 'CANCELLED']).select_related('table', 'processed_by', 'related_sale').prefetch_related('items', 'items__product')
         serializer = self.get_serializer(active_orders, many=True)
         return Response(serializer.data)
 
@@ -400,10 +395,17 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
     def check_new_orders(self, request):
         """Verificar si hay nuevos pedidos (para notificaciones en tiempo real)"""
         from apps.users.models import SystemSetting
+        from django.core.cache import cache
+        
+        # Usar cache para contar pedidos pendientes (más rápido)
+        pending_count_cache_key = 'pending_catalog_orders_count'
+        pending_count = cache.get(pending_count_cache_key)
+        if pending_count is None:
+            pending_count = self.queryset.filter(status='PENDING').count()
+            cache.set(pending_count_cache_key, pending_count, timeout=30)  # Cache por 30 segundos
         
         # Obtener el último pedido pendiente
-        recent_order = self.queryset.filter(status='PENDING').order_by('-id').first()
-        pending_count = self.queryset.filter(status='PENDING').count()
+        recent_order = self.queryset.filter(status='PENDING').select_related('table', 'processed_by').prefetch_related('items', 'items__product').order_by('-id').first()
         
         if recent_order:
             # Obtener el ID del último pedido notificado desde la DB
