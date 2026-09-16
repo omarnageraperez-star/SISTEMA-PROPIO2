@@ -128,7 +128,7 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
         return Response(CatalogOrderSerializer(order).data)
     
     def _auto_convert_to_sale(self, order, user):
-        from apps.sales.models import Sale, SaleDetail
+        from apps.sales.models import Sale, SaleDetail, PaymentMethod, Payment
         from apps.crm.models import Customer
         
         customer, created = Customer.objects.get_or_create(
@@ -145,8 +145,17 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
             status='COMPLETED',
             subtotal=order.subtotal,
             tax=order.tax,
-            total=order.total,
-            payment_method=order.payment_method
+            total=order.total
+        )
+        
+        pm, _ = PaymentMethod.objects.get_or_create(
+            name=dict(order.PAYMENT_METHOD_CHOICES).get(order.payment_method, 'Efectivo'),
+            defaults={'is_active': True}
+        )
+        Payment.objects.create(
+            sale=sale,
+            payment_method=pm,
+            amount=order.total
         )
         
         for order_item in order.items.all():
