@@ -221,6 +221,10 @@ def catalog_view(request):
     store_logo = settings.get('company_logo', '')
     currency_code = settings.get('currency_code', 'COP')
     currency_symbol = settings.get('currency_symbol', '$')
+    opening_time = settings.get('opening_time', '08:00')
+    closing_time = settings.get('closing_time', '22:00')
+    delivery_eta_mins = settings.get('delivery_eta_mins', '40')
+    pickup_eta_mins = settings.get('pickup_eta_mins', '15')
     
     # Process table QR parameter
     tables = []
@@ -245,6 +249,10 @@ def catalog_view(request):
         'store_logo': store_logo,
         'currency_code': currency_code,
         'currency_symbol': currency_symbol,
+        'opening_time': opening_time,
+        'closing_time': closing_time,
+        'delivery_eta_mins': delivery_eta_mins,
+        'pickup_eta_mins': pickup_eta_mins,
         'selected_table': selected_table,
     }
     return render(request, 'inventory/catalog.html', context)

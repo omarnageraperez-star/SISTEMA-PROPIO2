@@ -91,8 +91,25 @@
 </head>
 <body class="min-h-screen flex flex-col" x-data="catalogApp()" x-init="initApp({% if selected_table %}{{ selected_table.id }}{% else %}null{% endif %})">
     
+    <!-- BUSINESS CLOSED OVERLAY -->
+    <div x-show="isClosed" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-6 text-center" style="display: none;">
+        <div class="max-w-md w-full bg-gray-900 border border-gray-700 rounded-3xl p-8 shadow-2xl">
+            <div class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                <svg class="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <h2 class="text-3xl font-black text-white mb-2 tracking-tight">Fuera de Servicio</h2>
+            <p class="text-gray-400 mb-6 leading-relaxed">
+                Actualmente nos encontramos fuera de nuestro horario de atención. No podemos recibir pedidos en este momento.
+            </p>
+            <div class="bg-gray-800/50 rounded-2xl p-4 border border-gray-700/50 inline-block mb-2">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Horario de Atención</p>
+                <p class="text-lg font-bold text-white">{{ opening_time }} - {{ closing_time }}</p>
+            </div>
+        </div>
+    </div>
+
     <!-- MAIN CATALOG VIEW -->
-    <div x-show="!isTracking" x-transition.opacity.duration.500ms class="flex-1 flex flex-col">
+    <div x-show="!isTracking && !isClosed" x-transition.opacity.duration.500ms class="flex-1 flex flex-col">
         <!-- Header -->
         <header class="glass sticky top-0 z-40 px-4 py-5 rounded-b-3xl mb-4">
             <div class="flex items-center gap-4 mb-5">
@@ -254,6 +271,19 @@
                     </template>
                 </div>
             </div>
+
+            <!-- ETA Banner -->
+            <template x-if="['PENDING', 'CONFIRMED', 'PREPARING'].includes(trackData.status)">
+                <div class="mb-8 bg-gray-800/80 border border-gray-700 rounded-2xl p-4 flex items-center justify-center gap-3 max-w-md w-full shadow-lg">
+                    <svg class="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <div class="text-left">
+                        <p class="text-xs text-gray-400 font-bold uppercase tracking-widest leading-none">Tiempo Estimado</p>
+                        <p class="text-white font-black text-lg leading-tight">
+                            <span x-text="trackData.order_type === 'DELIVERY' ? '{{ delivery_eta_mins }}' : '{{ pickup_eta_mins }}'"></span> minutos
+                        </p>
+                    </div>
+                </div>
+            </template>
 
             <!-- Progress Bar Tracker -->
             <div class="w-full max-w-md bg-gray-800/80 p-6 rounded-3xl backdrop-blur-xl border border-gray-700 shadow-2xl">
@@ -432,8 +462,9 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">WhatsApp / Teléfono</label>
-                    <input x-model="orderForm.customer_phone" type="tel" class="w-full bg-gray-900/60 text-white border border-gray-700 rounded-xl px-4 py-3.5 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm font-medium transition-all" placeholder="Para contactarte">
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">WhatsApp / Teléfono *</label>
+                    <p class="text-[10px] text-orange-400 font-medium mb-2 leading-tight">⚠️ Obligatorio. Te enviaremos notificaciones sobre el estado de tu pedido a este número.</p>
+                    <input x-model="orderForm.customer_phone" type="tel" required class="w-full bg-gray-900/60 text-white border border-gray-700 rounded-xl px-4 py-3.5 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm font-medium transition-all" placeholder="Para contactarte">
                 </div>
 
                 <div x-show="orderForm.order_type === 'DELIVERY'" x-collapse>
@@ -483,6 +514,11 @@
                 showOrderForm: false,
                 isSubmitting: false,
                 
+                // Business Hours State
+                isClosed: false,
+                openingTime: '{{ opening_time }}',
+                closingTime: '{{ closing_time }}',
+                
                 // Tracker State
                 isTracking: false,
                 trackOrderNumber: '',
@@ -500,6 +536,9 @@
                 },
                 
                 initApp(tableId) {
+                    this.checkBusinessHours();
+                    setInterval(() => this.checkBusinessHours(), 60000); // Re-check every minute
+
                     if (tableId) {
                         this.orderForm.table_id = tableId;
                     }
@@ -510,6 +549,30 @@
                         this.trackOrderNumber = savedOrder;
                         this.isTracking = true;
                         this.pollOrder();
+                    }
+                },
+                
+                checkBusinessHours() {
+                    if (!this.openingTime || !this.closingTime) return;
+                    
+                    const now = new Date();
+                    const currentMins = now.getHours() * 60 + now.getMinutes();
+                    
+                    const [openH, openM] = this.openingTime.split(':').map(Number);
+                    const [closeH, closeM] = this.closingTime.split(':').map(Number);
+                    
+                    const openMins = openH * 60 + openM;
+                    const closeMins = closeH * 60 + closeM;
+                    
+                    if (closeMins > openMins) {
+                        // Normal day (e.g. 08:00 to 22:00)
+                        this.isClosed = currentMins < openMins || currentMins > closeMins;
+                    } else if (closeMins < openMins) {
+                        // Wraps past midnight (e.g. 18:00 to 02:00)
+                        this.isClosed = currentMins < openMins && currentMins > closeMins;
+                    } else {
+                        // Same time (e.g. 00:00 to 00:00) -> 24 hours open
+                        this.isClosed = false;
                     }
                 },
                 

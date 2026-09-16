@@ -5305,7 +5305,30 @@ function App() {
                       <label className="text-sm font-semibold text-gray-700 ml-1">Teléfono</label>
                       <input type="text" className="glass-input mt-1" value={systemSettings.business_phone} onChange={e => setSystemSettings({...systemSettings, business_phone: e.target.value})} />
                     </div>
-                    <button type="submit" className="btn-premium mt-2"><Save size={18}/> Guardar y Sincronizar</button>
+                    
+                    <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-100">
+                      <div>
+                        <label className="text-sm font-semibold text-gray-700 ml-1">Hora de Apertura (Catálogo Web)</label>
+                        <input type="time" className="glass-input mt-1" value={systemSettings.opening_time || '08:00'} onChange={e => setSystemSettings({...systemSettings, opening_time: e.target.value})} />
+                      </div>
+                      <div>
+                        <label className="text-sm font-semibold text-gray-700 ml-1">Hora de Cierre (Catálogo Web)</label>
+                        <input type="time" className="glass-input mt-1" value={systemSettings.closing_time || '22:00'} onChange={e => setSystemSettings({...systemSettings, closing_time: e.target.value})} />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mt-2">
+                      <div>
+                        <label className="text-sm font-semibold text-gray-700 ml-1">Tiempo Estimado Domicilio (min)</label>
+                        <input type="number" className="glass-input mt-1" placeholder="Ej: 40" value={systemSettings.delivery_eta_mins || '40'} onChange={e => setSystemSettings({...systemSettings, delivery_eta_mins: e.target.value})} />
+                      </div>
+                      <div>
+                        <label className="text-sm font-semibold text-gray-700 ml-1">Tiempo Estimado Local/Llevar (min)</label>
+                        <input type="number" className="glass-input mt-1" placeholder="Ej: 15" value={systemSettings.pickup_eta_mins || '15'} onChange={e => setSystemSettings({...systemSettings, pickup_eta_mins: e.target.value})} />
+                      </div>
+                    </div>
+
+                    <button type="submit" className="btn-premium mt-4"><Save size={18}/> Guardar y Sincronizar</button>
                   </form>
                 </div>
               )}

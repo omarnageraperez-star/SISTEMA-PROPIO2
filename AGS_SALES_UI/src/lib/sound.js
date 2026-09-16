@@ -72,3 +72,13 @@ export const playOrderDelivery = () => {
 
 // Fallback old function in case it's imported elsewhere
 export const playNewOrderSound = playOrderDineIn;
+
+// URGENT ALERT: Loud, fast repeating square wave
+export const playUrgentAlert = () => {
+  playCustomSequence([
+    { freq: 440.00, time: 0.00, duration: 0.1, vol: 0.8, type: 'square' },
+    { freq: 440.00, time: 0.15, duration: 0.1, vol: 0.8, type: 'square' },
+    { freq: 440.00, time: 0.30, duration: 0.1, vol: 0.8, type: 'square' },
+    { freq: 880.00, time: 0.45, duration: 0.3, vol: 0.9, type: 'square' },
+  ]);
+};

@@ -10,7 +10,7 @@ import 'sweetalert2/dist/sweetalert2.min.css';
 import { apiRequest } from '../../lib/api';
 import { printTicket } from '../../lib/print';
 // import { ipcRenderer } from 'electron'; // Removed to avoid context isolation issues
-import { playOrderDineIn, playOrderTakeout, playOrderDelivery } from '../../lib/sound';
+import { playOrderDineIn, playOrderTakeout, playOrderDelivery, playUrgentAlert } from '../../lib/sound';
 
 const STATUS_CONFIG = {
   'PENDING': { 
@@ -97,6 +97,42 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
     return () => clearInterval(interval);
   }, []);
 
+  // Check for urgent pending orders every minute and play alert
+  useEffect(() => {
+    const urgencyInterval = setInterval(() => {
+      if (orders.length > 0) {
+        const now = new Date();
+        const hasUrgent = orders.some(o => {
+          if (o.status !== 'PENDING') return false;
+          const createdTime = new Date(o.created_at);
+          const diffMins = Math.floor((now - createdTime) / 60000);
+          return diffMins >= 5;
+        });
+
+        if (hasUrgent) {
+          playUrgentAlert();
+          
+          // Optional visual toast for urgency
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'warning',
+            title: '¡PEDIDOS URGENTES!',
+            text: 'Hay pedidos sin atender desde hace más de 5 minutos.',
+            showConfirmButton: false,
+            timer: 5000,
+            customClass: {
+              popup: 'border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.7)] bg-red-50 text-red-700',
+              title: 'text-red-700 font-black',
+            }
+          });
+        }
+      }
+    }, 60000); // 1 minute
+
+    return () => clearInterval(urgencyInterval);
+  }, [orders]);
+
   const checkNewOrders = async () => {
     try {
       const cleanBaseUrl = config.apiUrl.endsWith('/') ? config.apiUrl : config.apiUrl + '/';
@@ -152,8 +188,8 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
             timer: 8000,
             timerProgressBar: true,
             customClass: {
-              popup: 'premium-swal',
-              title: 'text-amber-600 font-bold',
+              popup: 'premium-swal border-2 border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.5)]',
+              title: 'text-amber-600 font-black text-2xl',
             }
           });
           
@@ -501,11 +537,16 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
             const StatusIcon = statusConfig.icon;
             const orderTypeConfig = ORDER_TYPE_CONFIG[order.order_type] || ORDER_TYPE_CONFIG['DINE_IN'];
             const actions = getStatusActions(order);
+            
+            // Calculate urgency (Pending > 5 mins)
+            const createdTime = new Date(order.created_at);
+            const diffMins = Math.floor((new Date() - createdTime) / 60000);
+            const isUrgent = order.status === 'PENDING' && diffMins >= 5;
 
             return (
               <div
                 key={order.id}
-                className="glass-panel rounded-3xl border border-slate-200/80 p-5 hover:shadow-2xl transition-all duration-300 flex flex-col justify-between group bg-white hover:-translate-y-1"
+                className={`glass-panel rounded-3xl border p-5 hover:shadow-2xl transition-all duration-300 flex flex-col justify-between group bg-white hover:-translate-y-1 ${isUrgent ? 'border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)] animate-pulse' : 'border-slate-200/80'}`}
               >
                 <div>
                   {/* CARD HEADER */}
@@ -514,12 +555,19 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
                       <span className="text-base font-black text-slate-900 bg-slate-100 px-3 py-1 rounded-xl">
                         #{order.order_number}
                       </span>
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded-xl border ${orderTypeConfig.color}`}>
-                        {orderTypeConfig.icon} {orderTypeConfig.label}
-                      </span>
+                      {isUrgent && (
+                        <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest flex items-center gap-1">
+                          <AlertCircle size={10} /> Urgente ({diffMins}m)
+                        </span>
+                      )}
+                      {!isUrgent && (
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-xl border ${orderTypeConfig.color}`}>
+                          {orderTypeConfig.icon} {orderTypeConfig.label}
+                        </span>
+                      )}
                     </div>
 
-                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl border text-xs font-black ${statusConfig.bgColor}`}>
+                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl border text-xs font-black ${isUrgent ? 'bg-red-50 text-red-700 border-red-200' : statusConfig.bgColor}`}>
                       <StatusIcon size={14} />
                       <span>{statusConfig.label}</span>
                     </div>
