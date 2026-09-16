@@ -26,6 +26,44 @@ const ORDER_TYPE_CONFIG = {
   'DELIVERY': { label: '🛵 Domicilio', icon: '🛵' },
 };
 
+// Función para comprimir imagen base64
+const compressImage = (base64String, quality = 0.5) => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = base64String;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Calcular nuevas dimensiones manteniendo aspect ratio
+      const maxWidth = 600;
+      const maxHeight = 600;
+      let width = img.width;
+      let height = img.height;
+      
+      if (width > height) {
+        if (width > maxWidth) {
+          height *= maxWidth / width;
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width *= maxHeight / height;
+          height = maxHeight;
+        }
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Comprimir con calidad reducida
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(base64String);
+  });
+};
+
 export default function CatalogOrders({ auth, onLogout }) {
   const navigate = useNavigate();
   const isDeliveryDriver = auth.user?.role === 'DELIVERY';
@@ -212,17 +250,21 @@ export default function CatalogOrders({ auth, onLogout }) {
       if (isDeliverAction) {
         try {
           const photo = await Camera.getPhoto({
-            quality: 70,
+            quality: 50,
             allowEditing: false,
             resultType: CameraResultType.DataUrl,
             source: CameraSource.Camera,
+            width: 800,
+            height: 800,
           });
 
           if (photo.dataUrl) {
+            // Comprimir más la imagen reduciendo calidad
+            const compressedPhoto = await compressImage(photo.dataUrl, 0.5);
             requestBody = {
               status: newStatus,
               processed_by: auth.user?.id,
-              delivery_photo: photo.dataUrl
+              delivery_photo: compressedPhoto
             };
           }
         } catch (e) {
