@@ -424,76 +424,46 @@ function App() {
 
   useEffect(() => {
     if (!token || !apiUrl || !userProfile || !config?.default_printer) return;
-    const isAdmin = ['SUPERADMIN', 'ADMIN'].includes(userProfile.role);
-    if (!isAdmin) return;
 
-    const checkAdminSales = async () => {
-      let fs = null;
-      let path = null;
-      let logFile = null;
+    const checkLatestSale = async () => {
       try {
-        fs = window.require ? window.require('fs') : null;
-        path = window.require ? window.require('path') : null;
-        logFile = path ? path.join('C:', 'Users', 'USUARIO', 'Documents', 'trabajos sena', 'AGS SALES', 'AGS_SALES_UI', 'print_debug.log') : null;
-      } catch(e){}
-
-      const writeLog = (msg) => {
-        if (fs && logFile) {
-          try {
-            fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`, 'utf8');
-          } catch(err){}
-        }
-      };
-
-      try {
-        writeLog(`checkAdminSales ejecutado. token=${!!token} apiUrl=${apiUrl}`);
         const res = await apiRequest(`${apiUrl.replace(/\/$/, '')}/sales/sales/?page=1&page_size=1`, {}, token);
-        writeLog(`Respuesta API: status=${res.status}`);
-        
-        if (res.ok) {
-          const data = await res.json();
-          const latestSale = Array.isArray(data) ? data[0] : (data.results?.[0]);
-          writeLog(`latestSale obtenido: ${latestSale ? JSON.stringify(latestSale) : 'null'}`);
-          
-          if (latestSale) {
-            writeLog(`Comparando IDs: lastSaleIdRef.current=${lastSaleIdRef.current}, latestSale.id=${latestSale.id}`);
-            if (lastSaleIdRef.current !== null && lastSaleIdRef.current !== latestSale.id) {
-              writeLog(`Nueva venta detectada: window.lastLocalSaleId=${window.lastLocalSaleId}, default_printer=${config?.default_printer}`);
-              
-              if (latestSale.id !== window.lastLocalSaleId && config?.default_printer) {
-                const noPrintFlag = latestSale.payments?.some(p => p.reference?.includes('[NO_PRINT]'));
-                writeLog(`noPrintFlag=${noPrintFlag}, payments=${JSON.stringify(latestSale.payments)}`);
-                if (!noPrintFlag) {
-                  writeLog(`Procediendo a imprimir silenciosamente en: ${config.default_printer}`);
-                  try {
-                    printTicket(latestSale, systemSettings, systemSettings?.ticket_logo || config?.ticket_logo, { 
-                      silent: true, 
-                      printerName: config?.default_printer, 
-                      apiUrl: config?.apiUrl 
-                    });
-                    writeLog(`Llamada printTicket realizada sin excepciones.`);
-                  } catch (err) {
-                    writeLog(`ERROR al imprimir: ${err.message}\nStack: ${err.stack}`);
-                  }
-                } else {
-                  writeLog(`Impresión omitida por noPrintFlag.`);
-                }
-              } else {
-                writeLog(`Omitiendo auto-impresión: latestSale.id === window.lastLocalSaleId o no hay config.default_printer.`);
-              }
+        if (!res.ok) return;
+        const data = await res.json();
+        const latestSale = Array.isArray(data) ? data[0] : (data.results?.[0]);
+        if (!latestSale) return;
+
+        // On first load, just record the ID without printing
+        if (lastSaleIdRef.current === null) {
+          lastSaleIdRef.current = latestSale.id;
+          return;
+        }
+
+        // New sale detected
+        if (latestSale.id !== lastSaleIdRef.current) {
+          lastSaleIdRef.current = latestSale.id;
+          const noPrintFlag = latestSale.payments?.some(p => p.reference?.includes('[NO_PRINT]'));
+          if (!noPrintFlag) {
+            try {
+              printTicket(latestSale, systemSettings, systemSettings?.ticket_logo || config?.ticket_logo, {
+                silent: true,
+                printerName: config?.default_printer,
+                apiUrl: config?.apiUrl
+              });
+            } catch (err) {
+              console.error('Error al imprimir tirilla automatica:', err);
             }
-            lastSaleIdRef.current = latestSale.id;
           }
         }
       } catch (e) {
-        writeLog(`ERROR GLOBAL: ${e.message}\nStack: ${e.stack}`);
+        console.error('Error en checkLatestSale:', e);
       }
     };
 
-    checkAdminSales();
-    const interval = setInterval(checkAdminSales, 2500);
+    checkLatestSale();
+    const interval = setInterval(checkLatestSale, 2500);
     return () => clearInterval(interval);
-  }, [token, apiUrl, userProfile?.role, userProfile?.username, config?.default_printer, config?.apiUrl, config?.ticket_logo, systemSettings]);
+  }, [token, apiUrl, userProfile?.role, config?.default_printer, config?.apiUrl, config?.ticket_logo, systemSettings]);
 
   // Inventory States
   const [products, setProducts] = useState([]);

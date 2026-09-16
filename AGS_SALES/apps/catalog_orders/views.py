@@ -135,51 +135,84 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
         return Response(CatalogOrderSerializer(order).data)
     
     def _auto_convert_to_sale(self, order, user):
-        from apps.sales.models import Sale, SaleDetail, PaymentMethod, Payment
+        """
+        Crea una Venta completa igual que si el cajero la hubiera generado desde el POS.
+        Usa el SaleSerializer para garantizar: número de factura, Kardex, turno de caja, etc.
+        """
+        from apps.sales.serializers import SaleSerializer
+        from apps.inventory.models import Warehouse
         from apps.crm.models import Customer
+
+        # 1. Obtener o crear el cliente en CRM con nombre y apellido separados
+        full_name = order.customer_name.strip()
+        parts = full_name.split(' ', 1)
+        first_name = parts[0]
+        last_name = parts[1] if len(parts) > 1 else 'Web'
         
-        customer, created = Customer.objects.get_or_create(
-            name=order.customer_name,
-            defaults={
-                'phone': order.customer_phone or '',
-                'address': order.customer_address or ''
-            }
-        )
+        customer = Customer.objects.filter(
+            first_name__iexact=first_name,
+            last_name__iexact=last_name
+        ).first()
+        if not customer:
+            customer = Customer.objects.create(
+                first_name=first_name,
+                last_name=last_name,
+                phone=order.customer_phone or '',
+                address=order.customer_address or '',
+            )
         
-        sale = Sale.objects.create(
-            user=user,
-            customer=customer,
-            status='COMPLETED',
-            subtotal=order.subtotal,
-            tax=order.tax,
-            total=order.total
-        )
+        # 2. Obtener el almacén principal
+        warehouse = Warehouse.objects.first()
         
-        pm, _ = PaymentMethod.objects.get_or_create(
-            name=dict(order.PAYMENT_METHOD_CHOICES).get(order.payment_method, 'Efectivo'),
-            defaults={'is_active': True}
-        )
-        Payment.objects.create(
-            sale=sale,
-            payment_method=pm,
-            amount=order.total
-        )
-        
+        # 3. Construir el payload de items para el serializer
+        details_data = []
         for order_item in order.items.all():
             if order_item.product:
-                SaleDetail.objects.create(
-                    sale=sale,
-                    product=order_item.product,
-                    quantity=order_item.quantity,
-                    unit_price=order_item.unit_price,
-                    discount=0,
-                    subtotal=order_item.subtotal
-                )
+                details_data.append({
+                    'product': order_item.product.id,
+                    'quantity': str(order_item.quantity),
+                    'unit_price': str(order_item.unit_price),
+                    'discount': '0',
+                })
         
+        # 4. Construir el método de pago a partir del pedido
+        payment_name = dict(order.PAYMENT_METHOD_CHOICES).get(order.payment_method, 'Efectivo')
+        from apps.sales.models import PaymentMethod as PM
+        pm_obj, _ = PM.objects.get_or_create(name=payment_name, defaults={'is_active': True})
+        
+        payments_data = [{
+            'payment_method': pm_obj.id,
+            'amount': str(order.total),
+        }]
+        
+        # 5. Payload completo para el serializer (idéntico al del POS)
+        sale_data = {
+            'warehouse': warehouse.id if warehouse else None,
+            'customer': customer.id,
+            'status': 'COMPLETED',
+            'invoice_type': 'POS',
+            'details': details_data,
+            'payments': payments_data,
+        }
+        
+        # 6. Crear mock request con el usuario para que el serializer lo tome
+        from rest_framework.request import Request as DRFRequest
+        from django.test import RequestFactory
+        factory = RequestFactory()
+        mock_request = factory.post('/')
+        mock_request.user = user
+        
+        # 7. Ejecutar el serializer con la lógica completa del POS
+        serializer = SaleSerializer(data=sale_data, context={'request': mock_request})
+        serializer.is_valid(raise_exception=True)
+        sale = serializer.save()
+        
+        # 8. Vincular la venta al pedido
         order.related_sale = sale
         order.processed_by = user
         order.save()
         return sale
+
 
     @action(detail=True, methods=['post'], url_path='convert-to-sale')
     def convert_to_sale(self, request, pk=None):
