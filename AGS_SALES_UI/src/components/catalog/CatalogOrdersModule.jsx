@@ -795,6 +795,31 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
                 </div>
               )}
 
+              {/* DELIVERY PHOTO EVIDENCE */}
+              {selectedOrder.delivery_photo && (
+                <div className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-200">
+                  <h4 className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-3">📸 Evidencia de Entrega</h4>
+                  <div className="flex flex-col items-center gap-3">
+                    <img 
+                      src={selectedOrder.delivery_photo} 
+                      alt="Evidencia de entrega" 
+                      className="max-w-full max-h-64 rounded-xl border-2 border-emerald-300 shadow-md object-contain bg-white"
+                    />
+                    <button
+                      onClick={() => {
+                        const win = window.open();
+                        win.document.write(`<img src="${selectedOrder.delivery_photo}" style="max-width:100%;max-height:100vh;margin:auto;display:block;">`);
+                        win.document.title = `Evidencia de Entrega - Pedido #${selectedOrder.order_number}`;
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm active:scale-95"
+                    >
+                      <ExternalLink size={14} />
+                      <span>Abrir en nueva pestaña</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* FINANCIAL SUMMARY */}
               <div className="bg-slate-900 text-white p-5 rounded-2xl space-y-2">
                 <div className="flex justify-between text-xs text-slate-400">

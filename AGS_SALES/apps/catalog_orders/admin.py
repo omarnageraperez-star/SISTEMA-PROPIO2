@@ -35,15 +35,30 @@ class TableAdmin(admin.ModelAdmin):
 
 @admin.register(CatalogOrder)
 class CatalogOrderAdmin(admin.ModelAdmin):
-    list_display = ('order_number', 'customer_name', 'table', 'order_type', 'status', 'total', 'created_at')
+    list_display = ('order_number', 'customer_name', 'table', 'order_type', 'status', 'total', 'created_at', 'delivery_photo_thumbnail')
     list_filter = ('status', 'order_type', 'payment_method', 'created_at')
     search_fields = ('order_number', 'customer_name', 'customer_phone')
-    readonly_fields = ('order_number', 'subtotal', 'tax', 'total', 'created_at', 'confirmed_at', 'delivered_at')
+    readonly_fields = ('order_number', 'subtotal', 'tax', 'total', 'created_at', 'confirmed_at', 'delivered_at', 'delivery_photo_display')
     inlines = [CatalogOrderItemInline]
     list_per_page = 20  # Limitar registros por página para reducir conexiones
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('table', 'processed_by').prefetch_related('items')
+    
+    def delivery_photo_thumbnail(self, obj):
+        if obj.delivery_photo:
+            return format_html('<img src="{}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" />', obj.delivery_photo)
+        return "Sin foto"
+    delivery_photo_thumbnail.short_description = "Foto Entrega"
+    
+    def delivery_photo_display(self, obj):
+        if obj.delivery_photo:
+            return format_html(
+                '<img src="{}" style="max-width: 100%; max-height: 400px; border-radius: 8px; border: 2px solid #10b981;" />',
+                obj.delivery_photo
+            )
+        return "No hay foto de entrega"
+    delivery_photo_display.short_description = "Evidencia de Entrega"
     
     fieldsets = (
         ('Información del Pedido', {
@@ -57,6 +72,9 @@ class CatalogOrderAdmin(admin.ModelAdmin):
         }),
         ('Tiempos', {
             'fields': ('created_at', 'confirmed_at', 'delivered_at')
+        }),
+        ('Evidencia de Entrega', {
+            'fields': ('delivery_photo_display',)
         }),
         ('Procesamiento', {
             'fields': ('processed_by', 'related_sale', 'notes')
