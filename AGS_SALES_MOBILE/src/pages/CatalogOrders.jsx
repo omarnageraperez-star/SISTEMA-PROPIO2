@@ -834,6 +834,54 @@ export default function CatalogOrders({ auth, onLogout }) {
                 </div>
               )}
 
+              {/* Delivery Photo Evidence */}
+              {selectedOrder.delivery_photo && (
+                <div style={{ marginBottom: 20 }}>
+                  <h4 style={{ fontSize: 14, fontWeight: 700, color: '#10b981', marginBottom: 8 }}>📸 Evidencia de Entrega</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <img 
+                      src={selectedOrder.delivery_photo} 
+                      alt="Evidencia de entrega" 
+                      style={{ 
+                        width: '100%', 
+                        maxHeight: 250, 
+                        borderRadius: 12, 
+                        border: '2px solid #10b981',
+                        objectFit: 'contain',
+                        background: 'white'
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const win = window.open();
+                        win.document.write(`<img src="${selectedOrder.delivery_photo}" style="max-width:100%;max-height:100vh;margin:auto;display:block;">`);
+                        win.document.title = `Evidencia de Entrega - Pedido #${selectedOrder.order_number}`;
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: 12,
+                        borderRadius: 10,
+                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                        border: 'none',
+                        color: 'white',
+                        fontWeight: 800,
+                        fontSize: 13,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                      }}
+                    >
+                      <ExternalLink size={16} />
+                      <span>Abrir en nueva pestaña</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Totals */}
               <div style={{ marginBottom: 20, background: 'rgba(255, 255, 255, 0.03)', borderRadius: 12, padding: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
