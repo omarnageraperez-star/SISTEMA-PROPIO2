@@ -298,3 +298,5 @@ JAZZMIN_UI_TWEAKS = {
     "sidebar": "sidebar-dark-primary",
     "sidebar_nav_child_indent": True,
 }
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10MB
