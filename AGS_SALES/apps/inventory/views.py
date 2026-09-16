@@ -205,7 +205,7 @@ class KardexViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_fields = ['product', 'warehouse', 'movement_type']
 
 from django.shortcuts import render
-from apps.users.models import SystemSetting
+from apps.users.models import SystemSetting as SystemSettingModel
 from apps.catalog_orders.models import Table
 
 def catalog_view(request):
@@ -220,7 +220,7 @@ def catalog_view(request):
     settings_cache_key = 'catalog_settings'
     settings = cache.get(settings_cache_key)
     if settings is None:
-        settings = {s.key: s.value for s in SystemSetting.objects.all().only('key', 'value')}
+        settings = {s.key: s.value for s in SystemSettingModel.objects.all().only('key', 'value')}
         cache.set(settings_cache_key, settings, timeout=300)  # Cache for 5 minutes
     
     store_name = settings.get('store_name', 'Mi Tienda')
