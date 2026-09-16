@@ -474,22 +474,38 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
 @require_http_methods(["GET", "POST"])
 def customer_login_view(request):
     """Página de login para clientes"""
-    store_name = SystemSetting.objects.filter(key='store_name').first()
-    store_logo = SystemSetting.objects.filter(key='store_logo').first()
+    from django.core.cache import cache
+    settings_cache_key = 'catalog_settings'
+    settings = cache.get(settings_cache_key)
+    if settings is None:
+        settings = {s.key: s.value for s in SystemSetting.objects.all().only('key', 'value')}
+        cache.set(settings_cache_key, settings, timeout=300)
+    
+    store_name = settings.get('store_name', 'Mi Tienda')
+    store_logo = settings.get('company_logo', '')
+    
     context = {
-        'store_name': store_name.value if store_name else 'AGS SALES',
-        'store_logo': store_logo.value if store_logo else None
+        'store_name': store_name,
+        'store_logo': store_logo
     }
     return render(request, 'catalog_orders/customer_login.html', context)
 
 @require_http_methods(["GET", "POST"])
 def customer_register_view(request):
     """Página de registro para clientes"""
-    store_name = SystemSetting.objects.filter(key='store_name').first()
-    store_logo = SystemSetting.objects.filter(key='store_logo').first()
+    from django.core.cache import cache
+    settings_cache_key = 'catalog_settings'
+    settings = cache.get(settings_cache_key)
+    if settings is None:
+        settings = {s.key: s.value for s in SystemSetting.objects.all().only('key', 'value')}
+        cache.set(settings_cache_key, settings, timeout=300)
+    
+    store_name = settings.get('store_name', 'Mi Tienda')
+    store_logo = settings.get('company_logo', '')
+    
     context = {
-        'store_name': store_name.value if store_name else 'AGS SALES',
-        'store_logo': store_logo.value if store_logo else None
+        'store_name': store_name,
+        'store_logo': store_logo
     }
     return render(request, 'catalog_orders/customer_register.html', context)
 
@@ -502,12 +518,20 @@ def customer_dashboard_view(request):
     
     # Obtener pedidos del cliente
     orders = CatalogOrder.objects.filter(customer_user=request.user).order_by('-created_at')[:10]
-    store_name = SystemSetting.objects.filter(key='store_name').first()
-    store_logo = SystemSetting.objects.filter(key='store_logo').first()
+    
+    from django.core.cache import cache
+    settings_cache_key = 'catalog_settings'
+    settings = cache.get(settings_cache_key)
+    if settings is None:
+        settings = {s.key: s.value for s in SystemSetting.objects.all().only('key', 'value')}
+        cache.set(settings_cache_key, settings, timeout=300)
+    
+    store_name = settings.get('store_name', 'Mi Tienda')
+    store_logo = settings.get('company_logo', '')
     
     context = {
-        'store_name': store_name.value if store_name else 'AGS SALES',
-        'store_logo': store_logo.value if store_logo else None,
+        'store_name': store_name,
+        'store_logo': store_logo,
         'orders': orders,
         'customer': request.user
     }
