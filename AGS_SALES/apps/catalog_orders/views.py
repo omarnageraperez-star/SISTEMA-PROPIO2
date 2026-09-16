@@ -97,55 +97,63 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['patch'], url_path='update-status')
     def update_status(self, request, pk=None):
         """Actualizar estado de un pedido"""
-        order = self.get_object()
-        serializer = self.get_serializer(order, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        
-        new_status = serializer.validated_data.get('status')
-        old_status = order.status
-        
-        # Actualizar tiempos según estado
-        if new_status == 'CONFIRMED' and old_status == 'PENDING':
-            order.confirmed_at = timezone.now()
-        elif new_status == 'DELIVERED' and old_status != 'DELIVERED':
-            order.delivered_at = timezone.now()
-        
-        # Si el pedido se cancela y se provee un motivo
-        cancel_reason = request.data.get('cancel_reason')
-        if new_status == 'CANCELLED' and old_status != 'CANCELLED' and cancel_reason:
-            old_notes = order.notes or ''
-            prefix = '\n' if old_notes else ''
-            order.notes = f"{old_notes}{prefix}CANCELADO: {cancel_reason}"
-
-        # Evidencia de entrega (Opcional, puede venir en la misma request PATCH)
-        if request.FILES.get('delivery_photo'):
-            order.delivery_photo = request.FILES['delivery_photo']
-        
-        # Si se confirma el pedido, descontar inventario y convertir a venta
-        if new_status == 'CONFIRMED' and old_status == 'PENDING':
-            for item in order.items.all():
-                if item.product and item.product.has_inventory_control:
-                    item.product.stock -= item.quantity
-                    item.product.save()
+        try:
+            order = self.get_object()
+            serializer = self.get_serializer(order, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
             
-            # Autoconvertir a Venta POS si no tiene
-            if not order.related_sale:
-                try:
-                    self._auto_convert_to_sale(order, request.user)
-                except Exception as e:
-                    pass # Evitar romper el flujo si falla la venta automática
-        
-        serializer.save()
-        
-        # WhatsApp Notification
-        if new_status != old_status:
-            try:
-                self._send_whatsapp_notification(order, new_status)
-            except Exception as e:
-                pass # Non-blocking
+            new_status = serializer.validated_data.get('status')
+            old_status = order.status
+            
+            # Actualizar tiempos según estado
+            if new_status == 'CONFIRMED' and old_status == 'PENDING':
+                from django.utils import timezone
+                order.confirmed_at = timezone.now()
+            elif new_status == 'DELIVERED' and old_status != 'DELIVERED':
+                from django.utils import timezone
+                order.delivered_at = timezone.now()
+            
+            # Si el pedido se cancela y se provee un motivo
+            cancel_reason = request.data.get('cancel_reason')
+            if new_status == 'CANCELLED' and old_status != 'CANCELLED' and cancel_reason:
+                old_notes = order.notes or ''
+                prefix = '\n' if old_notes else ''
+                order.notes = f"{old_notes}{prefix}CANCELADO: {cancel_reason}"
+
+            # Evidencia de entrega (Opcional, puede venir en la misma request PATCH)
+            if request.FILES.get('delivery_photo'):
+                order.delivery_photo = request.FILES['delivery_photo']
+            
+            # Si se confirma el pedido, descontar inventario y convertir a venta
+            if new_status == 'CONFIRMED' and old_status == 'PENDING':
+                for item in order.items.all():
+                    if item.product and item.product.has_inventory_control:
+                        item.product.stock -= item.quantity
+                        item.product.save()
                 
-        return Response(CatalogOrderSerializer(order).data)
-        
+                # Autoconvertir a Venta POS si no tiene
+                if not order.related_sale:
+                    try:
+                        self._auto_convert_to_sale(order, request.user)
+                    except Exception as e:
+                        pass # Evitar romper el flujo si falla la venta automática
+            
+            serializer.save()
+            order.save(update_fields=['confirmed_at', 'delivered_at', 'notes', 'delivery_photo'] if any([order.confirmed_at, order.delivered_at, order.notes, order.delivery_photo]) else None)
+            
+            # WhatsApp Notification
+            if new_status != old_status:
+                try:
+                    self._send_whatsapp_notification(order, new_status)
+                except Exception as e:
+                    pass # Non-blocking
+                    
+            return Response(CatalogOrderSerializer(order).data)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     def _send_whatsapp_notification(self, order, status):
         """Simula o envía notificación por WhatsApp al cliente usando un webhook configurado en sistema"""
         if not order.customer_phone:
