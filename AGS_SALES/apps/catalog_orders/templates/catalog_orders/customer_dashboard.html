@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Pedidos - {{ store_name }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body { 
+            font-family: 'Outfit', sans-serif; 
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+        }
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="p-4" x-data="customerDashboard()" x-init="initDashboard()">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="glass rounded-3xl p-6 mb-6 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                {% if store_logo %}
+                <img src="{{ store_logo }}" alt="Logo" class="w-14 h-14 object-contain rounded-2xl bg-white/5 p-1">
+                {% else %}
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-black text-2xl">
+                    {{ store_name|slice:":1" }}
+                </div>
+                {% endif %}
+                <div>
+                    <h1 class="text-xl font-black text-white">Hola, {{ customer.first_name }}</h1>
+                    <p class="text-gray-400 text-sm">Bienvenido a tu panel de cliente</p>
+                </div>
+            </div>
+            <button @click="logout()" class="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-2 rounded-xl font-bold text-sm transition-colors">
+                Cerrar Sesión
+            </button>
+        </div>
+
+        <!-- Loading -->
+        <div x-show="loading" class="text-center py-12">
+            <div class="inline-block w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-gray-400 mt-4">Cargando tus pedidos...</p>
+        </div>
+
+        <!-- Orders List -->
+        <div x-show="!loading" class="space-y-4">
+            <template x-if="orders.length === 0">
+                <div class="glass rounded-3xl p-8 text-center">
+                    <p class="text-gray-400 text-lg">Aún no tienes pedidos</p>
+                    <a href="/catalogo/" class="inline-block mt-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold px-6 py-3 rounded-xl">
+                        Hacer mi primer pedido
+                    </a>
+                </div>
+            </template>
+
+            <template x-for="order in orders" :key="order.id">
+                <div class="glass rounded-2xl p-5">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-white font-black text-lg">Pedido #<span x-text="order.order_number"></span></h3>
+                            <p class="text-gray-400 text-sm" x-text="formatDate(order.created_at)"></p>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs font-bold" 
+                              :class="getStatusColor(order.status)" 
+                              x-text="getStatusText(order.status)"></span>
+                    </div>
+                    
+                    <div class="bg-gray-900/50 rounded-xl p-4 mb-4">
+                        <template x-for="item in order.items" :key="item.id">
+                            <div class="flex justify-between items-center py-2 border-b border-gray-800 last:border-0">
+                                <span class="text-gray-300 text-sm" x-text="item.product_name"></span>
+                                <span class="text-white font-bold text-sm">x<span x-text="item.quantity"></span></span>
+                            </div>
+                        </template>
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <div class="text-gray-400 text-sm">
+                            <span x-text="order.items.length"></span> items
+                        </div>
+                        <div class="text-orange-400 font-black text-xl">
+                            $<span x-text="order.total"></span>
+                        </div>
+                    </div>
+
+                    <template x-if="order.status === 'DELIVERED' && !order.rating">
+                        <div class="mt-4 pt-4 border-t border-gray-700">
+                            <button @click="repeatOrder(order)" class="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold py-3 rounded-xl">
+                                Repetir Pedido
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <script>
+        function customerDashboard() {
+            return {
+                loading: true,
+                orders: [],
+                token: localStorage.getItem('customerToken'),
+                
+                async initDashboard() {
+                    if (!this.token) {
+                        window.location.href = '/catalogo/login/';
+                        return;
+                    }
+                    
+                    await this.fetchOrders();
+                },
+                
+                async fetchOrders() {
+                    try {
+                        const response = await fetch('/api/catalog-orders/orders/?customer_user=' + this.getUserId(), {
+                            headers: { 'Authorization': `Token ${this.token}` }
+                        });
+                        
+                        if (response.status === 401) {
+                            this.logout();
+                            return;
+                        }
+                        
+                        const data = await response.json();
+                        this.orders = data.results || data || [];
+                    } catch (err) {
+                        console.error('Error fetching orders:', err);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                
+                getUserId() {
+                    const user = JSON.parse(localStorage.getItem('customerUser') || '{}');
+                    return user.id;
+                },
+                
+                formatDate(dateStr) {
+                    return new Date(dateStr).toLocaleDateString('es-ES', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                },
+                
+                getStatusColor(status) {
+                    const colors = {
+                        'PENDING': 'bg-yellow-500/20 text-yellow-400',
+                        'CONFIRMED': 'bg-blue-500/20 text-blue-400',
+                        'PREPARING': 'bg-purple-500/20 text-purple-400',
+                        'READY': 'bg-emerald-500/20 text-emerald-400',
+                        'DELIVERED': 'bg-gray-500/20 text-gray-400',
+                        'CANCELLED': 'bg-red-500/20 text-red-400'
+                    };
+                    return colors[status] || 'bg-gray-500/20 text-gray-400';
+                },
+                
+                getStatusText(status) {
+                    const texts = {
+                        'PENDING': 'Pendiente',
+                        'CONFIRMED': 'Confirmado',
+                        'PREPARING': 'En Preparación',
+                        'READY': 'Listo',
+                        'DELIVERED': 'Entregado',
+                        'CANCELLED': 'Cancelado'
+                    };
+                    return texts[status] || status;
+                },
+                
+                repeatOrder(order) {
+                    // Guardar items del pedido en localStorage para repetir
+                    localStorage.setItem('repeatOrder', JSON.stringify(order.items));
+                    window.location.href = '/catalogo/';
+                },
+                
+                logout() {
+                    localStorage.removeItem('customerToken');
+                    localStorage.removeItem('customerUser');
+                    window.location.href = '/catalogo/login/';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

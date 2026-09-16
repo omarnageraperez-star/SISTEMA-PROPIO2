@@ -13,6 +13,7 @@ import More from './pages/More';
 import CashControl from './pages/CashControl';
 import Credits from './pages/Credits';
 import CatalogOrders from './pages/CatalogOrders';
+import CustomerDashboard from './pages/CustomerDashboard';
 import BottomNav from './components/BottomNav';
 import { storage } from './lib/storage';
 import { loadAndApplyTheme } from './lib/theme';
@@ -1027,6 +1028,7 @@ function AppRoutes({ auth, onLogout, onSettingsUpdate, licenseStatusInfo, showWa
         <Route path="/cash-control" element={canAccessCash ? <CashControl auth={auth} onShiftOpened={onShiftOpened} /> : <Navigate to="/" replace />} />
         <Route path="/credits" element={hasPermission(user, 'sales.credits') ? <Credits auth={auth} /> : <Navigate to="/" replace />} />
         <Route path="/catalog-orders" element={<CatalogOrders auth={auth} onLogout={onLogout} />} />
+        <Route path="/customer-dashboard" element={<CustomerDashboard auth={auth} onLogout={onLogout} />} />
         <Route path="/more" element={<More auth={auth} onLogout={onLogout} onSettingsUpdate={onSettingsUpdate} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

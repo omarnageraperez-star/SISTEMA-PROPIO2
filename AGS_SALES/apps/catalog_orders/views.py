@@ -42,9 +42,24 @@ class TableViewSet(viewsets.ModelViewSet):
 
 class CatalogOrderViewSet(viewsets.ModelViewSet):
     """ViewSet para gestionar pedidos del catálogo"""
-    queryset = CatalogOrder.objects.select_related('table', 'processed_by', 'related_sale').prefetch_related('items', 'items__product')
+    queryset = CatalogOrder.objects.select_related('table', 'processed_by', 'related_sale', 'customer_user').prefetch_related('items', 'items__product')
     serializer_class = CatalogOrderSerializer
     permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """Optimizar queryset con select_related y prefetch_related"""
+        queryset = super().get_queryset()
+        
+        # Si el usuario es un CustomerUser, mostrar solo sus pedidos
+        if isinstance(self.request.user, CustomerUser):
+            queryset = queryset.filter(customer_user=self.request.user)
+        
+        # Filtrar por parámetro customer_user si se proporciona (para dashboard de clientes)
+        customer_user_id = self.request.query_params.get('customer_user')
+        if customer_user_id:
+            queryset = queryset.filter(customer_user_id=customer_user_id)
+        
+        return queryset
     
     def get_permissions(self):
         if self.action == 'create':

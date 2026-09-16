@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from decimal import Decimal
-from .models import Table, CatalogOrder, CatalogOrderItem
+from .models import Table, CatalogOrder, CatalogOrderItem, CustomerUser
 from apps.inventory.models import Product
 from apps.inventory.serializers import ProductSerializer
 
@@ -53,11 +53,12 @@ class CreateCatalogOrderItemSerializer(serializers.ModelSerializer):
 
 class CreateCatalogOrderSerializer(serializers.ModelSerializer):
     items = CreateCatalogOrderItemSerializer(many=True, write_only=True)
+    customer_user = serializers.PrimaryKeyRelatedField(queryset=CustomerUser.objects.all(), required=False, allow_null=True)
     
     class Meta:
         model = CatalogOrder
         fields = [
-            'table', 'customer_name', 'customer_phone', 'customer_address',
+            'table', 'customer_user', 'customer_name', 'customer_phone', 'customer_address',
             'order_type', 'payment_method', 'notes', 'items'
         ]
     
