@@ -249,7 +249,7 @@
                     <template x-if="trackData.status === 'CANCELLED'">
                         <div class="text-center">
                             <span class="text-7xl">❌</span>
-                            <p class="text-red-400 font-black mt-2 text-xl drop-shadow-md">Cancelado</p>
+                            <p class="text-red-400 font-black mt-2 text-xl drop-shadow-md">Pedido Rechazado</p>
                         </div>
                     </template>
                 </div>
@@ -290,6 +290,16 @@
                     <span x-show="trackData.status === 'READY'">Tu pedido está listo para ser entregado.</span>
                     <span x-show="trackData.status === 'DELIVERED'">Tu pedido ha sido entregado. ¡Gracias por tu compra!</span>
                 </p>
+
+                <!-- Cancellation Reason Box -->
+                <template x-if="trackData.status === 'CANCELLED'">
+                    <div class="mt-5 bg-red-950/60 border border-red-700 rounded-2xl p-4 text-left">
+                        <p class="text-red-400 font-extrabold text-xs uppercase tracking-widest mb-2">⚠️ Motivo del Rechazo</p>
+                        <p class="text-red-200 text-sm font-medium leading-relaxed"
+                           x-text="trackData.notes ? trackData.notes.replace('CANCELADO: ', '') : 'Lo sentimos, tu pedido no pudo ser procesado. Por favor contáctanos para más información.'"
+                        ></p>
+                    </div>
+                </template>
                 
                 <button x-show="['DELIVERED', 'CANCELLED'].includes(trackData.status)" @click="exitTracking()" class="mt-6 w-full py-3 bg-gray-700 hover:bg-gray-600 rounded-xl text-white font-bold transition-colors">
                     Hacer Nuevo Pedido

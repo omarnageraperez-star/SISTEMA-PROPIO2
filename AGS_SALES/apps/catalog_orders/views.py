@@ -249,7 +249,8 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
             'status': order.status,
             'customer_name': order.customer_name,
             'total': order.total,
-            'created_at': order.created_at
+            'created_at': order.created_at,
+            'notes': order.notes or '',
         })
     
     @action(detail=False, methods=['get'])
