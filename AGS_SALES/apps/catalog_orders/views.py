@@ -97,55 +97,51 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['patch'], url_path='update-status')
     def update_status(self, request, pk=None):
         """Actualizar estado de un pedido"""
-        from django.db import transaction
-        
         try:
-            with transaction.atomic():
-                # Usar select_for_update para bloquear la fila y prevenir condiciones de carrera
-                order = CatalogOrder.objects.select_for_update().get(pk=pk)
-                serializer = self.get_serializer(order, data=request.data, partial=True)
-                serializer.is_valid(raise_exception=True)
-                
-                new_status = serializer.validated_data.get('status')
-                old_status = order.status
-                
-                # Actualizar tiempos según estado
-                if new_status == 'CONFIRMED' and old_status == 'PENDING':
-                    from django.utils import timezone
-                    order.confirmed_at = timezone.now()
-                elif new_status == 'DELIVERED' and old_status != 'DELIVERED':
-                    from django.utils import timezone
-                    order.delivered_at = timezone.now()
-                
-                # Si se cancela el pedido y se provee un motivo
-                cancel_reason = request.data.get('cancel_reason')
-                if new_status == 'CANCELLED' and old_status != 'CANCELLED' and cancel_reason:
-                    old_notes = order.notes or ''
-                    prefix = '\n' if old_notes else ''
-                    order.notes = f"{old_notes}{prefix}CANCELADO: {cancel_reason}"
-
-                # Evidencia de entrega (Base64 desde el frontend)
-                if request.data.get('delivery_photo'):
-                    order.delivery_photo = request.data.get('delivery_photo')
-                
-                # Si se confirma el pedido, convertir a venta (el SaleSerializer maneja el stock)
-                if new_status == 'CONFIRMED' and old_status == 'PENDING':
-                    # Autoconvertir a Venta POS si no tiene
-                    if not order.related_sale:
-                        try:
-                            self._auto_convert_to_sale(order, request.user)
-                        except Exception as e:
-                            import traceback
-                            print(f"Error al convertir pedido a venta: {e}")
-                            traceback.print_exc()
-                            pass # Evitar romper el flujo si falla la venta automática
-                    else:
-                        print(f"Pedido {order.order_number} ya tiene venta relacionada: {order.related_sale.id}")
-                
-                serializer.save()
-                order.save()
+            order = self.get_object()
+            serializer = self.get_serializer(order, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
             
-            # WhatsApp Notification (fuera de la transacción)
+            new_status = serializer.validated_data.get('status')
+            old_status = order.status
+            
+            # Actualizar tiempos según estado
+            if new_status == 'CONFIRMED' and old_status == 'PENDING':
+                from django.utils import timezone
+                order.confirmed_at = timezone.now()
+            elif new_status == 'DELIVERED' and old_status != 'DELIVERED':
+                from django.utils import timezone
+                order.delivered_at = timezone.now()
+            
+            # Si se cancela el pedido y se provee un motivo
+            cancel_reason = request.data.get('cancel_reason')
+            if new_status == 'CANCELLED' and old_status != 'CANCELLED' and cancel_reason:
+                old_notes = order.notes or ''
+                prefix = '\n' if old_notes else ''
+                order.notes = f"{old_notes}{prefix}CANCELADO: {cancel_reason}"
+
+            # Evidencia de entrega (Base64 desde el frontend)
+            if request.data.get('delivery_photo'):
+                order.delivery_photo = request.data.get('delivery_photo')
+            
+            # Si se confirma el pedido, convertir a venta (el SaleSerializer maneja el stock)
+            if new_status == 'CONFIRMED' and old_status == 'PENDING':
+                # Autoconvertir a Venta POS si no tiene
+                if not order.related_sale:
+                    try:
+                        self._auto_convert_to_sale(order, request.user)
+                    except Exception as e:
+                        import traceback
+                        print(f"Error al convertir pedido a venta: {e}")
+                        traceback.print_exc()
+                        pass # Evitar romper el flujo si falla la venta automática
+                else:
+                    print(f"Pedido {order.order_number} ya tiene venta relacionada: {order.related_sale.id}")
+            
+            serializer.save()
+            order.save()
+            
+            # WhatsApp Notification
             if new_status != old_status:
                 try:
                     self._send_whatsapp_notification(order, new_status)
@@ -201,8 +197,7 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
         Usa el SaleSerializer para garantizar: número de factura, Kardex, turno de caja, etc.
         """
         # Verificar que el pedido no tenga ya una venta relacionada (recargar desde DB para estar seguro)
-        # Ya estamos dentro de una transacción desde update_status, así que podemos usar select_for_update
-        order = CatalogOrder.objects.select_for_update().get(pk=order.pk)
+        order = CatalogOrder.objects.get(pk=order.pk)
         if order.related_sale:
             print(f"Pedido {order.order_number} ya tiene venta relacionada {order.related_sale.id}, no se creará otra")
             return order.related_sale
