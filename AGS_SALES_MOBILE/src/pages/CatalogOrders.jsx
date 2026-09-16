@@ -38,6 +38,7 @@ export default function CatalogOrders({ auth, onLogout }) {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [gpsActive, setGpsActive] = useState(false);
+  const [updatingOrderId, setUpdatingOrderId] = useState(null);
   const pollingRef = useRef(null);
   const gpsRef = useRef(null);
 
@@ -180,6 +181,11 @@ export default function CatalogOrders({ auth, onLogout }) {
   };
 
   const handleStatusChange = async (order, newStatus) => {
+    // Prevenir múltiples clics en el mismo pedido
+    if (updatingOrderId === order.id) {
+      return;
+    }
+
     const isDeliverAction = newStatus === 'DELIVERED';
     const result = await DarkSwal.fire({
       title: isDeliverAction ? 'Confirmar Entrega' : 'Cambiar Estado',
@@ -194,6 +200,8 @@ export default function CatalogOrders({ auth, onLogout }) {
     });
 
     if (!result.isConfirmed) return;
+
+    setUpdatingOrderId(order.id);
 
     try {
       let requestBody;
@@ -249,6 +257,8 @@ export default function CatalogOrders({ auth, onLogout }) {
     } catch (e) {
       console.error(e);
       DarkSwal.fire('Error', 'Error de conexión', 'error');
+    } finally {
+      setUpdatingOrderId(null);
     }
   };
 
@@ -612,6 +622,7 @@ export default function CatalogOrders({ auth, onLogout }) {
                     <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                       <button
                         type="button"
+                        disabled={updatingOrderId === order.id}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleStatusChange(order, 'DELIVERED');
@@ -620,21 +631,24 @@ export default function CatalogOrders({ auth, onLogout }) {
                           width: '100%',
                           padding: '10px 14px',
                           borderRadius: 12,
-                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                          background: updatingOrderId === order.id 
+                            ? 'rgba(16, 185, 129, 0.5)' 
+                            : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                           border: 'none',
                           color: 'white',
                           fontWeight: 800,
                           fontSize: 13,
-                          cursor: 'pointer',
+                          cursor: updatingOrderId === order.id ? 'not-allowed' : 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           gap: 6,
-                          boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                          boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                          opacity: updatingOrderId === order.id ? 0.7 : 1
                         }}
                       >
                         <CheckCircle size={15} />
-                        <span>Marcar como Entregado</span>
+                        <span>{updatingOrderId === order.id ? 'Procesando...' : 'Marcar como Entregado'}</span>
                       </button>
                     </div>
                   )}
