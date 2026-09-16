@@ -77,6 +77,7 @@ export default function CatalogOrders({ auth, onLogout }) {
   const [pendingCount, setPendingCount] = useState(0);
   const [gpsActive, setGpsActive] = useState(false);
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
+  const [processingPhoto, setProcessingPhoto] = useState(false);
   const pollingRef = useRef(null);
   const gpsRef = useRef(null);
 
@@ -240,6 +241,7 @@ export default function CatalogOrders({ auth, onLogout }) {
     if (!result.isConfirmed) return;
 
     setUpdatingOrderId(order.id);
+    setProcessingPhoto(true);
 
     try {
       let requestBody;
@@ -250,17 +252,17 @@ export default function CatalogOrders({ auth, onLogout }) {
       if (isDeliverAction) {
         try {
           const photo = await Camera.getPhoto({
-            quality: 50,
+            quality: 40,
             allowEditing: false,
             resultType: CameraResultType.DataUrl,
             source: CameraSource.Camera,
-            width: 800,
-            height: 800,
+            width: 600,
+            height: 600,
           });
 
           if (photo.dataUrl) {
-            // Comprimir más la imagen reduciendo calidad
-            const compressedPhoto = await compressImage(photo.dataUrl, 0.5);
+            // Comprimir más rápido con menor calidad
+            const compressedPhoto = await compressImage(photo.dataUrl, 0.4);
             requestBody = {
               status: newStatus,
               processed_by: auth.user?.id,
@@ -301,6 +303,7 @@ export default function CatalogOrders({ auth, onLogout }) {
       DarkSwal.fire('Error', 'Error de conexión', 'error');
     } finally {
       setUpdatingOrderId(null);
+      setProcessingPhoto(false);
     }
   };
 
@@ -690,7 +693,7 @@ export default function CatalogOrders({ auth, onLogout }) {
                         }}
                       >
                         <CheckCircle size={15} />
-                        <span>{updatingOrderId === order.id ? 'Procesando...' : 'Marcar como Entregado'}</span>
+                        <span>{processingPhoto ? 'Procesando foto...' : updatingOrderId === order.id ? 'Enviando...' : 'Marcar como Entregado'}</span>
                       </button>
                     </div>
                   )}
