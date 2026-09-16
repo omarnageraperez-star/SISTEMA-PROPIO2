@@ -76,7 +76,7 @@ class CatalogOrder(models.Model):
     related_sale = models.ForeignKey('sales.Sale', on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Venta Relacionada")
     
     # Evidencia y Calificación
-    delivery_photo = models.ImageField(upload_to='delivery_evidence/', blank=True, null=True, verbose_name="Foto de Entrega")
+    delivery_photo = models.TextField(blank=True, null=True, verbose_name="Foto de Entrega (Base64)")
     rating = models.IntegerField(blank=True, null=True, verbose_name="Calificación (1-5)")
     customer_feedback = models.TextField(blank=True, null=True, verbose_name="Comentario del Cliente")
     

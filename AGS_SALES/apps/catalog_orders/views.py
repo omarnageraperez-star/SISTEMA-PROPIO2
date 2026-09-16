@@ -120,9 +120,9 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
                 prefix = '\n' if old_notes else ''
                 order.notes = f"{old_notes}{prefix}CANCELADO: {cancel_reason}"
 
-            # Evidencia de entrega (Opcional, puede venir en la misma request PATCH)
-            if request.FILES.get('delivery_photo'):
-                order.delivery_photo = request.FILES['delivery_photo']
+            # Evidencia de entrega (Base64 desde el frontend)
+            if request.data.get('delivery_photo'):
+                order.delivery_photo = request.data.get('delivery_photo')
             
             # Si se confirma el pedido, descontar inventario y convertir a venta
             if new_status == 'CONFIRMED' and old_status == 'PENDING':

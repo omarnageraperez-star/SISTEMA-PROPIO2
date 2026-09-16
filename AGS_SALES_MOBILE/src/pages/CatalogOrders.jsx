@@ -148,45 +148,35 @@ export default function CatalogOrders({ auth, onLogout }) {
           const photo = await Camera.getPhoto({
             quality: 70,
             allowEditing: false,
-            resultType: CameraResultType.Uri,
+            resultType: CameraResultType.DataUrl,
             source: CameraSource.Camera,
           });
 
-          if (photo.webPath) {
-            const response = await fetch(photo.webPath);
-            const blob = await response.blob();
-            requestBody = new FormData();
-            requestBody.append('status', newStatus);
-            requestBody.append('processed_by', auth.user?.id);
-            requestBody.append('delivery_photo', blob, 'delivery.jpg');
+          if (photo.dataUrl) {
+            requestBody = {
+              status: newStatus,
+              processed_by: auth.user?.id,
+              delivery_photo: photo.dataUrl
+            };
           }
         } catch (e) {
           console.log('User cancelled camera or error:', e);
-          // Opcional: ¿forzar la foto? Si es requerida:
-          // DarkSwal.fire('Error', 'La foto de evidencia es obligatoria', 'error');
-          // return;
         }
       }
 
-      let res;
-      if (requestBody instanceof FormData) {
-        // Enviar FormData
-        res = await fetch(apiUrl(auth.apiUrl, `catalog-orders/orders/${order.id}/update-status/`), {
-          method: 'PATCH',
-          headers: headers,
-          body: requestBody,
-        });
-      } else {
-        // Fallback a JSON normal si no hay foto o es otro estado
-        res = await apiRequest(
-          apiUrl(auth.apiUrl, `catalog-orders/orders/${order.id}/update-status/`),
-          {
-            method: 'PATCH',
-            body: JSON.stringify({ status: newStatus, processed_by: auth.user?.id }),
-          },
-          auth.token
-        );
+      // Si requestBody no fue asignado por la foto, crear default
+      if (!requestBody) {
+        requestBody = { status: newStatus, processed_by: auth.user?.id };
       }
+
+      const res = await apiRequest(
+        apiUrl(auth.apiUrl, `catalog-orders/orders/${order.id}/update-status/`),
+        {
+          method: 'PATCH',
+          body: JSON.stringify(requestBody),
+        },
+        auth.token
+      );
 
       if (res.ok) {
         Toast.fire({ icon: 'success', title: isDeliverAction ? '¡Pedido marcado como Entregado!' : 'Estado actualizado' });
