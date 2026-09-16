@@ -162,6 +162,11 @@ AUTH_PASSWORD_VALIDATORS = [
 # Custom User Model
 AUTH_USER_MODEL = 'users.User'
 
+# Authentication URLs
+LOGIN_URL = '/catalogo/login/'
+LOGIN_REDIRECT_URL = '/catalogo/cliente/'
+LOGOUT_REDIRECT_URL = '/catalogo/'
+
 # Internationalization
 LANGUAGE_CODE = 'es'
 TIME_ZONE = 'America/Bogota'
