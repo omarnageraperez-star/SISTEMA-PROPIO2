@@ -126,7 +126,24 @@
                 if (response.ok) {
                     window.location.href = '/catalogo/cliente/';
                 } else {
-                    errorDiv.textContent = result.error || Object.values(result).flat().join(', ');
+                    console.error('Register error:', result);
+                    let errorMsg = 'Error al crear cuenta';
+                    if (result.username) {
+                        errorMsg = Array.isArray(result.username) ? result.username.join(', ') : result.username;
+                    } else if (result.email) {
+                        errorMsg = Array.isArray(result.email) ? result.email.join(', ') : result.email;
+                    } else if (result.password) {
+                        errorMsg = Array.isArray(result.password) ? result.password.join(', ') : result.password;
+                    } else if (result.password_confirm) {
+                        errorMsg = Array.isArray(result.password_confirm) ? result.password_confirm.join(', ') : result.password_confirm;
+                    } else if (result.error) {
+                        errorMsg = result.error;
+                    } else if (result.non_field_errors && result.non_field_errors.length > 0) {
+                        errorMsg = result.non_field_errors.join(', ');
+                    } else if (result.detail) {
+                        errorMsg = result.detail;
+                    }
+                    errorDiv.textContent = errorMsg;
                     errorDiv.classList.remove('hidden');
                 }
             } catch (err) {
