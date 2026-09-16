@@ -735,7 +735,7 @@
 
                 async checkAuth() {
                     try {
-                        const response = await fetch('/api/catalog-orders/customer-auth/profile/', {
+                        const response = await fetch('/catalogo/api/customer-auth/profile/', {
                             credentials: 'include'
                         });
                         if (response.ok) {
@@ -793,13 +793,13 @@
                 async submitOrder() {
                     this.isSubmitting = true;
                     try {
-                        const apiUrl = window.location.origin + '/api/catalog-orders/orders/';
+                        const apiUrl = window.location.origin + '/catalogo/api/orders/';
                         
                         // Obtener perfil del cliente autenticado si existe
                         let customerUserId = null;
                         if (this.isAuthenticated) {
                             try {
-                                const profileResponse = await fetch('/api/catalog-orders/customer-auth/profile/', {
+                                const profileResponse = await fetch('/catalogo/api/customer-auth/profile/', {
                                     credentials: 'include'
                                 });
                                 if (profileResponse.ok) {
@@ -868,7 +868,7 @@
                     if (this.trackerInterval) clearTimeout(this.trackerInterval);
                     
                     try {
-                        const apiUrl = window.location.origin + `/api/catalog-orders/orders/track/?order_number=${this.trackOrderNumber}`;
+                        const apiUrl = window.location.origin + `/catalogo/api/orders/track/?order_number=${this.trackOrderNumber}`;
                         const response = await fetch(apiUrl);
                         
                         if (response.ok) {
@@ -955,7 +955,7 @@
                     if (this.rating === 0) return;
                     this.isSubmittingRating = true;
                     try {
-                        const apiUrl = window.location.origin + `/api/catalog-orders/orders/${this.trackData.id}/submit-rating/`;
+                        const apiUrl = window.location.origin + `/catalogo/api/orders/${this.trackData.id}/submit-rating/`;
                         const response = await fetch(apiUrl, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -982,7 +982,7 @@
                     this.isFetchingHistory = true;
                     this.historyOrders = [];
                     try {
-                        const apiUrl = window.location.origin + `/api/catalog-orders/orders/history/?phone=${encodeURIComponent(this.historyPhone)}`;
+                        const apiUrl = window.location.origin + `/catalogo/api/orders/history/?phone=${encodeURIComponent(this.historyPhone)}`;
                         const response = await fetch(apiUrl);
                         if (response.ok) {
                             this.historyOrders = await response.json();

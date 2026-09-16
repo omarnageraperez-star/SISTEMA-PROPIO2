@@ -8,7 +8,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     
     # Catálogo Público Digital
-    path('catalogo/', getattr(__import__('apps.inventory.views', fromlist=['catalog_view']), 'catalog_view'), name='catalog-view'),
+    path('catalogo/', include('apps.catalog_orders.urls')),
     
     # API Documentation
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
