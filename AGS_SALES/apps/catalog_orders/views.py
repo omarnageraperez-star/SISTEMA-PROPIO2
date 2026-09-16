@@ -139,7 +139,7 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
                         pass # Evitar romper el flujo si falla la venta automática
             
             serializer.save()
-            order.save(update_fields=['confirmed_at', 'delivered_at', 'notes', 'delivery_photo'] if any([order.confirmed_at, order.delivered_at, order.notes, order.delivery_photo]) else None)
+            order.save()
             
             # WhatsApp Notification
             if new_status != old_status:

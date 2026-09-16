@@ -334,8 +334,14 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
           setSelectedOrder({ ...selectedOrder, status: newStatus });
         }
       } else {
-        const error = await res.json();
-        Swal.fire('Error', error.error || 'No se pudo cambiar el estado', 'error');
+        let errorMsg = 'No se pudo cambiar el estado';
+        try {
+          const error = await res.json();
+          errorMsg = error.error || error.detail || JSON.stringify(error);
+        } catch(e) {
+          errorMsg = `HTTP Error ${res.status}`;
+        }
+        Swal.fire('Error', errorMsg, 'error');
       }
     } catch (e) {
       Swal.fire('Error', 'Error de conexión con el servidor', 'error');
