@@ -115,10 +115,11 @@ class SaleSerializer(serializers.ModelSerializer):
             resolution_cache_key = f'dian_resolution_{sale.invoice_type}'
             resolution = cache.get(resolution_cache_key)
             if resolution is None:
+                # Usar select_for_update para bloquear la fila y prevenir condiciones de carrera
                 resolution = DIANResolution.objects.filter(
                     resolution_type=sale.invoice_type,
                     is_active=True
-                ).first()
+                ).select_for_update().first()
                 cache.set(resolution_cache_key, resolution, timeout=60)  # Cache for 1 minute
             
             if resolution:
@@ -129,7 +130,7 @@ class SaleSerializer(serializers.ModelSerializer):
                 
                 if next_number <= resolution.end_range:
                     resolution.current_number = next_number
-                    resolution.save()
+                    resolution.save(update_fields=['current_number'])
                     
                     prefix = resolution.prefix or ''
                     sale.invoice_number = f"{prefix}{next_number}"
