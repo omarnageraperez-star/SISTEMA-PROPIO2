@@ -110,6 +110,13 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
         elif new_status == 'DELIVERED' and old_status != 'DELIVERED':
             order.delivered_at = timezone.now()
         
+        # Si el pedido se cancela y se provee un motivo
+        cancel_reason = request.data.get('cancel_reason')
+        if new_status == 'CANCELLED' and old_status != 'CANCELLED' and cancel_reason:
+            old_notes = order.notes or ''
+            prefix = '\n' if old_notes else ''
+            order.notes = f"{old_notes}{prefix}CANCELADO: {cancel_reason}"
+        
         # Si se confirma el pedido, descontar inventario y convertir a venta
         if new_status == 'CONFIRMED' and old_status == 'PENDING':
             for item in order.items.all():

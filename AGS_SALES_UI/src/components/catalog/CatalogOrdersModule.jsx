@@ -8,7 +8,7 @@ import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import { apiRequest } from '../../lib/api';
 // import { ipcRenderer } from 'electron'; // Removed to avoid context isolation issues
-import { playNewOrderSound } from '../../lib/sound';
+import { playOrderDineIn, playOrderTakeout, playOrderDelivery } from '../../lib/sound';
 
 const STATUS_CONFIG = {
   'PENDING': { 
@@ -104,8 +104,14 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
         setPendingCount(data.pending_count || 0);
         
         if (data.has_new && data.order) {
-          // Play sound
-            playNewOrderSound();
+          // Play differentiated sound based on order type
+          if (data.order.order_type === 'DELIVERY') {
+            playOrderDelivery();
+          } else if (data.order.order_type === 'TAKEOUT') {
+            playOrderTakeout();
+          } else {
+            playOrderDineIn();
+          }
 
             // Try Web Notification first
             if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
@@ -198,22 +204,53 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
 
   const handleStatusChange = async (order, newStatus) => {
     const targetStatus = STATUS_CONFIG[newStatus];
-    const result = await Swal.fire({
-      title: 'Cambiar Estado',
-      html: `¿Deseas cambiar el pedido <b>#${order.order_number}</b> a estado <b style="color:${targetStatus.color}">${targetStatus.label}</b>?`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, cambiar',
-      cancelButtonText: 'Cancelar',
-      customClass: {
-        popup: 'premium-swal',
-        title: 'premium-swal-title',
-        confirmButton: 'premium-swal-confirm bg-indigo-600 hover:bg-indigo-700',
-        cancelButton: 'premium-swal-cancel'
-      }
-    });
+    
+    let cancelReason = '';
+    
+    if (newStatus === 'CANCELLED') {
+      const { value: text } = await Swal.fire({
+        title: 'Cancelar Pedido',
+        input: 'textarea',
+        inputLabel: 'Motivo de la cancelación (Obligatorio para auditoría)',
+        inputPlaceholder: 'Ej: Cliente no responde, falta de inventario, duplicado...',
+        showCancelButton: true,
+        confirmButtonText: 'Confirmar Cancelación',
+        cancelButtonText: 'Volver',
+        icon: 'warning',
+        inputValidator: (value) => {
+          if (!value || value.trim().length === 0) {
+            return '¡Necesitas escribir un motivo justificado para cancelar!';
+          }
+        },
+        customClass: {
+          popup: 'premium-swal',
+          title: 'premium-swal-title text-rose-600',
+          confirmButton: 'premium-swal-confirm bg-rose-600 hover:bg-rose-700',
+          cancelButton: 'premium-swal-cancel',
+          input: 'w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800'
+        }
+      });
 
-    if (!result.isConfirmed) return;
+      if (!text) return; // User cancelled the modal
+      cancelReason = text;
+    } else {
+      const result = await Swal.fire({
+        title: 'Cambiar Estado',
+        html: `¿Deseas cambiar el pedido <b>#${order.order_number}</b> a estado <b style="color:${targetStatus.color}">${targetStatus.label}</b>?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, cambiar',
+        cancelButtonText: 'Cancelar',
+        customClass: {
+          popup: 'premium-swal',
+          title: 'premium-swal-title',
+          confirmButton: 'premium-swal-confirm bg-indigo-600 hover:bg-indigo-700',
+          cancelButton: 'premium-swal-cancel'
+        }
+      });
+
+      if (!result.isConfirmed) return;
+    }
 
     try {
       const cleanBaseUrl = config.apiUrl.endsWith('/') ? config.apiUrl : config.apiUrl + '/';
@@ -221,7 +258,10 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
         `${cleanBaseUrl}catalog-orders/orders/${order.id}/update-status/`,
         {
           method: 'PATCH',
-          body: JSON.stringify({ status: newStatus }),
+          body: JSON.stringify({ 
+            status: newStatus,
+            cancel_reason: cancelReason 
+          }),
         },
         token
       );
@@ -248,51 +288,7 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
     }
   };
 
-  const handleConvertToSale = async (order) => {
-    const result = await Swal.fire({
-      title: 'Facturar en POS',
-      html: `¿Convertir el pedido <b>#${order.order_number}</b> en una venta oficial del POS?`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, facturar venta',
-      cancelButtonText: 'Cancelar',
-      customClass: {
-        popup: 'premium-swal',
-        title: 'premium-swal-title',
-        confirmButton: 'premium-swal-confirm bg-emerald-600 hover:bg-emerald-700',
-        cancelButton: 'premium-swal-cancel'
-      }
-    });
 
-    if (!result.isConfirmed) return;
-
-    try {
-      const cleanBaseUrl = config.apiUrl.endsWith('/') ? config.apiUrl : config.apiUrl + '/';
-      const res = await apiRequest(
-        `${cleanBaseUrl}catalog-orders/orders/${order.id}/convert-to-sale/`,
-        { method: 'POST' },
-        token
-      );
-
-      if (res.ok) {
-        Swal.fire({
-          icon: 'success',
-          title: '¡Venta Registrada!',
-          text: `Pedido #${order.order_number} convertido en venta con éxito.`,
-          timer: 2000,
-          showConfirmButton: false,
-          customClass: { popup: 'premium-swal' }
-        });
-        setShowDetailModal(false);
-        fetchOrders();
-      } else {
-        const error = await res.json();
-        Swal.fire('Error', error.error || 'No se pudo convertir a venta', 'error');
-      }
-    } catch (e) {
-      Swal.fire('Error', 'Error de conexión', 'error');
-    }
-  };
 
   const getStatusActions = (order) => {
     const actions = [];
@@ -587,14 +583,7 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
                         <FileText size={14} /> Detalle
                       </button>
 
-                      {!order.related_sale && order.status !== 'CANCELLED' && (
-                        <button
-                          onClick={() => handleConvertToSale(order)}
-                          className="flex-1 py-2 px-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5"
-                        >
-                          <CreditCard size={14} /> Facturar POS
-                        </button>
-                      )}
+
                     </div>
 
                     {actions.length > 0 && (
@@ -740,15 +729,7 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
                   ))}
                 </div>
 
-                {!selectedOrder.related_sale && selectedOrder.status !== 'CANCELLED' && (
-                  <button
-                    onClick={() => handleConvertToSale(selectedOrder)}
-                    className="w-full py-3.5 px-4 rounded-2xl text-sm font-extrabold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25 transition-all flex items-center justify-center gap-2"
-                  >
-                    <CreditCard size={18} />
-                    Facturar y Convertir a Venta POS
-                  </button>
-                )}
+
               </div>
 
             </div>
