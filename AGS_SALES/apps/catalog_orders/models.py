@@ -1,8 +1,23 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AbstractUser
 from apps.inventory.models import Product
 
 User = get_user_model()
+
+class CustomerUser(AbstractUser):
+    """Usuario cliente para autenticación en catálogo web y móvil"""
+    phone = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono")
+    address = models.TextField(blank=True, null=True, verbose_name="Dirección Principal")
+    is_verified = models.BooleanField(default=False, verbose_name="Verificado")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Registro")
+    
+    class Meta:
+        verbose_name = "Cliente"
+        verbose_name_plural = "Clientes"
+    
+    def __str__(self):
+        return f"{self.get_full_name() or self.username} ({self.phone or 'Sin teléfono'})"
 
 class Table(models.Model):
     """Representa una mesa/ubicación física con QR único"""
@@ -46,7 +61,10 @@ class CatalogOrder(models.Model):
     order_number = models.CharField(max_length=20, unique=True, verbose_name="Número de Pedido")
     table = models.ForeignKey(Table, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Mesa")
     
-    # Información del cliente
+    # Usuario cliente autenticado (opcional)
+    customer_user = models.ForeignKey(CustomerUser, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Usuario Cliente")
+    
+    # Información del cliente (para pedidos anónimos o backup)
     customer_name = models.CharField(max_length=200, verbose_name="Nombre del Cliente")
     customer_phone = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono")
     customer_address = models.TextField(blank=True, null=True, verbose_name="Dirección")

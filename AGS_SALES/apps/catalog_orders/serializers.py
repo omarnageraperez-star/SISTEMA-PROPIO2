@@ -21,17 +21,27 @@ class CatalogOrderItemSerializer(serializers.ModelSerializer):
 class CatalogOrderSerializer(serializers.ModelSerializer):
     items = CatalogOrderItemSerializer(many=True, read_only=True)
     table_name = serializers.CharField(source='table.name', read_only=True)
+    customer_user_info = serializers.SerializerMethodField()
     
     class Meta:
         model = CatalogOrder
         fields = [
-            'id', 'order_number', 'table', 'table_name', 'customer_name', 
-            'customer_phone', 'customer_address', 'order_type', 'status', 
+            'id', 'order_number', 'table', 'table_name', 'customer_user', 'customer_user_info',
+            'customer_name', 'customer_phone', 'customer_address', 'order_type', 'status', 
             'payment_method', 'notes', 'subtotal', 'tax', 'total', 
             'created_at', 'confirmed_at', 'delivered_at', 'processed_by', 
             'related_sale', 'items', 'delivery_photo', 'rating', 'customer_feedback'
         ]
         read_only_fields = ['order_number', 'subtotal', 'tax', 'total', 'created_at', 'confirmed_at', 'delivered_at']
+    
+    def get_customer_user_info(self, obj):
+        if obj.customer_user:
+            return {
+                'id': obj.customer_user.id,
+                'username': obj.customer_user.username,
+                'full_name': obj.customer_user.get_full_name()
+            }
+        return None
 
 class CreateCatalogOrderItemSerializer(serializers.ModelSerializer):
     product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), required=False, allow_null=True)

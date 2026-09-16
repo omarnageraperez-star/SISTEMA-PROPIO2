@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro Cliente - {{ store_name }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Outfit', sans-serif; 
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+        }
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center p-4">
+    <div class="glass rounded-3xl p-8 w-full max-w-md shadow-2xl">
+        <div class="text-center mb-8">
+            {% if store_logo %}
+            <img src="{{ store_logo }}" alt="Logo" class="w-20 h-20 object-contain mx-auto mb-4 rounded-2xl bg-white/5 p-2">
+            {% else %}
+            <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-black text-3xl mx-auto mb-4 shadow-lg shadow-orange-500/30">
+                {{ store_name|slice:":1" }}
+            </div>
+            {% endif %}
+            <h1 class="text-2xl font-black text-white mb-2">{{ store_name }}</h1>
+            <p class="text-gray-400 text-sm">Crea tu cuenta para comenzar</p>
+        </div>
+
+        <form id="registerForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-bold text-gray-300 mb-2">Usuario</label>
+                <input type="text" id="username" required class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition-colors" placeholder="Nombre de usuario">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-300 mb-2">Email</label>
+                <input type="email" id="email" required class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition-colors" placeholder="tu@email.com">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-300 mb-2">Nombre</label>
+                    <input type="text" id="first_name" required class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition-colors" placeholder="Nombre">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-300 mb-2">Apellido</label>
+                    <input type="text" id="last_name" required class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition-colors" placeholder="Apellido">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-300 mb-2">Teléfono (opcional)</label>
+                <input type="tel" id="phone" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition-colors" placeholder="3001234567">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-300 mb-2">Dirección (opcional)</label>
+                <textarea id="address" rows="2" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition-colors resize-none" placeholder="Tu dirección principal"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-300 mb-2">Contraseña</label>
+                <input type="password" id="password" required minlength="6" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition-colors" placeholder="Mínimo 6 caracteres">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-300 mb-2">Confirmar Contraseña</label>
+                <input type="password" id="password_confirm" required class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition-colors" placeholder="Repite tu contraseña">
+            </div>
+            <button type="submit" class="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-orange-500/30">
+                Crear Cuenta
+            </button>
+        </form>
+
+        <div class="mt-6 text-center">
+            <p class="text-gray-400 text-sm">¿Ya tienes cuenta? <a href="/catalogo/login/" class="text-orange-400 font-bold hover:text-orange-300 transition-colors">Inicia sesión aquí</a></p>
+        </div>
+
+        <div id="error" class="mt-4 p-3 bg-red-900/50 border border-red-700 rounded-xl text-red-300 text-sm hidden"></div>
+    </div>
+
+    <script>
+        const API_URL = '/api/catalog-orders/';
+        
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('password').value;
+            const password_confirm = document.getElementById('password_confirm').value;
+            const errorDiv = document.getElementById('error');
+            
+            if (password !== password_confirm) {
+                errorDiv.textContent = 'Las contraseñas no coinciden';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+            
+            const data = {
+                username: document.getElementById('username').value,
+                email: document.getElementById('email').value,
+                first_name: document.getElementById('first_name').value,
+                last_name: document.getElementById('last_name').value,
+                phone: document.getElementById('phone').value,
+                address: document.getElementById('address').value,
+                password: password,
+                password_confirm: password_confirm
+            };
+            
+            try {
+                const response = await fetch(API_URL + 'auth/register/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    localStorage.setItem('customerToken', result.token);
+                    localStorage.setItem('customerUser', JSON.stringify(result.user));
+                    window.location.href = '/catalogo/cliente/';
+                } else {
+                    errorDiv.textContent = result.error || Object.values(result).flat().join(', ');
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (err) {
+                errorDiv.textContent = 'Error de conexión';
+                errorDiv.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

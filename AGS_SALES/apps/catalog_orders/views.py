@@ -3,7 +3,10 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.utils import timezone
-from .models import Table, CatalogOrder, CatalogOrderItem
+from django.shortcuts import render
+from django.views.decorators.http import require_http_methods
+from django.contrib.auth.decorators import login_required
+from .models import Table, CatalogOrder, CatalogOrderItem, CustomerUser
 from .serializers import (
     TableSerializer, 
     CatalogOrderSerializer, 
@@ -11,6 +14,7 @@ from .serializers import (
     UpdateCatalogOrderStatusSerializer
 )
 from apps.inventory.models import Product
+from apps.core.models import SystemSettings
 
 class TableViewSet(viewsets.ModelViewSet):
     """ViewSet para gestionar mesas"""
@@ -446,3 +450,39 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
             'has_new': False,
             'pending_count': pending_count
         })
+
+# Vistas de Django para páginas de autenticación de clientes
+@require_http_methods(["GET", "POST"])
+def customer_login_view(request):
+    """Página de login para clientes"""
+    settings = SystemSettings.objects.first()
+    context = {
+        'store_name': settings.store_name if settings else 'AGS SALES',
+        'store_logo': settings.store_logo if settings else None
+    }
+    return render(request, 'catalog_orders/customer_login.html', context)
+
+@require_http_methods(["GET", "POST"])
+def customer_register_view(request):
+    """Página de registro para clientes"""
+    settings = SystemSettings.objects.first()
+    context = {
+        'store_name': settings.store_name if settings else 'AGS SALES',
+        'store_logo': settings.store_logo if settings else None
+    }
+    return render(request, 'catalog_orders/customer_register.html', context)
+
+@login_required
+def customer_dashboard_view(request):
+    """Dashboard del cliente autenticado"""
+    if not isinstance(request.user, CustomerUser):
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("Acceso no autorizado")
+    
+    settings = SystemSettings.objects.first()
+    context = {
+        'store_name': settings.store_name if settings else 'AGS SALES',
+        'store_logo': settings.store_logo if settings else None,
+        'customer': request.user
+    }
+    return render(request, 'catalog_orders/customer_dashboard.html', context)

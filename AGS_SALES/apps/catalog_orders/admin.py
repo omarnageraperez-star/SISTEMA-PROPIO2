@@ -1,6 +1,20 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Table, CatalogOrder, CatalogOrderItem
+from django.contrib.auth.admin import UserAdmin
+from .models import Table, CatalogOrder, CatalogOrderItem, CustomerUser
+
+@admin.register(CustomerUser)
+class CustomerUserAdmin(UserAdmin):
+    list_display = ('username', 'email', 'first_name', 'last_name', 'phone', 'is_verified', 'created_at')
+    list_filter = ('is_verified', 'is_active', 'created_at')
+    search_fields = ('username', 'email', 'phone', 'first_name', 'last_name')
+    readonly_fields = ('created_at', 'last_login', 'date_joined')
+    
+    fieldsets = UserAdmin.fieldsets + (
+        ('Información de Cliente', {
+            'fields': ('phone', 'address', 'is_verified')
+        }),
+    )
 
 class CatalogOrderItemInline(admin.TabularInline):
     model = CatalogOrderItem
