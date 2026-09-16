@@ -474,20 +474,22 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
 @require_http_methods(["GET", "POST"])
 def customer_login_view(request):
     """Página de login para clientes"""
-    settings = SystemSetting.objects.first()
+    store_name = SystemSetting.objects.filter(key='store_name').first()
+    store_logo = SystemSetting.objects.filter(key='store_logo').first()
     context = {
-        'store_name': settings.store_name if settings else 'AGS SALES',
-        'store_logo': settings.store_logo if settings else None
+        'store_name': store_name.value if store_name else 'AGS SALES',
+        'store_logo': store_logo.value if store_logo else None
     }
     return render(request, 'catalog_orders/customer_login.html', context)
 
 @require_http_methods(["GET", "POST"])
 def customer_register_view(request):
     """Página de registro para clientes"""
-    settings = SystemSetting.objects.first()
+    store_name = SystemSetting.objects.filter(key='store_name').first()
+    store_logo = SystemSetting.objects.filter(key='store_logo').first()
     context = {
-        'store_name': settings.store_name if settings else 'AGS SALES',
-        'store_logo': settings.store_logo if settings else None
+        'store_name': store_name.value if store_name else 'AGS SALES',
+        'store_logo': store_logo.value if store_logo else None
     }
     return render(request, 'catalog_orders/customer_register.html', context)
 
@@ -500,11 +502,12 @@ def customer_dashboard_view(request):
     
     # Obtener pedidos del cliente
     orders = CatalogOrder.objects.filter(customer_user=request.user).order_by('-created_at')[:10]
-    settings = SystemSetting.objects.first()
+    store_name = SystemSetting.objects.filter(key='store_name').first()
+    store_logo = SystemSetting.objects.filter(key='store_logo').first()
     
     context = {
-        'store_name': settings.store_name if settings else 'AGS SALES',
-        'store_logo': settings.store_logo if settings else None,
+        'store_name': store_name.value if store_name else 'AGS SALES',
+        'store_logo': store_logo.value if store_logo else None,
         'orders': orders,
         'customer': request.user
     }
