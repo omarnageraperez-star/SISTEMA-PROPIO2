@@ -147,16 +147,29 @@ class CustomerLoginSerializer(serializers.Serializer):
         password = attrs.get('password')
         
         if username and password:
+            # Intentar autenticar con CustomerUser primero
+            from .models import CustomerUser
+            try:
+                user = CustomerUser.objects.get(username=username)
+                if user.check_password(password):
+                    if not user.is_active:
+                        raise serializers.ValidationError({"username": "Usuario inactivo"})
+                    attrs['user'] = user
+                    return attrs
+            except CustomerUser.DoesNotExist:
+                pass
+            
+            # Si no es CustomerUser, intentar con el User por defecto
             user = authenticate(username=username, password=password)
-            if not user:
-                raise serializers.ValidationError({"username": "Credenciales inválidas"})
-            if not user.is_active:
-                raise serializers.ValidationError({"username": "Usuario inactivo"})
-            attrs['user'] = user
+            if user:
+                if not user.is_active:
+                    raise serializers.ValidationError({"username": "Usuario inactivo"})
+                attrs['user'] = user
+                return attrs
+            
+            raise serializers.ValidationError({"username": "Credenciales inválidas"})
         else:
             raise serializers.ValidationError({"username": "Se requieren username y password"})
-        
-        return attrs
 
 class CustomerProfileSerializer(serializers.ModelSerializer):
     class Meta:
