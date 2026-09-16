@@ -9,6 +9,7 @@ import { apiRequest, apiUrl, parseError, formatCurrency } from '../lib/api';
 import { DarkSwal, Toast } from '../lib/swal';
 import { sendNativeNotification } from '../lib/notifications';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Geolocation } from '@capacitor/geolocation';
 
 const STATUS_CONFIG = {
   'PENDING': { color: '#f59e0b', label: 'Pendiente', icon: Clock },
@@ -36,9 +37,66 @@ export default function CatalogOrders({ auth, onLogout }) {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [gpsActive, setGpsActive] = useState(false);
   const pollingRef = useRef(null);
+  const gpsRef = useRef(null);
 
   const fmt = (n) => formatCurrency(n, auth.settings?.currency_symbol || '$', parseInt(auth.settings?.currency_decimals || '0', 10));
+
+  // ─── GPS Tracking para domiciliarios ───
+  useEffect(() => {
+    if (!isDeliveryDriver) return;
+
+    const hasActiveDeliveries = orders.some(o => o.status === 'READY' && o.order_type === 'DELIVERY');
+
+    if (hasActiveDeliveries && !gpsRef.current) {
+      // Iniciar rastreo GPS
+      setGpsActive(true);
+      gpsRef.current = setInterval(async () => {
+        try {
+          const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+          await apiRequest(
+            apiUrl(auth.apiUrl, 'catalog-orders/orders/update-location/'),
+            {
+              method: 'POST',
+              body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            },
+            auth.token
+          );
+        } catch (e) {
+          console.log('GPS error:', e);
+        }
+      }, 15000);
+
+      // Enviar ubicación inmediatamente al iniciar
+      (async () => {
+        try {
+          const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+          await apiRequest(
+            apiUrl(auth.apiUrl, 'catalog-orders/orders/update-location/'),
+            {
+              method: 'POST',
+              body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            },
+            auth.token
+          );
+        } catch (e) { console.log('GPS initial error:', e); }
+      })();
+
+    } else if (!hasActiveDeliveries && gpsRef.current) {
+      // Detener rastreo GPS cuando ya no hay pedidos activos
+      clearInterval(gpsRef.current);
+      gpsRef.current = null;
+      setGpsActive(false);
+    }
+
+    return () => {
+      if (gpsRef.current) {
+        clearInterval(gpsRef.current);
+        gpsRef.current = null;
+      }
+    };
+  }, [orders, isDeliveryDriver]);
 
   useEffect(() => {
     fetchOrders();
@@ -348,7 +406,24 @@ export default function CatalogOrders({ auth, onLogout }) {
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13, fontWeight: 800, color: '#34d399' }}>Modo Domiciliario Activo</div>
-              <div style={{ fontSize: 11, color: '#94a3b8' }}>Visualiza pedidos listos, navega por GPS y marca entregado.</div>
+              <div style={{ fontSize: 11, color: '#94a3b8' }}>
+                {gpsActive 
+                  ? '📡 GPS activo — enviando ubicación en tiempo real' 
+                  : 'Visualiza pedidos listos, navega por GPS y marca entregado.'}
+              </div>
+              {gpsActive && (
+                <div style={{ 
+                  display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 4,
+                  background: 'rgba(16, 185, 129, 0.15)', padding: '3px 10px', borderRadius: 20,
+                  fontSize: 10, color: '#34d399', fontWeight: 700
+                }}>
+                  <span style={{ 
+                    width: 8, height: 8, borderRadius: '50%', background: '#34d399',
+                    animation: 'pulse 1.5s infinite'
+                  }} />
+                  RASTREO EN VIVO
+                </div>
+              )}
             </div>
           </div>
         )}

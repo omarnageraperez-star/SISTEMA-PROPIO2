@@ -49,4 +49,7 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <!-- Required for LocalNotifications.schedule() on Android 13+ (API 33+) -->
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- GPS Tracking for delivery drivers -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 </manifest>

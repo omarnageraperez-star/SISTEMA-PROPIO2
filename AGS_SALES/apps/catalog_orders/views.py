@@ -335,7 +335,33 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
             'confirmed_at': order.confirmed_at,
             'delivered_at': order.delivered_at,
             'notes': order.notes or '',
+            'driver_lat': order.driver_lat,
+            'driver_lng': order.driver_lng,
+            'last_location_update': order.last_location_update,
         })
+
+    @action(detail=False, methods=['post'], url_path='update-location')
+    def update_location(self, request):
+        """Endpoint para que el domiciliario envíe su ubicación GPS en tiempo real"""
+        lat = request.data.get('lat')
+        lng = request.data.get('lng')
+        
+        if lat is None or lng is None:
+            return Response({'error': 'lat y lng son requeridos'}, status=400)
+        
+        # Actualizar todas las órdenes READY asignadas a delivery
+        active_orders = CatalogOrder.objects.filter(
+            status='READY',
+            order_type='DELIVERY'
+        )
+        
+        updated = active_orders.update(
+            driver_lat=float(lat),
+            driver_lng=float(lng),
+            last_location_update=timezone.now()
+        )
+        
+        return Response({'updated_orders': updated})
     
     @action(detail=False, methods=['get'])
     def pending(self, request):

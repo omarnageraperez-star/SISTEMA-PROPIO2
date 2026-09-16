@@ -10,6 +10,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Leaflet.js for Live Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         :root {
             --primary: #f97316;
@@ -287,6 +290,22 @@
                         <p class="text-white font-black text-lg leading-tight">
                             <span x-text="trackData.order_type === 'DELIVERY' ? '{{ delivery_eta_mins }}' : '{{ pickup_eta_mins }}'"></span> minutos
                         </p>
+                    </div>
+                </div>
+            </template>
+
+            <!-- LIVE MAP (only for DELIVERY orders in READY status) -->
+            <template x-if="trackData.status === 'READY' && trackData.order_type === 'DELIVERY' && trackData.driver_lat && trackData.driver_lng">
+                <div class="w-full max-w-md mb-6">
+                    <div class="bg-gray-800/80 border border-emerald-500/30 rounded-2xl overflow-hidden shadow-lg">
+                        <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-700">
+                            <span class="relative flex h-3 w-3">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                            </span>
+                            <span class="text-xs font-black text-emerald-400 uppercase tracking-widest">Domiciliario en Vivo</span>
+                        </div>
+                        <div id="liveMap" style="height: 280px; width: 100%; z-index: 1;"></div>
                     </div>
                 </div>
             </template>
@@ -645,6 +664,10 @@
                 feedback: '',
                 isRatingSubmitted: false,
                 isSubmittingRating: false,
+
+                // Live Map State
+                liveMap: null,
+                driverMarker: null,
                 
                 cartItems: [],
                 orderForm: {
@@ -793,6 +816,18 @@
                         if (response.ok) {
                             const data = await response.json();
                             this.trackData = data;
+
+                            // Update live map if driver location available
+                            if (data.driver_lat && data.driver_lng && data.status === 'READY' && data.order_type === 'DELIVERY') {
+                                this.$nextTick(() => this.updateLiveMap(data.driver_lat, data.driver_lng));
+                            } else {
+                                // Destroy map if status changed
+                                if (this.liveMap) {
+                                    this.liveMap.remove();
+                                    this.liveMap = null;
+                                    this.driverMarker = null;
+                                }
+                            }
                             
                             // Continue polling if not finished
                             if (!['DELIVERED', 'CANCELLED'].includes(data.status)) {
@@ -805,6 +840,46 @@
                     } catch (e) {
                         // Retry on network error silently
                         this.trackerInterval = setTimeout(() => this.pollOrder(), 10000);
+                    }
+                },
+
+                updateLiveMap(lat, lng) {
+                    const mapEl = document.getElementById('liveMap');
+                    if (!mapEl) return;
+
+                    const driverIcon = L.divIcon({
+                        html: '<div style="font-size:32px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">🛵</div>',
+                        className: '',
+                        iconSize: [40, 40],
+                        iconAnchor: [20, 20]
+                    });
+
+                    if (!this.liveMap) {
+                        this.liveMap = L.map('liveMap', {
+                            zoomControl: false,
+                            attributionControl: false
+                        }).setView([lat, lng], 15);
+
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            maxZoom: 19
+                        }).addTo(this.liveMap);
+
+                        this.driverMarker = L.marker([lat, lng], { icon: driverIcon }).addTo(this.liveMap);
+
+                        // Pulsating circle around driver
+                        L.circle([lat, lng], {
+                            radius: 80,
+                            color: '#10b981',
+                            fillColor: '#10b981',
+                            fillOpacity: 0.15,
+                            weight: 1
+                        }).addTo(this.liveMap);
+
+                        // Force map resize after render
+                        setTimeout(() => this.liveMap.invalidateSize(), 200);
+                    } else {
+                        this.driverMarker.setLatLng([lat, lng]);
+                        this.liveMap.panTo([lat, lng], { animate: true, duration: 1 });
                     }
                 },
                 
