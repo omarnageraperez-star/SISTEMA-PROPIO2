@@ -95,3 +95,9 @@ class UpdateCatalogOrderStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = CatalogOrder
         fields = ['status', 'processed_by']
+    
+    def validate_status(self, value):
+        # Prevenir que se actualice al mismo estado
+        if self.instance and self.instance.status == value:
+            raise serializers.ValidationError(f"El pedido ya está en estado {value}")
+        return value

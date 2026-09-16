@@ -131,7 +131,12 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
                     try:
                         self._auto_convert_to_sale(order, request.user)
                     except Exception as e:
+                        import traceback
+                        print(f"Error al convertir pedido a venta: {e}")
+                        traceback.print_exc()
                         pass # Evitar romper el flujo si falla la venta automática
+                else:
+                    print(f"Pedido {order.order_number} ya tiene venta relacionada: {order.related_sale.id}")
             
             serializer.save()
             order.save()
@@ -191,6 +196,11 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
         Crea una Venta completa igual que si el cajero la hubiera generado desde el POS.
         Usa el SaleSerializer para garantizar: número de factura, Kardex, turno de caja, etc.
         """
+        # Verificar que el pedido no tenga ya una venta relacionada
+        if order.related_sale:
+            print(f"Pedido {order.order_number} ya tiene venta relacionada {order.related_sale.id}, no se creará otra")
+            return order.related_sale
+
         from apps.sales.serializers import SaleSerializer
         from apps.inventory.models import Warehouse
         from apps.crm.models import Customer
@@ -258,6 +268,8 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
         serializer = SaleSerializer(data=sale_data, context={'request': mock_request})
         serializer.is_valid(raise_exception=True)
         sale = serializer.save()
+        
+        print(f"Creada venta {sale.id} para pedido {order.order_number}")
         
         # 8. Vincular la venta al pedido
         order.related_sale = sale
