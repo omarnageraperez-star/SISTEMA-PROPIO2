@@ -450,6 +450,53 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
         
         return Response({'message': 'Ruta iniciada correctamente'})
     
+    @action(detail=True, methods=['post'], url_path='assign-driver')
+    def assign_driver(self, request, pk=None):
+        """Asignar un domiciliario a un pedido"""
+        order = self.get_object()
+        driver_id = request.data.get('driver_id')
+        
+        if not driver_id:
+            return Response({'error': 'driver_id es requerido'}, status=400)
+        
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        
+        try:
+            driver = User.objects.get(id=driver_id, role='DELIVERY')
+        except User.DoesNotExist:
+            return Response({'error': 'Domiciliario no encontrado'}, status=404)
+        
+        order.assigned_driver = driver
+        order.save()
+        
+        serializer = self.get_serializer(order)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'], url_path='update-delivery-fee')
+    def update_delivery_fee(self, request, pk=None):
+        """Actualizar el valor del domicilio (solo el domiciliario asignado puede hacerlo)"""
+        order = self.get_object()
+        
+        # Verificar que el usuario es el domiciliario asignado
+        if order.assigned_driver != request.user:
+            return Response({'error': 'Solo el domiciliario asignado puede actualizar el valor del domicilio'}, status=403)
+        
+        delivery_fee = request.data.get('delivery_fee')
+        if delivery_fee is None:
+            return Response({'error': 'delivery_fee es requerido'}, status=400)
+        
+        try:
+            order.delivery_fee = float(delivery_fee)
+            # Recalcular total
+            order.total = order.subtotal + order.tax + order.delivery_fee
+            order.save()
+        except (ValueError, TypeError):
+            return Response({'error': 'delivery_fee debe ser un número válido'}, status=400)
+        
+        serializer = self.get_serializer(order)
+        return Response(serializer.data)
+    
     @action(detail=False, methods=['get'])
     def pending(self, request):
         """Listar pedidos pendientes"""
