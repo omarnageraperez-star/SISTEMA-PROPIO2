@@ -875,7 +875,8 @@
                     if (this.trackerInterval) clearTimeout(this.trackerInterval);
                     
                     try {
-                        const apiUrl = window.location.origin + `/api/catalog-orders/orders/track/?order_number=${this.trackOrderNumber}`;
+                        // Usar ruta relativa para que funcione tanto en local como en Vercel
+                        const apiUrl = `/api/catalog-orders/orders/track/?order_number=${this.trackOrderNumber}`;
                         const response = await fetch(apiUrl);
                         
                         if (response.ok) {
