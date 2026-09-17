@@ -80,6 +80,7 @@ class CatalogOrder(models.Model):
     # Totales
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name="Subtotal")
     tax = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name="Impuestos")
+    delivery_fee = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name="Valor Domicilio")
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name="Total")
     
     # Control de tiempo

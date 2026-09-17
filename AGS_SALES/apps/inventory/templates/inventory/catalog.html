@@ -432,6 +432,33 @@
                         <h4 class="text-emerald-300 font-bold">¡Gracias por tu calificación!</h4>
                     </div>
                 </template>
+
+                <!-- Order Summary -->
+                <template x-if="trackData.total">
+                    <div class="mt-8 bg-gray-900/50 border border-gray-700/50 rounded-3xl p-6 w-full shadow-inner">
+                        <h4 class="text-white font-bold mb-4 text-center">Resumen del Pedido</h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Subtotal</span>
+                                <span class="text-white font-bold">${{ currency_symbol }}<span x-text="trackData.subtotal || 0"></span></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Impuestos</span>
+                                <span class="text-white font-bold">${{ currency_symbol }}<span x-text="trackData.tax || 0"></span></span>
+                            </div>
+                            <template x-if="trackData.order_type === 'DELIVERY' && trackData.delivery_fee > 0">
+                                <div class="flex justify-between text-orange-400">
+                                    <span>🛵 Domicilio</span>
+                                    <span class="font-bold">${{ currency_symbol }}<span x-text="trackData.delivery_fee"></span></span>
+                                </div>
+                            </template>
+                            <div class="border-t border-gray-700 pt-2 mt-2 flex justify-between">
+                                <span class="text-white font-black text-lg">Total</span>
+                                <span class="text-orange-400 font-black text-lg">${{ currency_symbol }}<span x-text="trackData.total"></span></span>
+                            </div>
+                        </div>
+                    </div>
+                </template>
                 
                 <button x-show="['DELIVERED', 'CANCELLED'].includes(trackData.status)" @click="exitTracking()" class="mt-6 w-full py-3 bg-gray-700 hover:bg-gray-600 rounded-xl text-white font-bold transition-colors">
                     Hacer Nuevo Pedido

@@ -376,6 +376,9 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
             'order_type': order.order_type,
             'customer_name': order.customer_name,
             'customer_address': order.customer_address or '',
+            'subtotal': order.subtotal,
+            'tax': order.tax,
+            'delivery_fee': order.delivery_fee,
             'total': order.total,
             'created_at': order.created_at,
             'confirmed_at': order.confirmed_at,
@@ -408,29 +411,7 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
             last_location_update=timezone.now()
         )
         
-        return Response({'updated_orders': updated})
-    
-    @action(detail=True, methods=['post'], url_path='assign-driver')
-    def assign_driver(self, request, pk=None):
-        """Asignar un domiciliario a un pedido (desde POS)"""
-        order = self.get_object()
-        driver_id = request.data.get('driver_id')
-        
-        if not driver_id:
-            return Response({'error': 'driver_id es requerido'}, status=400)
-        
-        from django.contrib.auth import get_user_model
-        User = get_user_model()
-        
-        try:
-            driver = User.objects.get(id=driver_id)
-        except User.DoesNotExist:
-            return Response({'error': 'Domiciliario no encontrado'}, status=404)
-        
-        order.assigned_driver = driver
-        order.save(update_fields=['assigned_driver'])
-        
-        return Response(CatalogOrderSerializer(order).data)
+        return Response({'message': f'Ubicación actualizada para {updated} pedidos'})
     
     @action(detail=True, methods=['post'], url_path='accept-route')
     def accept_route(self, request, pk=None):

@@ -7,7 +7,7 @@ import {
 import TopBar from '../components/TopBar';
 import { apiRequest, apiUrl, parseError, formatCurrency } from '../lib/api';
 import { DarkSwal, Toast } from '../lib/swal';
-import { sendNativeNotification } from '../lib/notifications';
+import { sendNativeNotification, sendDeliveryNotification } from '../lib/notifications';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Geolocation } from '@capacitor/geolocation';
 
@@ -162,11 +162,18 @@ export default function CatalogOrders({ auth, onLogout }) {
         setPendingCount(data.pending_count);
         
         if (data.has_new && data.order) {
-          sendNativeNotification(
-            '¡Nuevo Pedido del Catálogo!',
-            `Pedido #${data.order.order_number} de ${data.order.customer_name} - ${fmt(data.order.total)}`,
-            { sound: true }
-          );
+          // Si es un pedido de domicilio asignado al domiciliario, usar notificación especial
+          if (data.is_driver_order && data.order.order_type === 'DELIVERY') {
+            sendDeliveryNotification({
+              title: '🛵 ¡Nuevo Domicilio Asignado!',
+              body: `Pedido #${data.order.order_number} - ${data.order.customer_name} - Dirección: ${data.order.customer_address || 'No especificada'}`
+            });
+          } else {
+            sendNativeNotification({
+              title: '¡Nuevo Pedido del Catálogo!',
+              body: `Pedido #${data.order.order_number} de ${data.order.customer_name} - ${fmt(data.order.total)}`
+            });
+          }
           
           fetchOrders();
           Toast.fire({
@@ -262,6 +269,49 @@ export default function CatalogOrders({ auth, onLogout }) {
       }
     } catch (e) {
       DarkSwal.fire('Error', 'No se pudo iniciar la ruta', 'error');
+    }
+  };
+
+  const updateDeliveryFee = async (orderId) => {
+    const { value: fee } = await DarkSwal.fire({
+      title: 'Valor del Domicilio',
+      input: 'number',
+      inputLabel: 'Ingresa el valor del domicilio',
+      inputPlaceholder: '0',
+      inputAttributes: {
+        min: 0,
+        step: 100
+      },
+      showCancelButton: true,
+      confirmButtonText: 'Actualizar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#3b82f6'
+    });
+
+    if (fee && !isNaN(parseFloat(fee))) {
+      try {
+        const res = await apiRequest(
+          apiUrl(auth.apiUrl, `catalog-orders/orders/${orderId}/update-delivery-fee/`),
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ delivery_fee: parseFloat(fee) })
+          },
+          auth.token
+        );
+        if (res.ok) {
+          Toast.fire({
+            icon: 'success',
+            title: 'Valor del domicilio actualizado',
+            timer: 2000
+          });
+          fetchOrders();
+        } else {
+          throw new Error('Error al actualizar valor');
+        }
+      } catch (e) {
+        DarkSwal.fire('Error', 'No se pudo actualizar el valor del domicilio', 'error');
+      }
     }
   };
 
@@ -745,34 +795,64 @@ export default function CatalogOrders({ auth, onLogout }) {
                       
                       {/* Start Route Button (si aceptó pero no inició) */}
                       {order.route_accepted_at && !order.route_started_at && (
-                        <button
-                          type="button"
-                          disabled={updatingOrderId === order.id}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            startRoute(order.id);
-                          }}
-                          style={{
-                            width: '100%',
-                            padding: '10px 14px',
-                            borderRadius: 12,
-                            background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                            border: 'none',
-                            color: 'white',
-                            fontWeight: 800,
-                            fontSize: 13,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: 6,
-                            boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
-                            marginBottom: 8
-                          }}
-                        >
-                          <Navigation size={15} />
-                          <span>Iniciar Ruta</span>
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            disabled={updatingOrderId === order.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateDeliveryFee(order.id);
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '10px 14px',
+                              borderRadius: 12,
+                              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                              border: 'none',
+                              color: 'white',
+                              fontWeight: 800,
+                              fontSize: 13,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 6,
+                              boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
+                              marginBottom: 8
+                            }}
+                          >
+                            <CreditCard size={15} />
+                            <span>Valor Domicilio</span>
+                          </button>
+                          <button
+                            type="button"
+                            disabled={updatingOrderId === order.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startRoute(order.id);
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '10px 14px',
+                              borderRadius: 12,
+                              background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                              border: 'none',
+                              color: 'white',
+                              fontWeight: 800,
+                              fontSize: 13,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 6,
+                              boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
+                              marginBottom: 8
+                            }}
+                          >
+                            <Navigation size={15} />
+                            <span>Iniciar Ruta</span>
+                          </button>
+                        </>
                       )}
                       
                       {/* Mark as Delivered Button (si inició ruta) */}

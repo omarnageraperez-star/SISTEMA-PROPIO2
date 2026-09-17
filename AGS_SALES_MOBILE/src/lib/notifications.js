@@ -27,6 +27,19 @@ export async function requestNotificationPermissions() {
       lights: true,
       lightColor: '#f59e0b',
     });
+    // Crear canal específico para domicilios
+    await LocalNotifications.createChannel({
+      id: 'delivery',
+      name: 'Notificaciones de Domicilios',
+      description: 'Alertas de nuevos pedidos de domicilio asignados',
+      importance: 5, // Importancia máxima
+      visibility: 1, // Visible en pantalla de bloqueo
+      playSound: true,
+      sound: 'delivery_sound', // Sonido personalizado
+      vibration: true,
+      lights: true,
+      lightColor: '#3b82f6',
+    });
   } catch (e) {
     console.warn("Could not request notification permissions:", e);
   }
@@ -82,6 +95,109 @@ export async function sendNativeNotification({ title, body, id = Math.floor(Math
     }
   }
 }
+
+/**
+ * Send a delivery notification with custom sound for new delivery orders.
+ */
+export async function sendDeliveryNotification({ title, body, id = Math.floor(Math.random() * 100000) }) {
+  try {
+    await LocalNotifications.schedule({
+      notifications: [
+        {
+          title,
+          body,
+          id,
+          channelId: 'delivery',
+          schedule: {
+            at: new Date(Date.now() + 1000),
+            allowWhileIdle: true,
+          },
+          sound: 'delivery_sound',
+          smallIcon: 'ic_stat_icon_config_sample',
+          iconColor: '#3b82f6',
+          actionTypeId: '',
+          extra: null
+        }
+      ]
+    });
+    // Trigger strong haptic feedback for delivery notifications
+    triggerHaptic('heavy');
+    // Also play custom sound
+    playDeliverySound();
+  } catch (e) {
+    console.warn("Failed to schedule delivery notification:", e);
+    // Fallback to default notification
+    await sendNativeNotification({ title, body, id });
+  }
+}
+
+/**
+ * Play a custom delivery notification sound using the Web Audio API.
+ */
+export const playDeliverySound = () => {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+
+    // First beep - attention grabber
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    
+    osc1.type = 'square';
+    osc1.frequency.setValueAtTime(880, ctx.currentTime);
+    osc1.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
+    
+    gain1.gain.setValueAtTime(0.4, ctx.currentTime);
+    gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+    
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    
+    osc1.start();
+    osc1.stop(ctx.currentTime + 0.2);
+    
+    // Second beep - confirmation
+    setTimeout(() => {
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      
+      osc2.type = 'square';
+      osc2.frequency.setValueAtTime(1100, ctx.currentTime);
+      osc2.frequency.setValueAtTime(1320, ctx.currentTime + 0.1);
+      
+      gain2.gain.setValueAtTime(0.4, ctx.currentTime);
+      gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+      
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      
+      osc2.start();
+      osc2.stop(ctx.currentTime + 0.2);
+    }, 250);
+    
+    // Third beep - urgency
+    setTimeout(() => {
+      const osc3 = ctx.createOscillator();
+      const gain3 = ctx.createGain();
+      
+      osc3.type = 'square';
+      osc3.frequency.setValueAtTime(1320, ctx.currentTime);
+      osc3.frequency.setValueAtTime(1760, ctx.currentTime + 0.15);
+      
+      gain3.gain.setValueAtTime(0.4, ctx.currentTime);
+      gain3.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+      
+      osc3.connect(gain3);
+      gain3.connect(ctx.destination);
+      
+      osc3.start();
+      osc3.stop(ctx.currentTime + 0.25);
+    }, 500);
+  } catch (e) {
+    console.error('Audio play error:', e);
+  }
+};
 
 /**
  * Trigger physical haptic feedback / vibration on the smartphone.

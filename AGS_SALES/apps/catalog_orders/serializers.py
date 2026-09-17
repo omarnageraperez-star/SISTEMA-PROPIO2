@@ -30,13 +30,13 @@ class CatalogOrderSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'order_number', 'table', 'table_name', 'customer_user', 'customer_user_info',
             'customer_name', 'customer_phone', 'customer_address', 'order_type', 'status', 
-            'payment_method', 'notes', 'subtotal', 'tax', 'total', 
+            'payment_method', 'notes', 'subtotal', 'tax', 'delivery_fee', 'total', 
             'created_at', 'confirmed_at', 'delivered_at', 'processed_by', 
             'related_sale', 'items', 'delivery_photo', 'rating', 'customer_feedback',
             'assigned_driver', 'assigned_driver_info', 'route_started_at', 'route_accepted_at',
             'driver_lat', 'driver_lng', 'last_location_update'
         ]
-        read_only_fields = ['order_number', 'subtotal', 'tax', 'total', 'created_at', 'confirmed_at', 'delivered_at']
+        read_only_fields = ['order_number', 'subtotal', 'tax', 'delivery_fee', 'total', 'created_at', 'confirmed_at', 'delivered_at']
     
     def get_customer_user_info(self, obj):
         if obj.customer_user:
