@@ -11,6 +11,7 @@ import BIModule from './components/reports/BIModule';
 import CashCutModal from './components/pos/CashCutModal';
 import CashMovementModal from './components/pos/CashMovementModal';
 import PurchasesModule from './components/purchases/PurchasesModule';
+import PurchasesAnalyticsModule from './components/purchases/PurchasesAnalyticsModule';
 import SalesHistoryModule from './components/pos/SalesHistoryModule';
 import AssetsModule from './components/assets/AssetsModule';
 import UsersManagementModule from './components/settings/UsersManagementModule';
@@ -3286,7 +3287,10 @@ function App() {
             <li className={`sidebar-item ${appState === 'REPORTS' ? 'active' : ''} ${sidebarCollapsed ? 'justify-center w-12 h-12 p-0' : 'w-full'}`} onClick={() => setAppState('REPORTS')} title={sidebarCollapsed ? "Inteligencia [F4]" : ""}><BarChart3 size={18} className="shrink-0" /> {!sidebarCollapsed && <span className="truncate">Inteligencia [F4]</span>}</li>
           )}
           {hasPermission(userProfile, 'purchases.access') && (
-            <li className={`sidebar-item ${appState === 'PURCHASES' ? 'active' : ''} ${sidebarCollapsed ? 'justify-center w-12 h-12 p-0' : 'w-full'}`} onClick={() => { setAppState('PURCHASES'); fetchProviders(); fetchProducts(); }} title={sidebarCollapsed ? "Compras [F5]" : ""}><ShoppingCart size={18} className="shrink-0" /> {!sidebarCollapsed && <span className="truncate">Compras [F5]</span>}</li>
+            <>
+              <li className={`sidebar-item ${appState === 'PURCHASES' ? 'active' : ''} ${sidebarCollapsed ? 'justify-center w-12 h-12 p-0' : 'w-full'}`} onClick={() => { setAppState('PURCHASES'); fetchProviders(); fetchProducts(); }} title={sidebarCollapsed ? "Compras [F5]" : ""}><ShoppingCart size={18} className="shrink-0" /> {!sidebarCollapsed && <span className="truncate">Compras [F5]</span>}</li>
+              <li className={`sidebar-item ${appState === 'PURCHASES_ANALYTICS' ? 'active' : ''} ${sidebarCollapsed ? 'justify-center w-12 h-12 p-0' : 'w-full'}`} onClick={() => setAppState('PURCHASES_ANALYTICS')} title={sidebarCollapsed ? "Análisis de Compras" : ""}><TrendingUp size={18} className="shrink-0" /> {!sidebarCollapsed && <span className="truncate">Análisis de Compras</span>}</li>
+            </>
           )}
           {hasPermission(userProfile, 'sales.view_history') && (
             <li className={`sidebar-item ${appState === 'SALES_HISTORY' ? 'active' : ''} ${sidebarCollapsed ? 'justify-center w-12 h-12 p-0' : 'w-full'}`} onClick={() => setAppState('SALES_HISTORY')} title={sidebarCollapsed ? "Historial de Ventas [F6]" : ""}><FileText size={18} className="shrink-0" /> {!sidebarCollapsed && <span className="truncate">Historial de Ventas [F6]</span>}</li>
@@ -5869,6 +5873,16 @@ function App() {
         {appState === 'PURCHASES' && (
           <div className="flex-1 flex flex-col p-4 sm:p-8 overflow-hidden h-full">
             <PurchasesModule 
+              config={config} 
+              token={token} 
+              systemSettings={systemSettings} 
+            />
+          </div>
+        )}
+
+        {appState === 'PURCHASES_ANALYTICS' && (
+          <div className="flex-1 flex flex-col p-4 sm:p-8 overflow-hidden h-full">
+            <PurchasesAnalyticsModule 
               config={config} 
               token={token} 
               systemSettings={systemSettings} 
