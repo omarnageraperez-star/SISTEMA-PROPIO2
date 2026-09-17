@@ -61,7 +61,7 @@ class TableViewSet(viewsets.ModelViewSet):
 
 class CatalogOrderViewSet(viewsets.ModelViewSet):
     """ViewSet para gestionar pedidos del catálogo"""
-    queryset = CatalogOrder.objects.select_related('table', 'processed_by', 'related_sale', 'customer_user').prefetch_related('items', 'items__product')
+    queryset = CatalogOrder.objects.select_related('table', 'processed_by', 'related_sale', 'customer_user', 'assigned_driver').prefetch_related('items', 'items__product')
     serializer_class = CatalogOrderSerializer
     permission_classes = [IsAuthenticated]
     
@@ -395,10 +395,11 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
         if lat is None or lng is None:
             return Response({'error': 'lat y lng son requeridos'}, status=400)
         
-        # Actualizar todas las órdenes READY asignadas a delivery
+        # Actualizar todas las órdenes READY asignadas a este domiciliario
         active_orders = CatalogOrder.objects.filter(
             status='READY',
-            order_type='DELIVERY'
+            order_type='DELIVERY',
+            assigned_driver=request.user
         )
         
         updated = active_orders.update(
@@ -408,6 +409,65 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
         )
         
         return Response({'updated_orders': updated})
+    
+    @action(detail=True, methods=['post'], url_path='assign-driver')
+    def assign_driver(self, request, pk=None):
+        """Asignar un domiciliario a un pedido (desde POS)"""
+        order = self.get_object()
+        driver_id = request.data.get('driver_id')
+        
+        if not driver_id:
+            return Response({'error': 'driver_id es requerido'}, status=400)
+        
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        
+        try:
+            driver = User.objects.get(id=driver_id)
+        except User.DoesNotExist:
+            return Response({'error': 'Domiciliario no encontrado'}, status=404)
+        
+        order.assigned_driver = driver
+        order.save(update_fields=['assigned_driver'])
+        
+        return Response(CatalogOrderSerializer(order).data)
+    
+    @action(detail=True, methods=['post'], url_path='accept-route')
+    def accept_route(self, request, pk=None):
+        """Domiciliario acepta la ruta (desde APK)"""
+        order = self.get_object()
+        
+        if order.assigned_driver != request.user:
+            return Response({'error': 'Este pedido no está asignado a ti'}, status=403)
+        
+        if order.route_accepted_at:
+            return Response({'error': 'La ruta ya fue aceptada'}, status=400)
+        
+        from django.utils import timezone
+        order.route_accepted_at = timezone.now()
+        order.save(update_fields=['route_accepted_at'])
+        
+        return Response({'message': 'Ruta aceptada correctamente'})
+    
+    @action(detail=True, methods=['post'], url_path='start-route')
+    def start_route(self, request, pk=None):
+        """Domiciliario inicia la ruta (desde APK)"""
+        order = self.get_object()
+        
+        if order.assigned_driver != request.user:
+            return Response({'error': 'Este pedido no está asignado a ti'}, status=403)
+        
+        if not order.route_accepted_at:
+            return Response({'error': 'Debes aceptar la ruta primero'}, status=400)
+        
+        if order.route_started_at:
+            return Response({'error': 'La ruta ya fue iniciada'}, status=400)
+        
+        from django.utils import timezone
+        order.route_started_at = timezone.now()
+        order.save(update_fields=['route_started_at'])
+        
+        return Response({'message': 'Ruta iniciada correctamente'})
     
     @action(detail=False, methods=['get'])
     def pending(self, request):
@@ -422,6 +482,15 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
         active_orders = self.queryset.exclude(status__in=['DELIVERED', 'CANCELLED']).select_related('table', 'processed_by', 'related_sale').prefetch_related('items', 'items__product')
         serializer = self.get_serializer(active_orders, many=True)
         return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], url_path='available-drivers')
+    def available_drivers(self, request):
+        """Listar usuarios con rol DELIVERY disponibles"""
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        
+        drivers = User.objects.filter(role='DELIVERY', is_active=True).values('id', 'username', 'first_name', 'last_name')
+        return Response(list(drivers))
 
     @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def history(self, request):

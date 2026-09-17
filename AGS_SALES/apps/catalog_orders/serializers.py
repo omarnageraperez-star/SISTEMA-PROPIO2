@@ -23,6 +23,7 @@ class CatalogOrderSerializer(serializers.ModelSerializer):
     items = CatalogOrderItemSerializer(many=True, read_only=True)
     table_name = serializers.CharField(source='table.name', read_only=True)
     customer_user_info = serializers.SerializerMethodField()
+    assigned_driver_info = serializers.SerializerMethodField()
     
     class Meta:
         model = CatalogOrder
@@ -31,7 +32,9 @@ class CatalogOrderSerializer(serializers.ModelSerializer):
             'customer_name', 'customer_phone', 'customer_address', 'order_type', 'status', 
             'payment_method', 'notes', 'subtotal', 'tax', 'total', 
             'created_at', 'confirmed_at', 'delivered_at', 'processed_by', 
-            'related_sale', 'items', 'delivery_photo', 'rating', 'customer_feedback'
+            'related_sale', 'items', 'delivery_photo', 'rating', 'customer_feedback',
+            'assigned_driver', 'assigned_driver_info', 'route_started_at', 'route_accepted_at',
+            'driver_lat', 'driver_lng', 'last_location_update'
         ]
         read_only_fields = ['order_number', 'subtotal', 'tax', 'total', 'created_at', 'confirmed_at', 'delivered_at']
     
@@ -41,6 +44,15 @@ class CatalogOrderSerializer(serializers.ModelSerializer):
                 'id': obj.customer_user.id,
                 'username': obj.customer_user.username,
                 'full_name': obj.customer_user.get_full_name()
+            }
+        return None
+    
+    def get_assigned_driver_info(self, obj):
+        if obj.assigned_driver:
+            return {
+                'id': obj.assigned_driver.id,
+                'username': obj.assigned_driver.username,
+                'full_name': obj.assigned_driver.get_full_name()
             }
         return None
 

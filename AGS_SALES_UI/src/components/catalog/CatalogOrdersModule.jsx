@@ -74,6 +74,7 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState(new Date());
   const [searchTerm, setSearchTerm] = useState('');
+  const [availableDrivers, setAvailableDrivers] = useState([]);
 
   const symbol = systemSettings?.currency_symbol || '$';
   const decimals = parseInt(systemSettings?.currency_decimals ?? '2', 10);
@@ -237,6 +238,52 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
     } finally {
       setLoading(false);
       setIsRefreshing(false);
+    }
+  };
+
+  const fetchAvailableDrivers = async () => {
+    try {
+      const cleanBaseUrl = config.apiUrl.endsWith('/') ? config.apiUrl : config.apiUrl + '/';
+      const res = await apiRequest(`${cleanBaseUrl}catalog-orders/orders/available-drivers/`, {}, token);
+      if (res.ok) {
+        const data = await res.json();
+        setAvailableDrivers(Array.isArray(data) ? data : []);
+      }
+    } catch (e) {
+      console.error('Error fetching drivers:', e);
+    }
+  };
+
+  const assignDriver = async (orderId, driverId) => {
+    try {
+      const cleanBaseUrl = config.apiUrl.endsWith('/') ? config.apiUrl : config.apiUrl + '/';
+      const res = await apiRequest(`${cleanBaseUrl}catalog-orders/orders/${orderId}/assign-driver/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ driver_id: driverId })
+      }, token);
+      
+      if (res.ok) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Domiciliario Asignado',
+          text: 'El domiciliario ha sido asignado correctamente',
+          timer: 2000,
+          showConfirmButton: false
+        });
+        fetchOrders();
+        if (selectedOrder && selectedOrder.id === orderId) {
+          setSelectedOrder({ ...selectedOrder, assigned_driver: availableDrivers.find(d => d.id === driverId) });
+        }
+      } else {
+        throw new Error('Error al asignar domiciliario');
+      }
+    } catch (e) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo asignar el domiciliario'
+      });
     }
   };
 
@@ -765,6 +812,47 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
                     </div>
                   )}
                 </div>
+
+                {/* DRIVER ASSIGNMENT (Solo para DELIVERY) */}
+                {selectedOrder.order_type === 'DELIVERY' && (
+                  <div className="mt-3 pt-3 border-t border-slate-200">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <Truck size={16} className="text-purple-600" />
+                        <span className="text-sm font-bold text-slate-700">
+                          {selectedOrder.assigned_driver_info 
+                            ? `Domiciliario: ${selectedOrder.assigned_driver_info.full_name || selectedOrder.assigned_driver_info.username}`
+                            : 'Sin Domiciliario Asignado'
+                          }
+                        </span>
+                      </div>
+                      {!selectedOrder.assigned_driver && (
+                        <button
+                          onClick={async () => {
+                            await fetchAvailableDrivers();
+                            const { value: driverId } = await Swal.fire({
+                              title: 'Asignar Domiciliario',
+                              input: 'select',
+                              inputOptions: availableDrivers.reduce((acc, driver) => {
+                                acc[driver.id] = `${driver.first_name} ${driver.last_name} (${driver.username})`;
+                                return acc;
+                              }, {}),
+                              inputPlaceholder: 'Selecciona un domiciliario',
+                              showCancelButton: true
+                            });
+                            if (driverId) {
+                              await assignDriver(selectedOrder.id, parseInt(driverId));
+                            }
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 shrink-0"
+                        >
+                          <User size={14} />
+                          <span>Asignar</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* ITEMS BREAKDOWN TABLE */}

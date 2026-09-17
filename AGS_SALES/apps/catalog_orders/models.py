@@ -102,6 +102,11 @@ class CatalogOrder(models.Model):
     driver_lat = models.FloatField(blank=True, null=True, verbose_name="Latitud Domiciliario")
     driver_lng = models.FloatField(blank=True, null=True, verbose_name="Longitud Domiciliario")
     last_location_update = models.DateTimeField(blank=True, null=True, verbose_name="Última Actualización GPS")
+    
+    # Asignación de domiciliario
+    assigned_driver = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_orders', verbose_name="Domiciliario Asignado")
+    route_started_at = models.DateTimeField(blank=True, null=True, verbose_name="Ruta Iniciada")
+    route_accepted_at = models.DateTimeField(blank=True, null=True, verbose_name="Ruta Aceptada")
 
     class Meta:
         verbose_name = "Pedido del Catálogo"
@@ -114,6 +119,7 @@ class CatalogOrder(models.Model):
             models.Index(fields=['order_number']),
             models.Index(fields=['customer_phone']),
             models.Index(fields=['related_sale']),
+            models.Index(fields=['assigned_driver']),
         ]
 
     def __str__(self):

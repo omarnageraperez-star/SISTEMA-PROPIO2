@@ -219,6 +219,50 @@ export default function CatalogOrders({ auth, onLogout }) {
     window.open(url, '_system');
   };
 
+  const acceptRoute = async (orderId) => {
+    try {
+      const res = await apiRequest(
+        apiUrl(auth.apiUrl, `catalog-orders/orders/${orderId}/accept-route/`),
+        { method: 'POST' },
+        auth.token
+      );
+      if (res.ok) {
+        Toast.fire({
+          icon: 'success',
+          title: 'Ruta aceptada correctamente',
+          timer: 2000
+        });
+        fetchOrders();
+      } else {
+        throw new Error('Error al aceptar ruta');
+      }
+    } catch (e) {
+      DarkSwal.fire('Error', 'No se pudo aceptar la ruta', 'error');
+    }
+  };
+
+  const startRoute = async (orderId) => {
+    try {
+      const res = await apiRequest(
+        apiUrl(auth.apiUrl, `catalog-orders/orders/${orderId}/start-route/`),
+        { method: 'POST' },
+        auth.token
+      );
+      if (res.ok) {
+        Toast.fire({
+          icon: 'success',
+          title: 'Ruta iniciada correctamente',
+          timer: 2000
+        });
+        fetchOrders();
+      } else {
+        throw new Error('Error al iniciar ruta');
+      }
+    } catch (e) {
+      DarkSwal.fire('Error', 'No se pudo iniciar la ruta', 'error');
+    }
+  };
+
   const handleStatusChange = async (order, newStatus) => {
     // Prevenir múltiples clics en el mismo pedido
     if (updatingOrderId === order.id) {
@@ -665,36 +709,103 @@ export default function CatalogOrders({ auth, onLogout }) {
                   {/* 1-Tap Quick Delivery Button on Card for READY orders */}
                   {order.status === 'READY' && (
                     <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                      <button
-                        type="button"
-                        disabled={updatingOrderId === order.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleStatusChange(order, 'DELIVERED');
-                        }}
-                        style={{
-                          width: '100%',
-                          padding: '10px 14px',
-                          borderRadius: 12,
-                          background: updatingOrderId === order.id 
-                            ? 'rgba(16, 185, 129, 0.5)' 
-                            : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                          border: 'none',
-                          color: 'white',
-                          fontWeight: 800,
-                          fontSize: 13,
-                          cursor: updatingOrderId === order.id ? 'not-allowed' : 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: 6,
-                          boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
-                          opacity: updatingOrderId === order.id ? 0.7 : 1
-                        }}
-                      >
-                        <CheckCircle size={15} />
-                        <span>{processingPhoto ? 'Procesando foto...' : updatingOrderId === order.id ? 'Enviando...' : 'Marcar como Entregado'}</span>
-                      </button>
+                      {/* Accept Route Button (si no ha aceptado) */}
+                      {!order.route_accepted_at && (
+                        <button
+                          type="button"
+                          disabled={updatingOrderId === order.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            acceptRoute(order.id);
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '10px 14px',
+                            borderRadius: 12,
+                            background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                            border: 'none',
+                            color: 'white',
+                            fontWeight: 800,
+                            fontSize: 13,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 6,
+                            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                            marginBottom: 8
+                          }}
+                        >
+                          <CheckCircle size={15} />
+                          <span>Aceptar Ruta</span>
+                        </button>
+                      )}
+                      
+                      {/* Start Route Button (si aceptó pero no inició) */}
+                      {order.route_accepted_at && !order.route_started_at && (
+                        <button
+                          type="button"
+                          disabled={updatingOrderId === order.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startRoute(order.id);
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '10px 14px',
+                            borderRadius: 12,
+                            background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                            border: 'none',
+                            color: 'white',
+                            fontWeight: 800,
+                            fontSize: 13,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 6,
+                            boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
+                            marginBottom: 8
+                          }}
+                        >
+                          <Navigation size={15} />
+                          <span>Iniciar Ruta</span>
+                        </button>
+                      )}
+                      
+                      {/* Mark as Delivered Button (si inició ruta) */}
+                      {order.route_started_at && (
+                        <button
+                          type="button"
+                          disabled={updatingOrderId === order.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStatusChange(order, 'DELIVERED');
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '10px 14px',
+                            borderRadius: 12,
+                            background: updatingOrderId === order.id 
+                              ? 'rgba(16, 185, 129, 0.5)' 
+                              : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                            border: 'none',
+                            color: 'white',
+                            fontWeight: 800,
+                            fontSize: 13,
+                            cursor: updatingOrderId === order.id ? 'not-allowed' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 6,
+                            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                            opacity: updatingOrderId === order.id ? 0.7 : 1
+                          }}
+                        >
+                          <CheckCircle size={15} />
+                          <span>{processingPhoto ? 'Procesando foto...' : updatingOrderId === order.id ? 'Enviando...' : 'Marcar como Entregado'}</span>
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
