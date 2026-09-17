@@ -783,86 +783,86 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
 
       {/* RICH ORDER DETAIL MODAL */}
       {showDetailModal && selectedOrder && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-          <div className="glass-panel bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col border border-slate-100">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-lg flex flex-col border border-gray-200">
             
             {/* MODAL HEADER */}
-            <div className="p-6 bg-slate-900 text-white flex justify-between items-center">
+            <div className="px-4 sm:px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white flex justify-between items-center border-b border-blue-700">
               <div>
-                <div className="flex items-center gap-3">
-                  <h3 className="text-2xl font-black tracking-tight">Pedido #{selectedOrder.order_number}</h3>
-                  <span className={`text-xs font-bold px-3 py-1 rounded-xl border ${STATUS_CONFIG[selectedOrder.status]?.bgColor}`}>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <h3 className="text-lg sm:text-2xl font-semibold">Pedido #{selectedOrder.order_number}</h3>
+                  <span className={`text-[10px] sm:text-xs font-medium px-2 sm:px-3 py-1 rounded-lg border ${STATUS_CONFIG[selectedOrder.status]?.bgColor}`}>
                     {STATUS_CONFIG[selectedOrder.status]?.label}
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 mt-1">Registrado el {formatDateTime(selectedOrder.created_at)}</p>
+                <p className="text-[10px] sm:text-xs text-blue-100 mt-1">Registrado el {formatDateTime(selectedOrder.created_at)}</p>
               </div>
 
               <button
                 onClick={() => setShowDetailModal(false)}
-                className="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-2xl flex items-center justify-center text-white transition-all"
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
               >
-                <XCircle size={22} />
+                <XCircle size={18} sm:size={22} />
               </button>
             </div>
 
             {/* MODAL BODY */}
-            <div className="p-6 overflow-y-auto space-y-6 flex-1">
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-4 sm:space-y-6 flex-1">
               
               {/* CUSTOMER DETAILS CARD */}
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 space-y-2">
-                <h4 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2">Datos del Cliente y Entrega</h4>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-3">
+                <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Datos del Cliente y Entrega</h4>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                  <div className="flex items-center gap-2 text-slate-800 font-bold">
-                    <User size={16} className="text-indigo-600" />
+                  <div className="flex items-center gap-2 text-gray-900 font-medium">
+                    <User size={16} className="text-blue-600" />
                     <span>{selectedOrder.customer_name}</span>
                   </div>
 
                   {selectedOrder.customer_phone && (
-                    <div className="flex items-center gap-2 text-slate-700 font-semibold">
-                      <Phone size={16} className="text-emerald-600" />
+                    <div className="flex items-center gap-2 text-gray-700 font-medium">
+                      <Phone size={16} className="text-green-600" />
                       <span>{selectedOrder.customer_phone}</span>
                     </div>
                   )}
 
                   {selectedOrder.customer_address && (
-                    <div className="flex items-center justify-between gap-3 text-slate-700 md:col-span-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="flex items-center justify-between gap-3 text-gray-700 md:col-span-2 bg-white p-3 rounded-lg border border-gray-200">
                       <div className="flex items-center gap-2">
-                        <MapPin size={16} className="text-rose-500 shrink-0" />
-                        <span className="font-semibold">{selectedOrder.customer_address}</span>
+                        <MapPin size={16} className="text-red-600 shrink-0" />
+                        <span className="font-medium">{selectedOrder.customer_address}</span>
                       </div>
                       <button
                         type="button"
                         onClick={() => {
                           window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedOrder.customer_address)}`, '_blank');
                         }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 shrink-0"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-medium transition-colors shrink-0"
                       >
                         <Navigation size={14} />
-                        <span>Abrir en Maps</span>
+                        <span>Maps</span>
                       </button>
                     </div>
                   )}
 
                   {selectedOrder.table_name && (
-                    <div className="flex items-center gap-2 text-sky-700 font-bold bg-sky-50 px-3 py-1.5 rounded-xl border border-sky-200">
+                    <div className="flex items-center gap-2 text-sky-700 font-medium bg-sky-50 px-3 py-1.5 rounded-lg border border-sky-200">
                       <MapPin size={16} className="text-sky-600" />
-                      <span>Ubicación / Mesa: {selectedOrder.table_name}</span>
+                      <span>Mesa: {selectedOrder.table_name}</span>
                     </div>
                   )}
                 </div>
 
                 {/* DRIVER ASSIGNMENT (Solo para DELIVERY) */}
                 {selectedOrder && selectedOrder.order_type === 'DELIVERY' && (
-                  <div className="mt-3 pt-3 border-t border-slate-200">
+                  <div className="mt-3 pt-3 border-t border-gray-200">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
                         <Truck size={16} className="text-purple-600" />
-                        <span className="text-sm font-bold text-slate-700">
+                        <span className="text-sm font-medium text-gray-700">
                           {selectedOrder.assigned_driver_info 
                             ? `Domiciliario: ${selectedOrder.assigned_driver_info.full_name || selectedOrder.assigned_driver_info.username}`
-                            : 'Sin Domiciliario Asignado'
+                            : 'Sin Domiciliario'
                           }
                         </span>
                       </div>
@@ -884,7 +884,7 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
                               await assignDriver(selectedOrder.id, parseInt(driverId));
                             }
                           }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 shrink-0"
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-medium transition-colors shrink-0"
                         >
                           <User size={14} />
                           <span>Asignar</span>
@@ -897,17 +897,17 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
 
               {/* ITEMS BREAKDOWN TABLE */}
               <div>
-                <h4 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-3">Productos Solicitados ({selectedOrder.items?.length || 0})</h4>
-                <div className="border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-150">
+                <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-3">Productos ({selectedOrder.items?.length || 0})</h4>
+                <div className="border border-gray-200 rounded-lg overflow-hidden divide-y divide-gray-100">
                   {selectedOrder.items?.map((item, idx) => (
-                    <div key={idx} className="p-3.5 bg-white hover:bg-slate-50 flex items-center justify-between">
+                    <div key={idx} className="p-3 bg-white hover:bg-gray-50 flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-bold text-slate-800">{item.product_name}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          {item.quantity} unidades × {formatCurrency(item.unit_price)}
+                        <p className="text-sm font-medium text-gray-900">{item.product_name}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {item.quantity} × {formatCurrency(item.unit_price)}
                         </p>
                       </div>
-                      <span className="text-sm font-extrabold text-indigo-600">
+                      <span className="text-sm font-semibold text-blue-600">
                         {formatCurrency(item.subtotal)}
                       </span>
                     </div>
@@ -917,21 +917,21 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
 
               {/* NOTES */}
               {selectedOrder.notes && (
-                <div className="bg-amber-50/60 p-4 rounded-2xl border border-amber-200">
-                  <h4 className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-1">Notas del Cliente</h4>
+                <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                  <h4 className="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-1">Notas</h4>
                   <p className="text-xs text-amber-900 font-medium">{selectedOrder.notes}</p>
                 </div>
               )}
 
               {/* DELIVERY PHOTO EVIDENCE */}
               {selectedOrder.delivery_photo && (
-                <div className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-200">
-                  <h4 className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-3">📸 Evidencia de Entrega</h4>
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <h4 className="text-xs font-semibold text-green-700 uppercase tracking-wider mb-3">Evidencia de Entrega</h4>
                   <div className="flex flex-col items-center gap-3">
                     <img 
                       src={selectedOrder.delivery_photo} 
                       alt="Evidencia de entrega" 
-                      className="max-w-full max-h-64 rounded-xl border-2 border-emerald-300 shadow-md object-contain bg-white"
+                      className="max-w-full max-h-64 rounded-lg border border-green-300 object-contain bg-white"
                     />
                     <button
                       onClick={() => {
@@ -939,30 +939,30 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
                         win.document.write(`<img src="${selectedOrder.delivery_photo}" style="max-width:100%;max-height:100vh;margin:auto;display:block;">`);
                         win.document.title = `Evidencia de Entrega - Pedido #${selectedOrder.order_number}`;
                       }}
-                      className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm active:scale-95"
+                      className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg transition-colors"
                     >
                       <ExternalLink size={14} />
-                      <span>Abrir en nueva pestaña</span>
+                      <span>Abrir</span>
                     </button>
                   </div>
                 </div>
               )}
 
               {/* FINANCIAL SUMMARY */}
-              <div className="bg-slate-900 text-white p-5 rounded-2xl space-y-2">
-                <div className="flex justify-between text-xs text-slate-400">
+              <div className="bg-gray-900 text-white p-4 rounded-lg space-y-2">
+                <div className="flex justify-between text-xs text-gray-400">
                   <span>Subtotal</span>
-                  <span className="font-semibold text-slate-200">{formatCurrency(selectedOrder.subtotal)}</span>
+                  <span className="font-medium text-gray-200">{formatCurrency(selectedOrder.subtotal)}</span>
                 </div>
                 {Number(selectedOrder.tax || 0) > 0 && (
-                  <div className="flex justify-between text-xs text-slate-400">
+                  <div className="flex justify-between text-xs text-gray-400">
                     <span>Impuestos</span>
-                    <span className="font-semibold text-slate-200">{formatCurrency(selectedOrder.tax)}</span>
+                    <span className="font-medium text-gray-200">{formatCurrency(selectedOrder.tax)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-base font-black pt-2 border-t border-slate-800">
-                  <span>Total Pedido</span>
-                  <span className="text-emerald-400 text-xl">{formatCurrency(selectedOrder.total)}</span>
+                <div className="flex justify-between text-sm font-semibold pt-2 border-t border-gray-700">
+                  <span>Total</span>
+                  <span className="text-green-400 text-lg">{formatCurrency(selectedOrder.total)}</span>
                 </div>
               </div>
 
@@ -973,14 +973,12 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
                     <button
                       key={act.status}
                       onClick={() => handleStatusChange(selectedOrder, act.status)}
-                      className={`flex-1 py-3 px-4 rounded-2xl text-xs font-extrabold text-white transition-all ${act.color} shadow-md`}
+                      className={`flex-1 py-2.5 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-medium text-white transition-colors ${act.color}`}
                     >
                       {act.label}
                     </button>
                   ))}
                 </div>
-
-
               </div>
 
             </div>
