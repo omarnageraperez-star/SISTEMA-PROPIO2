@@ -32,7 +32,7 @@ const STATUS_CONFIG = {
     bgColor: 'bg-purple-50 text-purple-700 border-purple-200', 
     badgeColor: 'bg-purple-500',
     label: 'En Preparación', 
-    icon: ChefHat 
+    icon: Zap 
   },
   'READY': { 
     color: '#10b981', 
@@ -814,7 +814,7 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
                 </div>
 
                 {/* DRIVER ASSIGNMENT (Solo para DELIVERY) */}
-                {selectedOrder.order_type === 'DELIVERY' && (
+                {selectedOrder && selectedOrder.order_type === 'DELIVERY' && (
                   <div className="mt-3 pt-3 border-t border-slate-200">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
