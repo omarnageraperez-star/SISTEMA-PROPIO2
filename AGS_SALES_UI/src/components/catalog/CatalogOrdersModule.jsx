@@ -315,26 +315,8 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
           input: 'w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800'
         }
       });
-
-      if (!text) return; // User cancelled the modal
+      if (!text) return;
       cancelReason = text;
-    } else {
-      const result = await Swal.fire({
-        title: 'Cambiar Estado',
-        html: `¿Deseas cambiar el pedido <b>#${order.order_number}</b> a estado <b style="color:${targetStatus.color}">${targetStatus.label}</b>?`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, cambiar',
-        cancelButtonText: 'Cancelar',
-        customClass: {
-          popup: 'premium-swal',
-          title: 'premium-swal-title',
-          confirmButton: 'premium-swal-confirm bg-indigo-600 hover:bg-indigo-700',
-          cancelButton: 'premium-swal-cancel'
-        }
-      });
-
-      if (!result.isConfirmed) return;
     }
 
     try {
@@ -411,6 +393,15 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
       actions.push({ status: 'READY', label: 'Marcar Listo ✨', color: 'bg-emerald-600 hover:bg-emerald-700' });
     } else if (currentStatus === 'READY') {
       actions.push({ status: 'DELIVERED', label: 'Entregar / Finalizar 🚀', color: 'bg-slate-700 hover:bg-slate-800' });
+      
+      // Agregar botón de asignar domiciliario para pedidos DELIVERY
+      if (order.order_type === 'DELIVERY' && !order.assigned_driver) {
+        actions.push({ 
+          type: 'assign_driver', 
+          label: 'Asignar Domiciliario 🛵', 
+          color: 'bg-purple-600 hover:bg-purple-700' 
+        });
+      }
     }
 
     return actions;
@@ -721,10 +712,10 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
 
                     {actions.length > 0 && (
                       <div className="flex gap-1.5">
-                        {actions.map(act => (
+                        {actions.map((act, idx) => (
                           <button
-                            key={act.status}
-                            onClick={() => handleStatusChange(order, act.status)}
+                            key={act.status || `assign-${idx}`}
+                            onClick={() => handleStatusChange(order, act)}
                             className={`flex-1 py-2 px-3 text-white font-extrabold text-xs rounded-xl transition-all ${act.color} flex items-center justify-center gap-1 shadow-sm`}
                           >
                             <span>{act.label}</span>
