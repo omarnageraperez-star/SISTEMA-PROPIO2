@@ -783,7 +783,7 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
   );
 
   return (
-    <div className="flex flex-1 h-full gap-4 relative overflow-hidden animate-in fade-in duration-300">
+    <div className="flex flex-1 h-full gap-4 relative overflow-hidden animate-in fade-in duration-300 flex-col lg:flex-row">
       
       {/* Messages */}
       {(successMsg || errorMsg) && (
@@ -802,26 +802,26 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
       )}
 
       {/* LEFT PANE: Catalog */}
-      <div className="flex-[2] flex flex-col gap-4 h-full overflow-hidden">
+      <div className="flex-[2] flex flex-col gap-4 h-full overflow-hidden min-h-0">
         {/* Search & Categories */}
-        <div className="glass-panel p-4 rounded-2xl shadow-sm flex flex-col gap-3">
+        <div className="glass-panel p-3 sm:p-4 rounded-xl shadow-sm flex flex-col gap-3">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
             <input 
               ref={searchInputRef}
               type="text" 
-              placeholder="Buscar producto por nombre o escanear código de barras (Enter para agregar)..." 
-              className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner"
+              placeholder="Buscar producto..." 
+              className="w-full pl-12 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner text-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={handleSearchKeyDown}
             />
           </div>
           {/* Categories Tab Row */}
-          <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
+          <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar -mx-1 px-1">
             <button
               onClick={() => setSelectedCategory('')}
-              className={`px-4 py-1.5 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
                 selectedCategory === '' 
                   ? 'bg-blue-600 text-white shadow-md' 
                   : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
@@ -833,7 +833,7 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${
+                className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
                   String(selectedCategory) === String(cat.id)
                     ? 'bg-blue-600 text-white shadow-md' 
                     : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
@@ -846,15 +846,15 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
         </div>
         
         {/* Grid */}
-        <div className="flex-1 glass-panel rounded-2xl shadow-sm p-4 overflow-y-auto">
-          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div className="flex-1 glass-panel rounded-xl shadow-sm p-3 sm:p-4 overflow-y-auto min-h-0">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {filteredProducts.map(p => (
               <div 
                 key={p.id} 
                 onClick={() => addToCart(p)}
-                className="bg-white/70 border border-gray-100 rounded-xl p-3 cursor-pointer hover:shadow-xl transition-all transform hover:scale-105 hover:-translate-y-1 flex flex-col backdrop-blur-sm"
+                className="bg-white/70 border border-gray-100 rounded-lg p-2 sm:p-3 cursor-pointer hover:shadow-lg transition-all transform hover:scale-105 hover:-translate-y-1 flex flex-col backdrop-blur-sm"
               >
-                <div className="h-24 bg-gray-50 rounded-lg mb-2 flex items-center justify-center text-gray-300 overflow-hidden relative">
+                <div className="h-16 sm:h-24 bg-gray-50 rounded-lg mb-2 flex items-center justify-center text-gray-300 overflow-hidden relative">
                     {p.image ? (
                       <img 
                         src={p.image.startsWith('http') 
@@ -892,10 +892,10 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
                      return null;
                    })()}
                 </div>
-                <h3 className="font-semibold text-gray-800 text-sm line-clamp-2 leading-tight flex-1">{p.name}</h3>
+                <h3 className="font-medium text-gray-800 text-xs sm:text-sm line-clamp-2 leading-tight flex-1">{p.name}</h3>
                 <div className="mt-2 flex justify-between items-end">
-                  <span className="text-gray-500 text-xs">{p.stock} unid.</span>
-                  <span className="font-bold text-blue-600">{formatPrice(p.price_sell)}</span>
+                  <span className="text-gray-500 text-[10px] sm:text-xs">{p.stock} unid.</span>
+                  <span className="font-semibold text-blue-600 text-xs sm:text-sm">{formatPrice(p.price_sell)}</span>
                 </div>
               </div>
             ))}
@@ -910,12 +910,12 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
       </div>
 
       {/* RIGHT PANE: Cart & Checkout */}
-      <div className="flex-1 min-w-[350px] max-w-[450px] flex flex-col gap-4 h-full overflow-hidden">
+      <div className="flex-1 min-w-[300px] max-w-[400px] lg:max-w-[450px] flex flex-col gap-4 h-full overflow-hidden">
         
         {/* Customer Selection */}
-        <div className="glass-panel p-4 rounded-2xl shadow-sm flex items-center gap-2">
+        <div className="glass-panel p-3 sm:p-4 rounded-xl shadow-sm flex items-center gap-2">
           <select 
-            className="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
             value={selectedCustomer}
             onChange={(e) => setSelectedCustomer(e.target.value)}
           >
@@ -926,37 +926,37 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
           </select>
           <button 
             onClick={() => { setShowAddCustomer(true); }}
-            className="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors"
+            className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
             title="Nuevo Cliente"
           >
-            <UserPlus size={20} />
+            <UserPlus size={18} />
           </button>
           {selectedCustomer && !isGenericConsumerSelected && (
             <>
               <button
                 onClick={handleOpenEditCustomer}
-                className="p-2 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-100 transition-colors"
+                className="p-2 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 transition-colors"
                 title="Editar Cliente"
               >
                 ✏️
-              </button>
+              </button>,
               <button
                 onClick={handleDeleteCustomer}
-                className="p-2 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors"
+                className="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-colors"
                 title="Eliminar Cliente"
               >
-                <Trash2 size={18} />
+                <Trash2 size={16} />
               </button>
             </>
           )}
         </div>
 
         {/* Cart Items */}
-        <div className="flex-1 glass-panel rounded-2xl shadow-sm flex flex-col overflow-hidden">
-          <div className="bg-slate-50 p-4 border-b border-gray-100 flex justify-between items-center relative">
-            <h2 className="font-bold text-gray-700 flex items-center gap-2">
-              <ShoppingCart size={18} /> Carrito 
-              <span className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-medium">{cart.length}</span>
+        <div className="flex-1 glass-panel rounded-xl shadow-sm flex flex-col overflow-hidden min-h-0">
+          <div className="bg-gray-50 p-3 sm:p-4 border-b border-gray-100 flex justify-between items-center relative">
+            <h2 className="font-semibold text-gray-700 flex items-center gap-2 text-sm sm:text-base">
+              <ShoppingCart size={16} /> Carrito 
+              <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full font-medium">{cart.length}</span>
             </h2>
             
             <div className="flex items-center gap-2">
@@ -1021,29 +1021,29 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
               )}
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-2">
+          <div className="flex-1 overflow-y-auto p-2 sm:p-3">
             {cart.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-gray-400 opacity-70">
-                <ShoppingCart size={48} className="mb-2" />
-                <p>El carrito está vacío</p>
+                <ShoppingCart size={32} sm:size={48} className="mb-2" />
+                <p className="text-xs sm:text-sm">El carrito está vacío</p>
               </div>
             ) : (
               cart.map((item, idx) => (
-                <div key={idx} className="bg-white/70 p-3 rounded-xl mb-2 border border-gray-100 shadow-sm flex items-center gap-3 transition-colors duration-150 hover:bg-white/90">
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-800 text-sm leading-tight">{item.product.name}</h4>
-                    <p className="text-gray-500 text-xs">{formatPrice(item.unit_price)} c/u</p>
+                <div key={idx} className="bg-white/70 p-2 sm:p-3 rounded-lg mb-2 border border-gray-100 shadow-sm flex items-center gap-2 sm:gap-3 transition-colors duration-150 hover:bg-white/90">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-gray-800 text-xs sm:text-sm leading-tight truncate">{item.product.name}</h4>
+                    <p className="text-gray-500 text-[10px] sm:text-xs">{formatPrice(item.unit_price)} c/u</p>
                   </div>
-                  <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-lg border border-gray-200">
-                    <button onClick={() => updateQuantity(idx, -1)} className="p-1 hover:bg-white rounded text-gray-600"><Minus size={14}/></button>
-                    <span className="font-medium text-sm w-6 text-center">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(idx, 1)} className="p-1 hover:bg-white rounded text-gray-600"><Plus size={14}/></button>
+                  <div className="flex items-center gap-1 sm:gap-2 bg-gray-50 p-1 rounded-lg border border-gray-200">
+                    <button onClick={() => updateQuantity(idx, -1)} className="p-1 hover:bg-white rounded text-gray-600"><Minus size={12}/></button>
+                    <span className="font-medium text-xs sm:text-sm w-5 sm:w-6 text-center">{item.quantity}</span>
+                    <button onClick={() => updateQuantity(idx, 1)} className="p-1 hover:bg-white rounded text-gray-600"><Plus size={12}/></button>
                   </div>
-                  <div className="font-bold text-gray-800">
+                  <div className="font-semibold text-gray-800 text-xs sm:text-sm">
                     {formatPrice(item.quantity * item.unit_price)}
                   </div>
                   <button onClick={() => removeFromCart(idx)} className="text-red-400 hover:text-red-600 p-1">
-                    <Trash2 size={16} />
+                    <Trash2 size={14} />
                   </button>
                 </div>
               ))
@@ -1052,23 +1052,23 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
         </div>
 
         {/* Totals & Checkout */}
-        <div className="glass-panel p-5 rounded-2xl shadow-sm bg-white totals-checkout-panel">
-          <div className="space-y-2 mb-4">
-            <div className="flex justify-between text-gray-500 text-sm">
+        <div className="glass-panel p-3 sm:p-5 rounded-xl shadow-sm bg-white totals-checkout-panel">
+          <div className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
+            <div className="flex justify-between text-gray-500 text-xs sm:text-sm">
               <span>Subtotal</span>
               <span>{formatPrice(totals.subtotal)}</span>
             </div>
-            <div className="flex justify-between text-gray-500 text-sm">
+            <div className="flex justify-between text-gray-500 text-xs sm:text-sm">
               <span>Impuestos (Variable)</span>
               <span>{formatPrice(totals.tax)}</span>
             </div>
             {totals.globalDiscount > 0 && (
-              <div className="flex justify-between text-emerald-500 font-bold text-sm">
+              <div className="flex justify-between text-emerald-500 font-semibold text-xs sm:text-sm">
                 <span>Descuento Dados ({globalDiscountPercent}%)</span>
                 <span>-{formatPrice(totals.globalDiscount)}</span>
               </div>
             )}
-            <div className="flex justify-between text-gray-800 font-bold text-xl pt-2 border-t border-gray-200 mt-2">
+            <div className="flex justify-between text-gray-800 font-semibold text-lg sm:text-xl pt-2 border-t border-gray-200 mt-2">
               <span>Total</span>
               <span className={currentBillingMode === 'ELECTRONIC' ? 'text-green-600' : 'text-blue-600'}>
                 {formatPrice(totals.total)}
@@ -1080,14 +1080,14 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
             <button
               onClick={handleRollDice}
               disabled={isRollingDice}
-              className="w-full py-3 mb-3 rounded-xl bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-black flex items-center justify-center gap-2 transition-transform hover:scale-105 shadow-md border-2 border-yellow-500"
+              className="w-full py-2.5 sm:py-3 mb-2 sm:mb-3 rounded-lg bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-semibold flex items-center justify-center gap-2 transition-transform hover:scale-105 shadow-md border-2 border-yellow-500 text-xs sm:text-sm"
             >
               {isRollingDice ? (
-                <span className="w-5 h-5 border-2 border-yellow-900 border-t-transparent rounded-full animate-spin"></span>
+                <span className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-yellow-900 border-t-transparent rounded-full animate-spin"></span>
               ) : (
-                <span className="text-xl">🎲</span>
+                <span className="text-lg sm:text-xl">🎲</span>
               )}
-              {isRollingDice ? 'Lanzando Dados...' : 'Lanzar Dados de Promoción'}
+              {isRollingDice ? 'Lanzando...' : 'Lanzar Dados'}
             </button>
           )}
 
@@ -1095,18 +1095,18 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
             id="btn-checkout-pos"
             onClick={handleCheckout}
             disabled={loading || cart.length === 0}
-            className={`w-full py-4 rounded-xl text-white font-bold text-lg flex items-center justify-center gap-2 transition-all shadow-md ${
+            className={`w-full py-3 sm:py-4 rounded-lg text-white font-semibold sm:font-bold text-base sm:text-lg flex items-center justify-center gap-2 transition-all shadow-md ${
               currentBillingMode === 'ELECTRONIC' 
-                ? 'bg-emerald-600 hover:bg-emerald-700' 
-                : 'bg-indigo-600 hover:bg-indigo-700'
-            } ${(loading || cart.length === 0) ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-1 hover:shadow-lg'}`}
+                ? 'bg-green-600 hover:bg-green-700' 
+                : 'bg-blue-600 hover:bg-blue-700'
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {loading ? (
               <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
             ) : (
-              <CreditCard size={24} />
+              <CreditCard size={18} sm:size={20} />
             )}
-            Cobrar {currentBillingMode === 'ELECTRONIC' ? 'Factura E.' : 'POS'} <span className="ml-2 text-xs bg-white/20 px-2 py-0.5 rounded-md">F4</span>
+            Procesar Venta
           </button>
         </div>
 
@@ -1115,35 +1115,37 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
       {/* Add Customer Modal */}
       {showAddCustomer && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95">
-            <div className="p-4 border-b flex justify-between items-center bg-white/70 backdrop-blur-md border-b shrink-0">
-              <h2 className="font-bold text-gray-800">Nuevo Cliente</h2>
-              <button onClick={() => setShowAddCustomer(false)} className="text-gray-400 hover:text-gray-600">×</button>
+          <div className="bg-white rounded-lg w-full max-w-md shadow-lg overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 border border-gray-200">
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 shrink-0">
+              <h2 className="font-semibold text-gray-900 text-base">Nuevo Cliente</h2>
+              <button onClick={() => setShowAddCustomer(false)} className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-200 rounded-lg transition-colors">
+                <X size={18} />
+              </button>
             </div>
-            <form onSubmit={handleCreateCustomer} className="p-6 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleCreateCustomer} className="p-4 sm:p-6 space-y-3 sm:space-y-4 overflow-y-auto flex-1 custom-scrollbar">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Nombre *</label>
-                  <input required type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500" value={newCustomerForm.first_name} onChange={e => setNewCustomerForm({...newCustomerForm, first_name: e.target.value})} />
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Nombre *</label>
+                  <input required type="text" className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" value={newCustomerForm.first_name} onChange={e => setNewCustomerForm({...newCustomerForm, first_name: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Apellido</label>
-                  <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500" value={newCustomerForm.last_name} onChange={e => setNewCustomerForm({...newCustomerForm, last_name: e.target.value})} />
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Apellido</label>
+                  <input type="text" className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" value={newCustomerForm.last_name} onChange={e => setNewCustomerForm({...newCustomerForm, last_name: e.target.value})} />
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Cédula / NIT</label>
-                <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500" value={newCustomerForm.document_number} onChange={e => setNewCustomerForm({...newCustomerForm, document_number: e.target.value})} />
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">Cédula / NIT</label>
+                <input type="text" className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" value={newCustomerForm.document_number} onChange={e => setNewCustomerForm({...newCustomerForm, document_number: e.target.value})} />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Email (para enviar factura)</label>
-                <input type="email" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500" value={newCustomerForm.email} onChange={e => setNewCustomerForm({...newCustomerForm, email: e.target.value})} />
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">Email (para enviar factura)</label>
+                <input type="email" className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" value={newCustomerForm.email} onChange={e => setNewCustomerForm({...newCustomerForm, email: e.target.value})} />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Teléfono</label>
-                <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500" value={newCustomerForm.phone} onChange={e => setNewCustomerForm({...newCustomerForm, phone: e.target.value})} />
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">Teléfono</label>
+                <input type="text" className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" value={newCustomerForm.phone} onChange={e => setNewCustomerForm({...newCustomerForm, phone: e.target.value})} />
               </div>
-              <button disabled={loading} type="submit" className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors flex justify-center">
+              <button disabled={loading} type="submit" className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex justify-center text-sm disabled:opacity-50">
                 {loading ? 'Guardando...' : 'Crear Cliente'}
               </button>
             </form>
@@ -1154,35 +1156,37 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
       {/* Edit Customer Modal */}
       {showEditCustomer && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95">
-            <div className="p-4 border-b flex justify-between items-center bg-amber-50 shrink-0">
-              <h2 className="font-bold text-amber-800">✏️ Editar Cliente</h2>
-              <button onClick={() => setShowEditCustomer(false)} className="text-gray-400 hover:text-gray-600">×</button>
+          <div className="bg-white rounded-lg w-full max-w-md shadow-lg overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 border border-gray-200">
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-amber-50 shrink-0">
+              <h2 className="font-semibold text-amber-900 text-base">✏️ Editar Cliente</h2>
+              <button onClick={() => setShowEditCustomer(false)} className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-200 rounded-lg transition-colors">
+                <X size={18} />
+              </button>
             </div>
-            <form onSubmit={handleEditCustomer} className="p-6 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleEditCustomer} className="p-4 sm:p-6 space-y-3 sm:space-y-4 overflow-y-auto flex-1 custom-scrollbar">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Nombre *</label>
-                  <input required type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-amber-500" value={editCustomerForm.first_name} onChange={e => setEditCustomerForm({...editCustomerForm, first_name: e.target.value})} />
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Nombre *</label>
+                  <input required type="text" className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-sm" value={editCustomerForm.first_name} onChange={e => setEditCustomerForm({...editCustomerForm, first_name: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Apellido</label>
-                  <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-amber-500" value={editCustomerForm.last_name} onChange={e => setEditCustomerForm({...editCustomerForm, last_name: e.target.value})} />
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Apellido</label>
+                  <input type="text" className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-sm" value={editCustomerForm.last_name} onChange={e => setEditCustomerForm({...editCustomerForm, last_name: e.target.value})} />
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Cédula / NIT</label>
-                <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-amber-500" value={editCustomerForm.document_number} onChange={e => setEditCustomerForm({...editCustomerForm, document_number: e.target.value})} />
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">Cédula / NIT</label>
+                <input type="text" className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-sm" value={editCustomerForm.document_number} onChange={e => setEditCustomerForm({...editCustomerForm, document_number: e.target.value})} />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Email (para enviar factura)</label>
-                <input type="email" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-amber-500" value={editCustomerForm.email} onChange={e => setEditCustomerForm({...editCustomerForm, email: e.target.value})} />
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">Email (para enviar factura)</label>
+                <input type="email" className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-sm" value={editCustomerForm.email} onChange={e => setEditCustomerForm({...editCustomerForm, email: e.target.value})} />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Teléfono</label>
-                <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-amber-500" value={editCustomerForm.phone} onChange={e => setEditCustomerForm({...editCustomerForm, phone: e.target.value})} />
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">Teléfono</label>
+                <input type="text" className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-sm" value={editCustomerForm.phone} onChange={e => setEditCustomerForm({...editCustomerForm, phone: e.target.value})} />
               </div>
-              <button disabled={loading} type="submit" className="w-full py-3 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-600 transition-colors flex justify-center">
+              <button disabled={loading} type="submit" className="w-full py-3 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 transition-colors flex justify-center text-sm disabled:opacity-50">
                 {loading ? 'Guardando...' : '✏️ Guardar Cambios'}
               </button>
             </form>
@@ -1192,34 +1196,36 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
 
       {/* Payment Selection Modal */}
       {showPaymentModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
-            <div className="p-6 flex justify-between items-center border-b border-gray-100 shrink-0">
-              <h2 className="font-bold text-black text-xl flex items-center gap-3">
-                <CreditCard className="text-black" size={24} /> Procesar Cobro
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg w-full max-w-lg shadow-lg overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 border border-gray-200">
+            <div className="px-4 sm:px-6 py-4 flex justify-between items-center border-b border-gray-200 shrink-0">
+              <h2 className="font-semibold text-gray-900 text-base sm:text-lg flex items-center gap-2 sm:gap-3">
+                <CreditCard className="text-blue-600" size={18} sm:size={24} /> Procesar Cobro
               </h2>
-              <button onClick={() => setShowPaymentModal(false)} className="text-gray-400 hover:text-black text-2xl font-light transition-colors">×</button>
+              <button onClick={() => setShowPaymentModal(false)} className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-200 rounded-lg transition-colors">
+                <X size={18} />
+              </button>
             </div>
             
-            <div className="p-8 space-y-6 overflow-y-auto flex-1 custom-scrollbar">
+            <div className="p-4 sm:p-6 sm:p-8 space-y-4 sm:space-y-6 overflow-y-auto flex-1 custom-scrollbar">
                 {/* Large Total display */}
-                <div className="bg-gray-50/50 p-6 rounded-xl border border-gray-100 text-center flex flex-col items-center">
+                <div className="bg-gray-50 p-4 sm:p-6 rounded-lg border border-gray-200 text-center flex flex-col items-center">
                   {totals.globalDiscount > 0 && (
-                    <div className="mb-3 w-full flex flex-col items-center gap-1 border-b border-gray-200 pb-4">
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Valor Original</span>
-                      <span className="text-lg font-bold text-gray-400 line-through">{formatPrice(totals.subtotal + totals.tax)}</span>
-                      <span className="text-xs font-bold text-emerald-500 uppercase tracking-widest mt-2">Descuento Dados ({globalDiscountPercent}%)</span>
-                      <span className="text-lg font-bold text-emerald-500">-{formatPrice(totals.globalDiscount)}</span>
+                    <div className="mb-3 w-full flex flex-col items-center gap-1 border-b border-gray-200 pb-3 sm:pb-4">
+                      <span className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Valor Original</span>
+                      <span className="text-base sm:text-lg font-semibold text-gray-400 line-through">{formatPrice(totals.subtotal + totals.tax)}</span>
+                      <span className="text-[10px] sm:text-xs font-semibold text-emerald-500 uppercase tracking-wider mt-2">Descuento Dados ({globalDiscountPercent}%)</span>
+                      <span className="text-base sm:text-lg font-semibold text-emerald-500">-{formatPrice(totals.globalDiscount)}</span>
                     </div>
                   )}
-                  <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Total a Pagar</span>
-                  <div className="text-4xl font-black text-black mt-2">{formatPrice(totals.total)}</div>
+                  <span className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider">Total a Pagar</span>
+                  <div className="text-2xl sm:text-4xl font-bold text-gray-900 mt-2">{formatPrice(totals.total)}</div>
                 </div>
 
               {/* Payment Method Selector */}
               <div>
-                <label className="block text-sm font-bold text-black mb-3">Método de Pago</label>
-                <div className="grid grid-cols-3 gap-3">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3">Método de Pago</label>
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
                   {(() => {
                     const defaultMethods = [
                       {id: 1, name: 'Efectivo'},
@@ -1234,10 +1240,10 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
                           key={method.id}
                           type="button"
                           onClick={() => setSelectedPaymentMethod(method.id)}
-                          className={`py-4 px-2 rounded-xl text-sm font-bold transition-all border flex flex-col items-center gap-2 ${
+                          className={`py-3 sm:py-4 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all border flex flex-col items-center gap-1 sm:gap-2 ${
                             isSelected 
-                              ? 'bg-black border-black text-white shadow-md transform scale-[1.02]'
-                              : 'bg-white border-gray-200 text-gray-600 hover:border-black hover:text-black'
+                              ? 'bg-blue-600 border-blue-600 text-white shadow-md transform scale-[1.02]'
+                              : 'bg-white border-gray-200 text-gray-600 hover:border-blue-600 hover:text-blue-600'
                           }`}
                         >
                           {method.name}
@@ -1271,80 +1277,80 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
                   const pending = finalTotal - cleanReceived;
                   
                   return (
-                    <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="space-y-3 sm:space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
                       {/* Surcharge percentage */}
                       <div>
-                        <label className="block text-sm font-bold text-black mb-2">Recargo por Financiación (%)</label>
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Recargo por Financiación (%)</label>
                         <input
                           type="number"
                           placeholder="Ej: 10 (O vacío si es 0%)"
-                          className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-black focus:ring-1 focus:ring-black font-sans text-md font-semibold text-black transition-all"
+                          className="w-full bg-white border border-gray-300 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm sm:text-base"
                           value={interestPercent}
                           onChange={e => setInterestPercent(e.target.value)}
                         />
                       </div>
 
                       {surcharge > 0 && (
-                        <div className="flex justify-between items-center p-3 bg-purple-55/10 rounded-xl border border-purple-200 text-purple-700">
-                          <span className="text-xs font-bold uppercase tracking-wider">Interés Adicional:</span>
-                          <span className="font-bold text-sm">+{formatPrice(surcharge)} ({pct}%)</span>
+                        <div className="flex justify-between items-center p-2 sm:p-3 bg-purple-50 rounded-lg border border-purple-200 text-purple-700">
+                          <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider">Interés Adicional:</span>
+                          <span className="font-semibold text-xs sm:text-sm">+{formatPrice(surcharge)} ({pct}%)</span>
                         </div>
                       )}
 
                       {/* Abono input */}
                       <div>
-                        <label className="block text-sm font-bold text-black mb-2">Abono Inicial (Monto Recibido)</label>
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Abono Inicial (Monto Recibido)</label>
                         <div className="relative mt-1">
-                          <span className="absolute left-4 top-3.5 text-gray-400 font-mono font-bold text-lg">{symbol}</span>
+                          <span className="absolute left-3 sm:left-4 top-2.5 sm:top-3.5 text-gray-400 font-mono font-medium text-sm sm:text-lg">{symbol}</span>
                           <input
                             type="text"
                             placeholder="Ej: 10000"
-                            className="w-full bg-white border border-gray-300 rounded-xl pl-10 pr-4 py-3.5 outline-none focus:border-black focus:ring-1 focus:ring-black font-mono text-lg font-bold text-black transition-all"
+                            className="w-full bg-white border border-gray-300 rounded-lg pl-8 sm:pl-10 pr-3 sm:pr-4 py-2.5 sm:py-3.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono text-sm sm:text-lg font-medium text-gray-900 transition-all"
                             value={amountReceived}
                             onChange={handleAmountReceivedChange}
                           />
                         </div>
                       </div>
 
-                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-200">
-                        <span className="text-sm font-bold text-gray-500">Total Financiado:</span>
-                        <span className="font-mono font-bold text-black text-md">{formatPrice(finalTotal)}</span>
+                      <div className="flex justify-between items-center p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <span className="text-xs sm:text-sm font-medium text-gray-600">Total Financiado:</span>
+                        <span className="font-mono font-medium text-gray-900 text-xs sm:text-sm">{formatPrice(finalTotal)}</span>
                       </div>
 
-                      <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-200">
-                        <span className="text-sm font-bold text-gray-650">Deuda Restante:</span>
-                        <span className="font-mono font-black text-orange-600 text-xl">{formatPrice(pending >= 0 ? pending : 0)}</span>
+                      <div className="flex justify-between items-center p-2 sm:p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <span className="text-xs sm:text-sm font-medium text-gray-600">Deuda Restante:</span>
+                        <span className="font-mono font-bold text-orange-600 text-sm sm:text-xl">{formatPrice(pending >= 0 ? pending : 0)}</span>
                       </div>
                     </div>
                   );
                 }
                 
                 return (
-                  <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="space-y-3 sm:space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
                     <div>
-                      <label className="block text-sm font-bold text-black mb-2">Monto Recibido</label>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Monto Recibido</label>
                       <div className="relative mt-1">
-                        <span className="absolute left-4 top-3.5 text-gray-400 font-mono font-bold text-lg">{symbol}</span>
+                        <span className="absolute left-3 sm:left-4 top-2.5 sm:top-3.5 text-gray-400 font-mono font-medium text-sm sm:text-lg">{symbol}</span>
                         <input
                           type="text"
                           required
-                          className="w-full bg-white border border-gray-300 rounded-xl pl-10 pr-4 py-3.5 outline-none focus:border-black focus:ring-1 focus:ring-black font-mono text-lg font-bold text-black transition-all"
+                          className="w-full bg-white border border-gray-300 rounded-lg pl-8 sm:pl-10 pr-3 sm:pr-4 py-2.5 sm:py-3.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono text-sm sm:text-lg font-medium text-gray-900 transition-all"
                           value={amountReceived}
                           onChange={handleAmountReceivedChange}
                         />
                       </div>
                     </div>
 
-                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-200">
-                      <span className="text-sm font-bold text-gray-650">Cambio (Vueltos):</span>
-                      <span className="font-mono font-black text-black text-xl">{formatPrice(changeDue)}</span>
+                    <div className="flex justify-between items-center p-2 sm:p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200">
+                      <span className="text-xs sm:text-sm font-medium text-gray-600">Cambio (Vueltos):</span>
+                      <span className="font-mono font-bold text-gray-900 text-sm sm:text-xl">{formatPrice(changeDue)}</span>
                     </div>
                   </div>
                 );
               })()}
 
               {errorMsg && (
-                <div className="text-sm font-semibold text-white bg-red-600 p-4 rounded-xl shadow-sm text-center">
+                <div className="text-xs sm:text-sm font-medium text-white bg-red-600 p-2 sm:p-4 rounded-lg shadow-sm text-center">
                   {typeof errorMsg === 'object' ? (errorMsg.message || errorMsg.error || JSON.stringify(errorMsg)) : String(errorMsg)}
                 </div>
               )}
@@ -1352,12 +1358,12 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
               <button
                 disabled={loading}
                 onClick={submitSale}
-                className="w-full py-4 mt-2 bg-black hover:bg-gray-900 text-white rounded-xl font-bold text-lg shadow-lg transition-all transform hover:scale-[1.01] flex items-center justify-center gap-3"
+                className="w-full py-3 sm:py-4 mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium sm:font-bold text-base sm:text-lg shadow-md transition-all transform hover:scale-[1.01] flex items-center justify-center gap-2 sm:gap-3 disabled:opacity-50"
               >
                 {loading ? (
-                  <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  <span className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                 ) : (
-                  <CheckCircle size={22} />
+                  <CheckCircle size={18} sm:size={22} />
                 )}
                 Confirmar y Registrar Venta
               </button>
@@ -1368,18 +1374,18 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
 
       {/* Completed Sale Modal */}
       {completedSale && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
-            <div className="p-8 flex flex-col items-center bg-white border-b border-gray-100">
-              <div className="w-20 h-20 bg-black text-white rounded-full flex items-center justify-center mb-5 shadow-lg">
-                <CheckCircle size={40} />
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg w-full max-w-lg shadow-lg overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 border border-gray-200">
+            <div className="p-4 sm:p-6 sm:p-8 flex flex-col items-center bg-white border-b border-gray-200">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-blue-600 text-white rounded-full flex items-center justify-center mb-3 sm:mb-5 shadow-lg">
+                <CheckCircle size={28} sm:size={40} />
               </div>
-              <h2 className="text-3xl font-black text-black">¡Venta Registrada!</h2>
-              <p className="text-gray-500 font-bold mt-2 tracking-wide uppercase text-sm">Factura: {completedSale.invoice_number || `TEMP-${completedSale.id}`}</p>
+              <h2 className="text-xl sm:text-2xl sm:text-3xl font-bold text-gray-900">¡Venta Registrada!</h2>
+              <p className="text-gray-500 font-medium mt-2 tracking-wide uppercase text-xs sm:text-sm">Factura: {completedSale.invoice_number || `TEMP-${completedSale.id}`}</p>
             </div>
             
-            <div className="p-6 overflow-y-auto bg-gray-50 flex-1 flex justify-center custom-scrollbar">
-              <div className="bg-white rounded-xl shadow border border-gray-200 overflow-hidden" style={{ width: '80mm', minHeight: '300px' }}>
+            <div className="p-4 sm:p-6 overflow-y-auto bg-gray-50 flex-1 flex justify-center custom-scrollbar">
+              <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden" style={{ width: '80mm', minHeight: '300px' }}>
                 <iframe 
                   srcDoc={generateTicketHTML(completedSale, systemSettings, systemSettings?.ticket_logo, {})}
                   className="w-full h-full border-none"
@@ -1389,10 +1395,10 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
               </div>
             </div>
             
-            <div className="p-6 bg-white flex gap-4">
+            <div className="p-4 sm:p-6 bg-white flex gap-2 sm:gap-4">
               <button 
                 onClick={() => setCompletedSale(null)}
-                className="flex-1 py-4 px-4 bg-white border-2 border-black hover:bg-gray-50 text-black rounded-xl font-bold transition-all text-lg"
+                className="flex-1 py-3 sm:py-4 px-4 bg-white border-2 border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg font-medium transition-all text-sm sm:text-lg"
               >
                 Nueva Venta
               </button>
@@ -1401,9 +1407,9 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
                   printTicket(completedSale, systemSettings, systemSettings?.ticket_logo || config?.ticket_logo, { silent: true, printerName: config?.default_printer, apiUrl: config?.apiUrl });
                   setCompletedSale(null);
                 }}
-                className="flex-1 py-4 px-4 bg-black hover:bg-gray-900 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-3 text-lg shadow-lg transform hover:scale-[1.02]"
+                className="flex-1 py-3 sm:py-4 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-lg shadow-md transform hover:scale-[1.02]"
               >
-                <Printer size={22} /> Imprimir
+                <Printer size={18} sm:size={22} /> Imprimir
               </button>
             </div>
           </div>
