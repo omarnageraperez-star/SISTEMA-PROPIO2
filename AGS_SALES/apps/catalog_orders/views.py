@@ -453,25 +453,19 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
         pending_count = cache.get(pending_count_cache_key)
         if pending_count is None:
             pending_count = self.queryset.filter(status='PENDING').count()
-            cache.set(pending_count_cache_key, pending_count, timeout=30)  # Cache por 30 segundos
+            cache.set(pending_count_cache_key, pending_count, timeout=60)  # Cache por 60 segundos
         
-        # Obtener el último pedido pendiente
-        recent_order = self.queryset.filter(status='PENDING').select_related('table', 'processed_by').prefetch_related('items', 'items__product').order_by('-id').first()
+        # Usar cache para el último ID notificado (evita DB en cada polling)
+        last_notified_cache_key = 'last_notified_order_id'
+        last_notified_id = cache.get(last_notified_cache_key, 0)
         
-        if recent_order:
-            # Obtener el ID del último pedido notificado desde la DB
-            last_notified_setting, _ = SystemSetting.objects.get_or_create(
-                key='last_notified_order_id',
-                defaults={'value': '0'}
-            )
+        # Obtener el último pedido pendiente (solo si hay pendientes)
+        if pending_count > 0:
+            recent_order = self.queryset.filter(status='PENDING').select_related('table', 'processed_by').prefetch_related('items', 'items__product').order_by('-id').first()
             
-            last_notified_id = int(last_notified_setting.value)
-            
-            # Si el pedido actual es más nuevo que el último notificado
-            if recent_order.id > last_notified_id:
-                # Actualizar el setting para no notificar de nuevo
-                last_notified_setting.value = str(recent_order.id)
-                last_notified_setting.save()
+            if recent_order and recent_order.id > last_notified_id:
+                # Actualizar el cache para no notificar de nuevo
+                cache.set(last_notified_cache_key, recent_order.id, timeout=300)
                 
                 serializer = self.get_serializer(recent_order)
                 return Response({

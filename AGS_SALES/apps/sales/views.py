@@ -19,8 +19,8 @@ class SaleViewSet(viewsets.ModelViewSet):
     queryset = Sale.objects.all().order_by('-created_at').select_related(
         'customer', 'user', 'warehouse'
     ).prefetch_related(
-        'details', 'payments', 'details__product', 'payments__payment_method',
-        'credit_payments', 'credit_payments__registered_by'
+        'details__product', 'payments__payment_method',
+        'credit_payments__registered_by'
     )
     serializer_class = SaleSerializer
     permission_classes = [permissions.IsAuthenticated]

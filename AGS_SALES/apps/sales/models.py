@@ -103,6 +103,10 @@ class SaleDetail(models.Model):
     class Meta:
         verbose_name = "Detalle de Venta"
         verbose_name_plural = "Detalles de Venta"
+        indexes = [
+            models.Index(fields=['sale']),
+            models.Index(fields=['product']),
+        ]
 
     def __str__(self):
         return f"{self.quantity}x {self.product.name}"
@@ -117,6 +121,10 @@ class Payment(models.Model):
     class Meta:
         verbose_name = "Pago"
         verbose_name_plural = "Pagos"
+        indexes = [
+            models.Index(fields=['sale']),
+            models.Index(fields=['payment_method']),
+        ]
 
     def __str__(self):
         return f"{self.payment_method.name}: {self.amount}"
