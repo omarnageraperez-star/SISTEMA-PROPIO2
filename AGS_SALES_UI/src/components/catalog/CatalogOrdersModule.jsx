@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   ShoppingBag, Clock, CheckCircle, XCircle, AlertCircle, User, MapPin, Phone, 
   CreditCard, RefreshCw, Filter, Bell, ArrowRight, DollarSign, PackageCheck, 
-  ChefHat, Truck, FileText, Check, ExternalLink, Calendar, MessageSquare, Search,
+  Zap, Truck, FileText, Check, ExternalLink, Calendar, MessageSquare, Search,
   Navigation
 } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -358,7 +358,7 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
       actions.push({ status: 'CONFIRMED', label: 'Aceptar Pedido', color: 'bg-blue-600 hover:bg-blue-700' });
       actions.push({ status: 'CANCELLED', label: 'Cancelar', color: 'bg-rose-600 hover:bg-rose-700' });
     } else if (currentStatus === 'CONFIRMED') {
-      actions.push({ status: 'PREPARING', label: 'Iniciar Preparación 👨‍🍳', color: 'bg-purple-600 hover:bg-purple-700' });
+      actions.push({ status: 'PREPARING', label: 'Iniciar Procesamiento ⚡', color: 'bg-purple-600 hover:bg-purple-700' });
       actions.push({ status: 'CANCELLED', label: 'Cancelar', color: 'bg-rose-600 hover:bg-rose-700' });
     } else if (currentStatus === 'PREPARING') {
       actions.push({ status: 'READY', label: 'Marcar Listo ✨', color: 'bg-emerald-600 hover:bg-emerald-700' });
@@ -451,14 +451,14 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
           </div>
         </div>
 
-        {/* KPI 3: EN PREPARACIÓN */}
+        {/* KPI 3: PROCESANDO */}
         <div className="glass-panel p-5 rounded-3xl border border-slate-150 flex items-center justify-between shadow-sm">
           <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">En Preparación</p>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Procesando</p>
             <h3 className="text-2xl font-black text-purple-600 mt-1">{preparingOrdersCount}</h3>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
-            <ChefHat size={22} />
+            <Zap size={22} />
           </div>
         </div>
 
@@ -482,7 +482,7 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
             { id: 'ALL', label: 'Todos', count: orders.length },
             { id: 'PENDING', label: '⏳ Pendientes', count: orders.filter(o => o.status === 'PENDING').length },
             { id: 'CONFIRMED', label: '✅ Confirmados', count: orders.filter(o => o.status === 'CONFIRMED').length },
-            { id: 'PREPARING', label: '👨‍🍳 En Preparación', count: orders.filter(o => o.status === 'PREPARING').length },
+            { id: 'PREPARING', label: '⚡ Procesando', count: orders.filter(o => o.status === 'PREPARING').length },
             { id: 'READY', label: '✨ Listos', count: orders.filter(o => o.status === 'READY').length },
             { id: 'DELIVERED', label: '🚀 Entregados', count: orders.filter(o => o.status === 'DELIVERED').length },
             { id: 'CANCELLED', label: '❌ Cancelados', count: orders.filter(o => o.status === 'CANCELLED').length },
