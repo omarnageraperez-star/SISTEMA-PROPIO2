@@ -21,7 +21,7 @@ import CatalogOrdersModule from './components/catalog/CatalogOrdersModule';
 import { hasPermission } from './lib/permissionsConfig';
 import { apiRequest } from './lib/api';
 import { printCashCut, generateCashCutHTML, printTicket } from './lib/print';
-import { playNewOrderSound } from './lib/sound';
+import { playOrderDineIn, playOrderTakeout, playOrderDelivery } from './lib/sound';
 import { useToast } from './context/ToastContext';
 
 const normalizeText = (text) => text ? text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
@@ -1178,7 +1178,14 @@ function App() {
           setCatalogOrdersPendingCount(data.pending_count || 0);
 
           if (data.has_new && data.order) {
-            playNewOrderSound();
+            // Play differentiated sound based on order type
+            if (data.order.order_type === 'DELIVERY') {
+              playOrderDelivery();
+            } else if (data.order.order_type === 'TAKEOUT') {
+              playOrderTakeout();
+            } else {
+              playOrderDineIn();
+            }
             
             const sym = systemSettings?.currency_symbol || '$';
             const formattedTotal = `${sym}${Number(data.order.total || 0).toLocaleString()}`;
