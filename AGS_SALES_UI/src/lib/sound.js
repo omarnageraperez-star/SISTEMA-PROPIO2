@@ -3,15 +3,33 @@
  * Generates clear, high-quality audio chimes without external audio asset dependencies.
  */
 
-const playCustomSequence = (notesSequence) => {
+// Shared AudioContext to prevent multiple instances
+let audioContext = null;
+
+const getAudioContext = () => {
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
+    if (!AudioCtx) return null;
     
-    if (ctx.state === 'suspended') {
-      ctx.resume();
+    if (!audioContext) {
+      audioContext = new AudioCtx();
     }
+    
+    if (audioContext.state === 'suspended') {
+      audioContext.resume();
+    }
+    
+    return audioContext;
+  } catch (e) {
+    console.error('Error getting AudioContext:', e);
+    return null;
+  }
+};
+
+const playCustomSequence = (notesSequence) => {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
     
     const playChimeSequence = (startTimeOffset = 0, sequence) => {
       sequence.forEach(n => {
