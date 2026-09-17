@@ -247,10 +247,28 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
       const res = await apiRequest(`${cleanBaseUrl}catalog-orders/orders/available-drivers/`, {}, token);
       if (res.ok) {
         const data = await res.json();
-        setAvailableDrivers(Array.isArray(data) ? data : []);
+        const drivers = Array.isArray(data) ? data : [];
+        setAvailableDrivers(drivers);
+        
+        if (drivers.length === 0) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'No hay domiciliarios disponibles',
+            text: 'No hay usuarios con rol DELIVERY activos. Por favor crea domiciliarios en la sección de usuarios.',
+            confirmButtonText: 'Entendido'
+          });
+        }
+      } else {
+        throw new Error('Error al obtener domiciliarios');
       }
     } catch (e) {
       console.error('Error fetching drivers:', e);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo cargar la lista de domiciliarios',
+        confirmButtonText: 'OK'
+      });
     }
   };
 
@@ -291,11 +309,19 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
     // Manejar asignación de domiciliario
     if (action.type === 'assign_driver') {
       await fetchAvailableDrivers();
+      
+      if (availableDrivers.length === 0) {
+        return;
+      }
+      
       const { value: driverId } = await Swal.fire({
         title: 'Asignar Domiciliario',
         input: 'select',
         inputOptions: availableDrivers.reduce((acc, driver) => {
-          acc[driver.id] = `${driver.first_name} ${driver.last_name} (${driver.username})`;
+          const displayName = (driver.first_name || driver.last_name) 
+            ? `${driver.first_name} ${driver.last_name} (${driver.username})`
+            : driver.username;
+          acc[driver.id] = displayName;
           return acc;
         }, {}),
         inputPlaceholder: 'Selecciona un domiciliario',
