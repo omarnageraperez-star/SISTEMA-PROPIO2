@@ -387,6 +387,7 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
             'driver_lat': order.driver_lat,
             'driver_lng': order.driver_lng,
             'last_location_update': order.last_location_update,
+            'delivery_photo': order.delivery_photo,
         })
 
     @action(detail=False, methods=['post'], url_path='update-location')

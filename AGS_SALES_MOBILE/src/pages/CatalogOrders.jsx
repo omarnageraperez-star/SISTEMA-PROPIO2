@@ -94,20 +94,25 @@ export default function CatalogOrders({ auth, onLogout }) {
       setGpsActive(true);
       gpsRef.current = setInterval(async () => {
         try {
-          const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+          const pos = await Geolocation.getCurrentPosition({
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0,
+            desiredAccuracy: 'high'
+          });
           await apiRequest(
             apiUrl(auth.apiUrl, 'catalog-orders/orders/update-location/'),
             {
               method: 'POST',
-              body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude })
             },
             auth.token
           );
         } catch (e) {
-          console.log('GPS error:', e);
+          console.error('Error sending GPS location:', e);
         }
-      }, 15000);
-
+      }, 5000); // Send location every 5s for better accuracy
       // Enviar ubicación inmediatamente al iniciar
       (async () => {
         try {
@@ -212,7 +217,23 @@ export default function CatalogOrders({ auth, onLogout }) {
       const res = await apiRequest(apiUrl(auth.apiUrl, endpoint), {}, auth.token);
       if (res.ok) {
         const data = await res.json();
-        setOrders(Array.isArray(data) ? data : data.results || []);
+        const newOrders = Array.isArray(data) ? data : data.results || [];
+        
+        // Preservar el estado de ruta local para evitar reinicios
+        setOrders(prevOrders => {
+          return newOrders.map(newOrder => {
+            const existingOrder = prevOrders.find(o => o.id === newOrder.id);
+            // Si el pedido existe y ya tiene ruta iniciada/aceptada, preservar esos timestamps
+            if (existingOrder) {
+              return {
+                ...newOrder,
+                route_accepted_at: newOrder.route_accepted_at || existingOrder.route_accepted_at,
+                route_started_at: newOrder.route_started_at || existingOrder.route_started_at
+              };
+            }
+            return newOrder;
+          });
+        });
       }
     } catch (e) {
       console.error('Error fetching orders:', e);
