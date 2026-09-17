@@ -95,7 +95,7 @@ DB_PASSWORD = os.environ.get('DB_PASSWORD', 'root')
 DB_PORT = os.environ.get('DB_PORT', '3306')
 
 # Database configuration - Fallback to SQLite if MySQL host is local or not defined
-USE_SQLITE = True
+USE_SQLITE = DB_HOST in ('127.0.0.1', 'localhost', 'db', '')
 
 
 if USE_SQLITE:
