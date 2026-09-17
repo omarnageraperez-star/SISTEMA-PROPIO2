@@ -491,6 +491,16 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
         
         drivers = User.objects.filter(role='DELIVERY', is_active=True).values('id', 'username', 'first_name', 'last_name')
         return Response(list(drivers))
+    
+    @action(detail=False, methods=['get'], url_path='my-orders')
+    def my_orders(self, request):
+        """Listar pedidos asignados al domiciliario actual (desde APK)"""
+        orders = self.queryset.filter(
+            assigned_driver=request.user,
+            status__in=['READY', 'DELIVERED']
+        ).select_related('table', 'processed_by', 'related_sale', 'customer_user', 'assigned_driver').prefetch_related('items', 'items__product')
+        serializer = self.get_serializer(orders, many=True)
+        return Response(serializer.data)
 
     @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def history(self, request):
@@ -522,25 +532,56 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
         pending_count = cache.get(pending_count_cache_key)
         if pending_count is None:
             pending_count = self.queryset.filter(status='PENDING').count()
-            cache.set(pending_count_cache_key, pending_count, timeout=60)  # Cache por 60 segundos
+            cache.set(pending_count_cache_key, pending_count, timeout=30)  # Cache por 30 segundos
         
-        # Usar cache para el último ID notificado (evita DB en cada polling)
-        last_notified_cache_key = 'last_notified_order_id'
-        last_notified_id = cache.get(last_notified_cache_key, 0)
-        
-        # Obtener el último pedido pendiente (solo si hay pendientes)
-        if pending_count > 0:
-            recent_order = self.queryset.filter(status='PENDING').select_related('table', 'processed_by').prefetch_related('items', 'items__product').order_by('-id').first()
+        # Si el usuario es domiciliario, verificar si tiene nuevos pedidos asignados
+        if hasattr(request.user, 'role') and request.user.role == 'DELIVERY':
+            driver_orders_cache_key = f'driver_orders_{request.user.id}'
+            last_driver_order_id = cache.get(driver_orders_cache_key)
             
-            if recent_order and recent_order.id > last_notified_id:
-                # Actualizar el cache para no notificar de nuevo
-                cache.set(last_notified_cache_key, recent_order.id, timeout=300)
+            # Obtener el último pedido asignado a este domiciliario
+            recent_driver_order = self.queryset.filter(
+                assigned_driver=request.user,
+                status__in=['READY', 'DELIVERED']
+            ).select_related('table', 'processed_by', 'assigned_driver').prefetch_related('items', 'items__product').order_by('-id').first()
+            
+            if recent_driver_order:
+                if last_driver_order_id is None or recent_driver_order.id > last_driver_order_id:
+                    # Actualizar cache
+                    cache.set(driver_orders_cache_key, recent_driver_order.id, timeout=300)
+                    
+                    serializer = self.get_serializer(recent_driver_order)
+                    return Response({
+                        'has_new': True,
+                        'order': serializer.data,
+                        'pending_count': pending_count,
+                        'is_driver_order': True
+                    })
+        
+        # Para usuarios no domiciliarios, verificar pedidos pendientes
+        recent_order = self.queryset.filter(status='PENDING').select_related('table', 'processed_by').prefetch_related('items', 'items__product').order_by('-id').first()
+        
+        if recent_order:
+            # Obtener el ID del último pedido notificado desde la DB
+            last_notified_setting, _ = SystemSetting.objects.get_or_create(
+                key='last_notified_order_id',
+                defaults={'value': '0'}
+            )
+            
+            last_notified_id = int(last_notified_setting.value)
+            
+            # Si el pedido actual es más nuevo que el último notificado
+            if recent_order.id > last_notified_id:
+                # Actualizar el setting para no notificar de nuevo
+                last_notified_setting.value = str(recent_order.id)
+                last_notified_setting.save()
                 
                 serializer = self.get_serializer(recent_order)
                 return Response({
                     'has_new': True,
                     'order': serializer.data,
-                    'pending_count': pending_count
+                    'pending_count': pending_count,
+                    'is_driver_order': False
                 })
             
         return Response({

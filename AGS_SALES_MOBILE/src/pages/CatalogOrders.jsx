@@ -200,7 +200,9 @@ export default function CatalogOrders({ auth, onLogout }) {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const res = await apiRequest(apiUrl(auth.apiUrl, 'catalog-orders/orders/'), {}, auth.token);
+      // Si es domiciliario, usar endpoint my-orders para ver solo sus pedidos asignados
+      const endpoint = isDeliveryDriver ? 'catalog-orders/orders/my-orders/' : 'catalog-orders/orders/';
+      const res = await apiRequest(apiUrl(auth.apiUrl, endpoint), {}, auth.token);
       if (res.ok) {
         const data = await res.json();
         setOrders(Array.isArray(data) ? data : data.results || []);
