@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ShoppingBag, Clock, CheckCircle, XCircle, AlertCircle, User, MapPin, Phone, 
-  CreditCard, ChevronRight, RefreshCw, Filter, Bell, Navigation, CheckCircle2, LogOut
+  CreditCard, ChevronRight, RefreshCw, Filter, Bell, Navigation, CheckCircle2, LogOut, ExternalLink
 } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import { apiRequest, apiUrl, parseError, formatCurrency } from '../lib/api';
