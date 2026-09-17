@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
-import { Settings, Server, Database, CheckCircle, ChevronRight, Activity, User, Lock, Mail, Phone, LogIn, DollarSign, Printer, Save, Image as ImageIcon, Package, Plus, X, QrCode, Users, Building, Sliders, Hash, Coins, Percent, Cpu, Globe, ShoppingBag, ShoppingCart, CreditCard, FileText, ArrowLeft, ArrowDownRight, Shield, Edit3, Trash2, BarChart3, Monitor, Menu, ChevronLeft, LogOut, ChevronDown, Check, Sun, Moon, Maximize, Minimize, Bell, Search, Tag, Briefcase, Download } from 'lucide-react';
+import { Settings, Server, Database, CheckCircle, ChevronRight, Activity, User, Lock, Mail, Phone, LogIn, DollarSign, Printer, Save, Image as ImageIcon, Package, Plus, X, QrCode, Users, Building, Sliders, Hash, Coins, Percent, Cpu, Globe, ShoppingBag, ShoppingCart, CreditCard, FileText, ArrowLeft, ArrowDownRight, Shield, Edit3, Trash2, BarChart3, Monitor, Menu, ChevronLeft, LogOut, ChevronDown, Check, Sun, Moon, Maximize, Minimize, Bell, Search, Tag, Briefcase, Download, TrendingUp } from 'lucide-react';
 import { Toaster, sileo } from 'sileo';
 import Barcode from 'react-barcode';
 import QRCode from 'react-qr-code';
