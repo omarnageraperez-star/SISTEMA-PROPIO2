@@ -31,7 +31,7 @@ const STATUS_CONFIG = {
     color: '#8b5cf6', 
     bgColor: 'bg-purple-50 text-purple-700 border-purple-200', 
     badgeColor: 'bg-purple-500',
-    label: 'En Preparación', 
+    label: 'Procesando', 
     icon: Zap 
   },
   'READY': { 
