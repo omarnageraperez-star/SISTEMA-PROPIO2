@@ -12,8 +12,8 @@ urlpatterns = [
     # Catálogo principal (página pública)
     path('', catalog_view, name='catalog-view'),
     
-    # API endpoints (bajo catalogo/api/)
-    path('api/', include(router.urls)),
+    # API endpoints
+    path('', include(router.urls)),
     
     # Páginas de autenticación de clientes (Django)
     path('login/', customer_login_view, name='customer_login_page'),
