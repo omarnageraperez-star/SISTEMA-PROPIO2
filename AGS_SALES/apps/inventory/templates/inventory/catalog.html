@@ -257,7 +257,7 @@
                     <template x-if="trackData.status === 'PREPARING'">
                         <div class="text-center">
                             <span class="text-7xl">🔥</span>
-                            <p class="text-white font-black mt-2 text-xl drop-shadow-md">Preparando en Cocina</p>
+                            <p class="text-white font-black mt-2 text-xl drop-shadow-md">Procesando tu Pedido</p>
                         </div>
                     </template>
                     <template x-if="trackData.status === 'READY'">
@@ -376,11 +376,11 @@
                 </template>
                 
                 <p class="text-center mt-8 text-sm text-gray-300 font-medium leading-relaxed">
-                    <span x-show="['PENDING', 'CONFIRMED'].includes(trackData.status)">Hemos recibido tu pedido. Pronto comenzaremos a prepararlo.</span>
-                    <span x-show="trackData.status === 'PREPARING'">👨‍🍳 Estamos preparando tus productos ahora mismo.</span>
+                    <span x-show="['PENDING', 'CONFIRMED'].includes(trackData.status)">Hemos recibido tu pedido. Pronto comenzaremos a procesarlo.</span>
+                    <span x-show="trackData.status === 'PREPARING'">⚡ Estamos procesando tus productos ahora mismo.</span>
                     <span x-show="trackData.status === 'READY' && trackData.order_type === 'DELIVERY'">🛵 El domiciliario ya está en despacho con tu pedido hacia tu dirección.</span>
                     <span x-show="trackData.status === 'READY' && trackData.order_type !== 'DELIVERY'">🛍️ Tu pedido está listo para ser retirado en caja o servido en mesa.</span>
-                    <span x-show="trackData.status === 'DELIVERED' && trackData.order_type === 'DELIVERY'">🎉 ¡Tu pedido ha sido entregado en tu dirección! ¡Buen provecho!</span>
+                    <span x-show="trackData.status === 'DELIVERED' && trackData.order_type === 'DELIVERY'">🎉 ¡Tu pedido ha sido entregado en tu dirección! ¡Gracias por tu compra!</span>
                     <span x-show="trackData.status === 'DELIVERED' && trackData.order_type !== 'DELIVERY'">🎉 ¡Tu pedido ha sido entregado! ¡Gracias por tu compra!</span>
                 </p>
 
