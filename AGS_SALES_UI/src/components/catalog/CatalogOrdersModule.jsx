@@ -287,7 +287,30 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
     }
   };
 
-  const handleStatusChange = async (order, newStatus) => {
+  const handleStatusChange = async (order, action) => {
+    // Manejar asignación de domiciliario
+    if (action.type === 'assign_driver') {
+      await fetchAvailableDrivers();
+      const { value: driverId } = await Swal.fire({
+        title: 'Asignar Domiciliario',
+        input: 'select',
+        inputOptions: availableDrivers.reduce((acc, driver) => {
+          acc[driver.id] = `${driver.first_name} ${driver.last_name} (${driver.username})`;
+          return acc;
+        }, {}),
+        inputPlaceholder: 'Selecciona un domiciliario',
+        showCancelButton: true,
+        confirmButtonText: 'Asignar',
+        cancelButtonText: 'Cancelar'
+      });
+      if (driverId) {
+        await assignDriver(order.id, parseInt(driverId));
+      }
+      return;
+    }
+
+    // Manejar cambio de estado normal
+    const newStatus = action.status;
     const targetStatus = STATUS_CONFIG[newStatus];
     
     let cancelReason = '';
