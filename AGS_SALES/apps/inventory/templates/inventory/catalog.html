@@ -597,7 +597,12 @@
 
                 <div x-show="orderForm.order_type === 'DELIVERY'" x-collapse>
                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 mt-2">Dirección de Entrega *</label>
-                    <input x-model="orderForm.customer_address" type="text" x-bind:required="orderForm.order_type === 'DELIVERY'" class="w-full bg-gray-900/60 text-white border border-gray-700 rounded-xl px-4 py-3.5 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm font-medium transition-all" placeholder="Tu dirección exacta">
+                    <div class="flex gap-2">
+                        <input x-model="orderForm.customer_address" type="text" x-bind:required="orderForm.order_type === 'DELIVERY'" class="flex-1 bg-gray-900/60 text-white border border-gray-700 rounded-xl px-4 py-3.5 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm font-medium transition-all" placeholder="Tu dirección exacta">
+                        <button type="button" @click="showAddressMap = true; $nextTick(() => initAddressMap())" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white px-4 rounded-xl transition-all flex items-center justify-center" title="Seleccionar en mapa">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        </button>
+                    </div>
                 </div>
 
                 <div x-show="orderForm.order_type === 'DINE_IN'" x-collapse>
@@ -630,6 +635,25 @@
                     </span>
                 </button>
             </form>
+        </div>
+    </div>
+
+    <!-- Address Map Modal -->
+    <div x-show="showAddressMap" x-transition.opacity class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4" style="display: none;">
+        <div x-show="showAddressMap" @click.away="showAddressMap = false" x-transition:enter="transform scale-95 opacity-0" x-transition:enter-end="transform scale-100 opacity-100" x-transition:leave="transform scale-100 opacity-100" x-transition:leave-end="transform scale-95 opacity-0" class="glass w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl border border-gray-700">
+            <div class="p-4 border-b border-gray-800 flex items-center justify-between">
+                <h2 class="text-lg font-black text-white">📍 Seleccionar Dirección en Mapa</h2>
+                <button @click="showAddressMap = false" class="bg-gray-800/50 p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700 transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div id="addressMap" style="height: 400px; width: 100%;"></div>
+            <div class="p-4 bg-gray-900/80 border-t border-gray-800">
+                <p class="text-xs text-gray-400 mb-2">Haz clic en el mapa para seleccionar tu ubicación</p>
+                <button @click="confirmAddress" class="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white py-3 rounded-xl font-bold transition-all">
+                    Confirmar Dirección
+                </button>
+            </div>
         </div>
     </div>
 
@@ -669,6 +693,12 @@
                 // Live Map State
                 liveMap: null,
                 driverMarker: null,
+                
+                // Address Map State
+                showAddressMap: false,
+                addressMap: null,
+                addressMarker: null,
+                selectedAddressCoords: null,
                 
                 cartItems: [],
                 orderForm: {
@@ -889,6 +919,81 @@
                         this.driverMarker.setLatLng([lat, lng]);
                         this.liveMap.panTo([lat, lng], { animate: true, duration: 1 });
                     }
+                },
+
+                initAddressMap() {
+                    this.$nextTick(() => {
+                        const mapEl = document.getElementById('addressMap');
+                        if (!mapEl) return;
+
+                        const pinIcon = L.divIcon({
+                            html: '<div style="font-size:32px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">📍</div>',
+                            className: '',
+                            iconSize: [40, 40],
+                            iconAnchor: [20, 40]
+                        });
+
+                        if (!this.addressMap) {
+                            this.addressMap = L.map('addressMap').setView([4.6097, -74.0817], 13); // Default: Bogotá
+
+                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                maxZoom: 19
+                            }).addTo(this.addressMap);
+
+                            // Click handler to select location
+                            this.addressMap.on('click', (e) => {
+                                const { lat, lng } = e.latlng;
+                                
+                                if (this.addressMarker) {
+                                    this.addressMarker.setLatLng([lat, lng]);
+                                } else {
+                                    this.addressMarker = L.marker([lat, lng], { icon: pinIcon, draggable: true }).addTo(this.addressMap);
+                                }
+                                
+                                // Get address from coordinates using Nominatim
+                                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+                                    .then(res => res.json())
+                                    .then(data => {
+                                        if (data.display_name) {
+                                            this.orderForm.customer_address = data.display_name;
+                                        }
+                                    })
+                                    .catch(() => {
+                                        // Fallback to coordinates if geocoding fails
+                                        this.orderForm.customer_address = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                                    });
+                            });
+
+                            // Try to get user's current location
+                            if (navigator.geolocation) {
+                                navigator.geolocation.getCurrentPosition(
+                                    (position) => {
+                                        const { latitude, longitude } = position.coords;
+                                        this.addressMap.setView([latitude, longitude], 15);
+                                        if (!this.addressMarker) {
+                                            this.addressMarker = L.marker([latitude, longitude], { icon: pinIcon, draggable: true }).addTo(this.addressMap);
+                                        } else {
+                                            this.addressMarker.setLatLng([latitude, longitude]);
+                                        }
+                                    },
+                                    () => {
+                                        // If geolocation fails, just use default view
+                                    }
+                                );
+                            }
+                        } else {
+                            setTimeout(() => this.addressMap.invalidateSize(), 200);
+                        }
+                    });
+                },
+
+                confirmAddress() {
+                    if (this.addressMarker) {
+                        const { lat, lng } = this.addressMarker.getLatLng();
+                        this.orderForm.customer_address = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                        this.selectedAddressCoords = { lat, lng };
+                    }
+                    this.showAddressMap = false;
                 },
                 
                 exitTracking() {
