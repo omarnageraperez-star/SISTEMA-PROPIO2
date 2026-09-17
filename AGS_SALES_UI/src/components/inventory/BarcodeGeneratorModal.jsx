@@ -58,29 +58,32 @@ const BarcodeGeneratorModal = ({ onClose, products = [], onGenerateBackend }) =>
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl w-[1000px] max-h-[90vh] flex flex-col">
-        <div className="flex justify-between items-center p-4 border-b bg-gray-50 rounded-t-lg">
-          <h2 className="text-lg font-semibold text-gray-700">Generar códigos de barra</h2>
-          <button onClick={onClose} className="p-1 bg-red-100 hover:bg-red-200 text-red-600 rounded">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-lg shadow-lg w-[1000px] max-h-[90vh] flex flex-col border border-gray-200">
+        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">Generar Códigos de Barras</h2>
+            <p className="text-xs text-gray-500">Configuración y previsualización de etiquetas</p>
+          </div>
+          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-lg transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="flex flex-1 overflow-hidden">
           {/* Settings Panel */}
-          <div className="w-1/2 p-4 border-r overflow-y-auto bg-gray-50">
+          <div className="w-1/2 p-6 border-r border-gray-200 overflow-y-auto bg-gray-50">
             <div className="mb-4">
-              <label className="block text-sm font-bold text-gray-700 mb-1">Tipo de código de barras</label>
-              <select className="w-full border p-2 rounded" value={barcodeType} onChange={e => setBarcodeType(e.target.value)}>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Tipo de código de barras</label>
+              <select className="w-full border border-gray-300 p-2.5 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" value={barcodeType} onChange={e => setBarcodeType(e.target.value)}>
                 <option value="CODE128">Code128</option>
                 <option value="QR">QR Code</option>
               </select>
             </div>
             
             <div className="mb-4">
-               <label className="block text-sm font-bold text-gray-700 mb-1">Códigos de productos compatibles</label>
-               <div className="border rounded bg-white overflow-y-auto max-h-40">
+               <label className="block text-sm font-medium text-gray-700 mb-1.5">Códigos de productos compatibles</label>
+               <div className="border border-gray-200 rounded-lg bg-white overflow-y-auto max-h-40">
                  <table className="w-full text-xs text-left">
                    <thead className="bg-gray-100 border-b">
                      <tr>
@@ -107,72 +110,73 @@ const BarcodeGeneratorModal = ({ onClose, products = [], onGenerateBackend }) =>
                </button>
             </div>
             
-            <div className="mb-4 border-b pb-4">
-               <label className="block text-sm font-bold text-gray-700 mb-1">Formato</label>
+            <div className="mb-4 border-b border-gray-200 pb-4">
+               <label className="block text-sm font-medium text-gray-700 mb-1.5">Formato</label>
                <div className="flex space-x-4">
-                 <label className="flex items-center space-x-1">
-                   <input type="radio" name="format" checked={format === 'PDF'} onChange={() => setFormat('PDF')} />
-                   <span>Generar PDF</span>
+                 <label className="flex items-center space-x-2">
+                   <input type="radio" name="format" checked={format === 'PDF'} onChange={() => setFormat('PDF')} className="text-blue-600" />
+                   <span className="text-sm text-gray-700">Generar PDF</span>
                  </label>
-                 <label className="flex items-center space-x-1">
-                   <input type="radio" name="format" checked={format === 'IMAGE'} onChange={() => setFormat('IMAGE')} />
-                   <span>Generar Imagen</span>
+                 <label className="flex items-center space-x-2">
+                   <input type="radio" name="format" checked={format === 'IMAGE'} onChange={() => setFormat('IMAGE')} className="text-blue-600" />
+                   <span className="text-sm text-gray-700">Generar Imagen</span>
                  </label>
                </div>
                
                <label className="flex items-center space-x-2 mt-4 cursor-pointer">
-                  <input type="checkbox" checked={includeCode} onChange={e => setIncludeCode(e.target.checked)} />
-                  <span className="text-sm">¿Agregar código del producto al código de barras?</span>
+                  <input type="checkbox" checked={includeCode} onChange={e => setIncludeCode(e.target.checked)} className="text-blue-600" />
+                  <span className="text-sm text-gray-700">¿Agregar código del producto al código de barras?</span>
                </label>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
                <div>
-                 <label className="block text-xs font-bold mb-1">DPI</label>
-                 <input type="number" className="w-full border p-1 rounded" value={dpi} onChange={e => setDpi(e.target.value)} />
+                 <label className="block text-xs font-medium text-gray-700 mb-1">DPI</label>
+                 <input type="number" className="w-full border border-gray-300 p-2 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" value={dpi} onChange={e => setDpi(e.target.value)} />
                </div>
                <div>
-                 <label className="block text-xs font-bold mb-1">Tamaño de Fuente</label>
-                 <input type="number" className="w-full border p-1 rounded" value={fontSize} onChange={e => setFontSize(e.target.value)} />
+                 <label className="block text-xs font-medium text-gray-700 mb-1">Tamaño de Fuente</label>
+                 <input type="number" className="w-full border border-gray-300 p-2 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" value={fontSize} onChange={e => setFontSize(e.target.value)} />
                </div>
                <div>
-                 <label className="block text-xs font-bold mb-1">Ancho Hoja (mm)</label>
-                 <input type="number" step="0.1" className="w-full border p-1 rounded" value={pageWidth} onChange={e => setPageWidth(e.target.value)} />
+                 <label className="block text-xs font-medium text-gray-700 mb-1">Ancho Hoja (mm)</label>
+                 <input type="number" step="0.1" className="w-full border border-gray-300 p-2 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" value={pageWidth} onChange={e => setPageWidth(e.target.value)} />
                </div>
                <div>
-                 <label className="block text-xs font-bold mb-1">Alto Hoja (mm)</label>
-                 <input type="number" step="0.1" className="w-full border p-1 rounded" value={pageHeight} onChange={e => setPageHeight(e.target.value)} />
+                 <label className="block text-xs font-medium text-gray-700 mb-1">Alto Hoja (mm)</label>
+                 <input type="number" step="0.1" className="w-full border border-gray-300 p-2 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" value={pageHeight} onChange={e => setPageHeight(e.target.value)} />
                </div>
                <div>
-                 <label className="block text-xs font-bold mb-1">Ancho imagen (mm)</label>
-                 <input type="number" step="0.1" className="w-full border p-1 rounded" value={imageWidth} onChange={e => setImageWidth(e.target.value)} />
+                 <label className="block text-xs font-medium text-gray-700 mb-1">Ancho imagen (mm)</label>
+                 <input type="number" step="0.1" className="w-full border border-gray-300 p-2 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" value={imageWidth} onChange={e => setImageWidth(e.target.value)} />
                </div>
                <div>
-                 <label className="block text-xs font-bold mb-1">Alto Imagen (mm)</label>
-                 <input type="number" step="0.1" className="w-full border p-1 rounded" value={imageHeight} onChange={e => setImageHeight(e.target.value)} />
+                 <label className="block text-xs font-medium text-gray-700 mb-1">Alto Imagen (mm)</label>
+                 <input type="number" step="0.1" className="w-full border border-gray-300 p-2 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" value={imageHeight} onChange={e => setImageHeight(e.target.value)} />
                </div>
                <div>
-                 <label className="block text-xs font-bold mb-1">Margen (mm)</label>
-                 <input type="number" step="0.1" className="w-full border p-1 rounded" value={margin} onChange={e => setMargin(e.target.value)} />
+                 <label className="block text-xs font-medium text-gray-700 mb-1">Margen (mm)</label>
+                 <input type="number" step="0.1" className="w-full border border-gray-300 p-2 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" value={margin} onChange={e => setMargin(e.target.value)} />
                </div>
             </div>
             
-            <button className="w-full mt-6 bg-blue-50 text-blue-700 py-2 rounded font-bold border border-blue-200 hover:bg-blue-100 flex items-center justify-center" onClick={format === 'PDF' ? handleGeneratePDF : handleGenerateImage}>
+            <button className="w-full mt-6 bg-blue-600 text-white py-3 rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors flex items-center justify-center" onClick={format === 'PDF' ? handleGeneratePDF : handleGenerateImage}>
                <CheckSquare className="w-4 h-4 mr-2" />
                Generar código de barras
             </button>
           </div>
           
           {/* Preview Panel */}
-          <div className="w-1/2 p-6 flex flex-col bg-gray-200">
-             <div className="bg-white rounded p-3 mb-4 shadow-sm">
+          <div className="w-1/2 p-6 flex flex-col bg-gray-100">
+<h3 className="text-sm font-medium text-gray-700 mb-3">Previsualización</h3>
+             <div className="bg-white rounded-lg p-4 mb-4 shadow-sm border border-gray-200">
                 <p className="text-sm text-gray-600 mb-3">Escoge la opción a previsualizar :</p>
                 <div className="flex space-x-2">
-                   <button onClick={handleGeneratePDF} className="flex-1 border p-2 rounded flex items-center justify-center hover:bg-gray-50 text-sm">
-                     <Printer className="w-4 h-4 mr-2 text-red-500" /> Generar PDF
+                   <button onClick={handleGeneratePDF} className="flex-1 border border-gray-300 p-2.5 rounded-lg flex items-center justify-center hover:bg-gray-50 text-sm font-medium transition-colors">
+                     <Printer className="w-4 h-4 mr-2 text-red-600" /> Generar PDF
                    </button>
-                   <button onClick={handleGenerateImage} className="flex-1 border p-2 rounded flex items-center justify-center hover:bg-gray-50 text-sm">
-                     <ImageIcon className="w-4 h-4 mr-2 text-green-500" /> Generar Imagen
+                   <button onClick={handleGenerateImage} className="flex-1 border border-gray-300 p-2.5 rounded-lg flex items-center justify-center hover:bg-gray-50 text-sm font-medium transition-colors">
+                     <ImageIcon className="w-4 h-4 mr-2 text-green-600" /> Generar Imagen
                    </button>
                 </div>
              </div>

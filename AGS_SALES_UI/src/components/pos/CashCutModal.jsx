@@ -248,79 +248,79 @@ export default function CashCutModal({ isOpen, onClose, config, token, systemSet
   const difference = finalBalance !== '' ? currentFinalVal - Math.round(expectedBalance) : 0;
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100 flex flex-col text-slate-800">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[1000] flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl w-full max-w-xl shadow-lg overflow-hidden border border-gray-200 flex flex-col text-gray-900">
         
         {/* Header */}
-        <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-blue-600 text-white rounded-lg">
               <Coins size={20} />
             </div>
             <div>
-              <h2 className="font-extrabold text-lg text-slate-800">Corte de Caja</h2>
-              <p className="text-[10px] text-slate-450 font-bold uppercase tracking-wider">Cierre y arqueo del turno activo</p>
+              <h2 className="font-semibold text-base text-gray-900">Corte de Caja</h2>
+              <p className="text-xs text-gray-500 font-medium">Cierre y arqueo del turno activo</p>
             </div>
           </div>
           <button 
             onClick={onClose} 
             disabled={submitting}
-            className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+            className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-200 rounded-lg transition-colors"
           >
-            <X size={18} strokeWidth={2.5} />
+            <X size={18} strokeWidth={2} />
           </button>
         </div>
 
         {loading ? (
           <div className="p-16 flex flex-col items-center justify-center gap-4">
-            <span className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin"></span>
-            <span className="text-sm font-semibold text-slate-500">Calculando saldos y arqueo de caja...</span>
+            <span className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></span>
+            <span className="text-sm font-medium text-gray-500">Calculando saldos y arqueo de caja...</span>
           </div>
         ) : (
-          <form onSubmit={handleCloseShift} className="p-6 flex flex-col gap-6 overflow-y-auto max-h-[80vh]">
+          <form onSubmit={handleCloseShift} className="p-6 flex flex-col gap-5 overflow-y-auto max-h-[80vh]">
             
             {/* Cash register info banner */}
-            <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-4 flex flex-col gap-1 text-xs font-semibold text-slate-650">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-col gap-2 text-xs font-medium text-gray-600">
               <div className="flex justify-between">
                 <span>Caja Registradora:</span>
-                <span className="text-slate-800 font-bold">{shift?.register_name}</span>
+                <span className="text-gray-900 font-semibold">{shift?.register_name}</span>
               </div>
               <div className="flex justify-between">
                 <span>Cajero / Administrador:</span>
-                <span className="text-slate-800 font-bold">{shift?.username}</span>
+                <span className="text-gray-900 font-semibold">{shift?.username}</span>
               </div>
               <div className="flex justify-between">
                 <span>Apertura de Turno:</span>
-                <span className="text-slate-800 font-mono">{new Date(shift?.opened_at).toLocaleString()}</span>
+                <span className="text-gray-900 font-mono">{new Date(shift?.opened_at).toLocaleString()}</span>
               </div>
             </div>
 
             {/* Calculations Grid */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="border border-slate-100 rounded-xl p-3.5 bg-slate-50/30 flex flex-col justify-between">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Saldo Inicial</span>
-                <span className="text-lg font-bold text-slate-700 font-mono mt-1">{formatPrice(initialBalance)}</span>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="border border-gray-200 rounded-lg p-3 bg-gray-50 flex flex-col justify-between">
+                <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">Saldo Inicial</span>
+                <span className="text-base font-semibold text-gray-900 font-mono mt-1">{formatPrice(initialBalance)}</span>
               </div>
               
-              <div className="border border-slate-100 rounded-xl p-3.5 bg-slate-50/30 flex flex-col justify-between">
-                <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider flex items-center gap-1">
+              <div className="border border-gray-200 rounded-lg p-3 bg-gray-50 flex flex-col justify-between">
+                <span className="text-xs text-blue-600 font-medium uppercase tracking-wide flex items-center gap-1">
                   <TrendingUp size={12} /> Ventas del Turno
                 </span>
-                <span className="text-lg font-bold text-indigo-600 font-mono mt-1">{formatPrice(salesTotal)}</span>
+                <span className="text-base font-semibold text-blue-700 font-mono mt-1">{formatPrice(salesTotal)}</span>
               </div>
               
-              <div className="border border-slate-100 rounded-xl p-3.5 bg-slate-50/30 flex flex-col justify-between">
-                <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider flex items-center gap-1">
+              <div className="border border-gray-200 rounded-lg p-3 bg-gray-50 flex flex-col justify-between">
+                <span className="text-xs text-green-600 font-medium uppercase tracking-wide flex items-center gap-1">
                   <ArrowUpRight size={12} /> Entradas de Caja
                 </span>
-                <span className="text-lg font-bold text-emerald-600 font-mono mt-1">{formatPrice(movementsIn)}</span>
+                <span className="text-base font-semibold text-green-700 font-mono mt-1">{formatPrice(movementsIn)}</span>
               </div>
               
-              <div className="border border-slate-100 rounded-xl p-3.5 bg-slate-50/30 flex flex-col justify-between">
-                <span className="text-[10px] text-red-400 font-bold uppercase tracking-wider flex items-center gap-1">
+              <div className="border border-gray-200 rounded-lg p-3 bg-gray-50 flex flex-col justify-between">
+                <span className="text-xs text-red-600 font-medium uppercase tracking-wide flex items-center gap-1">
                   <ArrowDownRight size={12} /> Salidas de Caja
                 </span>
-                <span className="text-lg font-bold text-red-650 font-mono mt-1">{formatPrice(movementsOut)}</span>
+                <span className="text-base font-semibold text-red-700 font-mono mt-1">{formatPrice(movementsOut)}</span>
               </div>
             </div>
 
@@ -347,25 +347,25 @@ export default function CashCutModal({ isOpen, onClose, config, token, systemSet
             )}
 
             {/* Expected balance section */}
-            <div className="bg-indigo-50/40 border border-indigo-100 rounded-2xl p-4 text-center">
-              <span className="text-[10px] text-indigo-500 font-extrabold uppercase tracking-wider flex items-center justify-center gap-1">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+              <span className="text-xs text-blue-700 font-semibold uppercase tracking-wide flex items-center justify-center gap-1">
                 <Scale size={14} /> Saldo Esperado en Caja (Libro)
               </span>
-              <h3 className="text-3xl font-extrabold text-indigo-900 font-mono mt-1">{formatPrice(expectedBalance)}</h3>
+              <h3 className="text-2xl font-semibold text-blue-900 font-mono mt-1">{formatPrice(expectedBalance)}</h3>
             </div>
 
             {/* Input final balance */}
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Monto de Efectivo Real en Caja [*]</label>
+              <label className="text-xs font-semibold text-gray-700 block mb-1.5">Monto de Efectivo Real en Caja [*]</label>
               <div className="relative">
-                <span className="absolute left-4 top-3 text-slate-500 font-mono font-bold text-sm">
+                <span className="absolute left-3 top-3 text-gray-500 font-mono font-medium text-sm">
                   {symbol}
                 </span>
                 <input 
                   type="text" 
                   required
                   placeholder="Introduce el total de efectivo físico" 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-3 outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm font-semibold text-slate-800 transition-all font-mono"
+                  className="w-full bg-white border border-gray-300 rounded-lg pl-8 pr-4 py-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm font-medium text-gray-900 transition-colors font-mono"
                   value={finalBalance}
                   onChange={handleFinalBalanceChange}
                 />
@@ -374,11 +374,11 @@ export default function CashCutModal({ isOpen, onClose, config, token, systemSet
 
             {/* Observations */}
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Observaciones / Comentarios</label>
+              <label className="text-xs font-semibold text-gray-700 block mb-1.5">Observaciones / Comentarios</label>
               <textarea 
                 placeholder="Ej. Sobrante de $2.00 por cambio no retirado, etc." 
                 rows="2"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-xs font-medium text-slate-800 transition-all resize-none"
+                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-xs font-medium text-gray-900 transition-colors resize-none"
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
               />
@@ -410,12 +410,12 @@ export default function CashCutModal({ isOpen, onClose, config, token, systemSet
             <button 
               type="submit" 
               disabled={submitting}
-              className="w-full btn-premium !from-indigo-600 !to-indigo-800 !py-3.5 flex items-center justify-center gap-2 font-bold text-sm shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
             >
               {submitting ? (
-                <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
               ) : (
-                <Save size={18} />
+                <Save size={16} />
               )}
               Registrar Corte y Cerrar Turno
             </button>

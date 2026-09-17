@@ -82,24 +82,27 @@ const BulkEditModal = ({ onClose, onExecute, selectedCount }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl w-[900px] max-h-[90vh] flex flex-col">
-        <div className="flex justify-between items-center p-4 border-b bg-gray-50 rounded-t-lg">
-          <h2 className="text-lg font-semibold text-gray-700">Cantidad de registros a modificar: {selectedCount} registros</h2>
-          <button onClick={onClose} className="p-1 bg-red-100 hover:bg-red-200 text-red-600 rounded">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-lg shadow-lg w-[900px] max-h-[90vh] flex flex-col border border-gray-200">
+        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">Edición Masiva</h2>
+            <p className="text-xs text-gray-500">Cantidad de registros a modificar: {selectedCount}</p>
+          </div>
+          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-lg transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-4 overflow-y-auto flex-1 bg-gray-100">
+        <div className="p-6 overflow-y-auto flex-1 bg-gray-50">
           <div className="grid grid-cols-2 gap-4">
             {/* Top row (Prices) */}
             <div className="col-span-2 grid grid-cols-2 gap-4">
               {actions.slice(0, 2).map(action => (
-                <div key={action.id} className={`bg-white border-2 rounded-lg p-0 cursor-pointer overflow-hidden ${selectedAction === action.id ? 'border-blue-500' : 'border-gray-200'}`}>
+                <div key={action.id} className={`bg-white border rounded-lg p-0 cursor-pointer overflow-hidden ${selectedAction === action.id ? 'border-blue-500 shadow-sm' : 'border-gray-200'}`}>
                   <div className="p-4 flex flex-col items-center justify-center h-24" onClick={() => handleActionClick(action.id)}>
                     {action.icon}
-                    <span className="text-sm font-medium">{action.title}</span>
+                    <span className="text-sm font-medium text-gray-700">{action.title}</span>
                   </div>
                   {selectedAction === action.id && (
                     <div className="flex border-t divide-x">
@@ -119,10 +122,10 @@ const BulkEditModal = ({ onClose, onExecute, selectedCount }) => {
             {/* Middle row */}
             <div className="col-span-2 grid grid-cols-3 gap-4">
               {actions.slice(2, 5).map(action => (
-                <div key={action.id} className={`bg-white border-2 rounded-lg p-0 cursor-pointer overflow-hidden flex flex-col ${selectedAction === action.id ? 'border-blue-500' : 'border-gray-200'}`}>
+                <div key={action.id} className={`bg-white border rounded-lg p-0 cursor-pointer overflow-hidden flex flex-col ${selectedAction === action.id ? 'border-blue-500 shadow-sm' : 'border-gray-200'}`}>
                   <div className="p-4 flex flex-col items-center justify-center flex-1" onClick={() => handleActionClick(action.id)}>
                     {action.icon}
-                    <span className="text-sm font-medium text-center">{action.title}</span>
+                    <span className="text-sm font-medium text-gray-700 text-center">{action.title}</span>
                   </div>
                   {selectedAction === action.id && action.modifiers.length > 0 && action.id !== 'is_active' && (
                     <div className="flex border-t divide-x">
@@ -142,10 +145,10 @@ const BulkEditModal = ({ onClose, onExecute, selectedCount }) => {
             {/* Bottom row */}
             <div className="col-span-2 grid grid-cols-3 gap-4">
               {actions.slice(5).map(action => (
-                <div key={action.id} className={`bg-white border-2 rounded-lg p-0 cursor-pointer overflow-hidden flex flex-col ${selectedAction === action.id ? 'border-blue-500' : 'border-gray-200'}`}>
+                <div key={action.id} className={`bg-white border rounded-lg p-0 cursor-pointer overflow-hidden flex flex-col ${selectedAction === action.id ? 'border-blue-500 shadow-sm' : 'border-gray-200'}`}>
                   <div className="p-4 flex flex-col items-center justify-center flex-1" onClick={() => handleActionClick(action.id)}>
                     {action.icon}
-                    <span className="text-sm font-medium text-center">{action.title}</span>
+                    <span className="text-sm font-medium text-gray-700 text-center">{action.title}</span>
                   </div>
                 </div>
               ))}
@@ -153,18 +156,18 @@ const BulkEditModal = ({ onClose, onExecute, selectedCount }) => {
           </div>
           
           {selectedAction && selectedAction !== 'delete' && (
-            <div className="mt-6 p-4 bg-white rounded-lg border shadow-sm">
+            <div className="mt-6 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
               <label className="block text-sm font-medium text-gray-700 mb-2">Valor para aplicar:</label>
               {selectedAction === 'is_active' ? (
-                <select className="w-full border p-2 rounded" value={editValue} onChange={e => setEditValue(e.target.value)}>
+                <select className="w-full border border-gray-300 p-2.5 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" value={editValue} onChange={e => setEditValue(e.target.value)}>
                   <option value="">Seleccione...</option>
                   <option value="true">Activar</option>
                   <option value="false">Desactivar</option>
                 </select>
               ) : selectedAction === 'category' || selectedAction === 'provider' ? (
-                <input type="number" placeholder="ID de la Categoría/Proveedor" className="w-full border p-2 rounded" value={editValue} onChange={e => setEditValue(e.target.value)} />
+                <input type="number" placeholder="ID de la Categoría/Proveedor" className="w-full border border-gray-300 p-2.5 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" value={editValue} onChange={e => setEditValue(e.target.value)} />
               ) : (
-                <input type="number" placeholder="Ingrese el valor numérico" className="w-full border p-2 rounded" value={editValue} onChange={e => setEditValue(e.target.value)} />
+                <input type="number" placeholder="Ingrese el valor numérico" className="w-full border border-gray-300 p-2.5 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" value={editValue} onChange={e => setEditValue(e.target.value)} />
               )}
             </div>
           )}
@@ -176,9 +179,9 @@ const BulkEditModal = ({ onClose, onExecute, selectedCount }) => {
           )}
         </div>
         
-        <div className="p-4 border-t bg-gray-50 flex justify-end">
-           <button onClick={onClose} className="px-4 py-2 border rounded text-gray-600 hover:bg-gray-100 mr-2">Cancelar</button>
-           <button onClick={execute} disabled={!selectedAction} className="px-6 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 disabled:opacity-50">
+        <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-2">
+           <button onClick={onClose} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 text-sm font-medium transition-colors">Cancelar</button>
+           <button onClick={execute} disabled={!selectedAction} className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 disabled:opacity-50 transition-colors">
              Ejecutar Acción
            </button>
         </div>
