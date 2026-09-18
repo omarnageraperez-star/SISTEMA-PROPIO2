@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ShoppingCart, Trash2, Plus, Minus, UserPlus, CreditCard, CheckCircle, Printer, Dices } from 'lucide-react';
+import { Search, ShoppingCart, Trash2, Plus, Minus, UserPlus, CreditCard, CheckCircle, Printer, Dices, X } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { apiRequest } from '../../lib/api';
 import { printTicket, generateTicketHTML } from '../../lib/print';
