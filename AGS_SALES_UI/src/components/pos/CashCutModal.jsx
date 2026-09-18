@@ -65,6 +65,7 @@ export default function CashCutModal({ isOpen, onClose, config, token, systemSet
           setInitialBalance(initBal);
 
           // 2. Fetch sales from this shift (created_at >= opened_at)
+          // Include both POS sales and catalog orders converted to sales
           const salesRes = await fetch(`${config.apiUrl}sales/sales/?status=COMPLETED&page_size=10000`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
