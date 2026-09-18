@@ -475,100 +475,99 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
   const totalSalesAmount = orders.filter(o => o.status !== 'CANCELLED').reduce((acc, o) => acc + Number(o.total || 0), 0);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="flex flex-col h-full overflow-hidden animate-in fade-in duration-300">
       
       {/* HEADER & TOP CONTROL CENTER */}
-      <div className="glass-panel p-6 rounded-3xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 border border-slate-100">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl text-white shadow-lg shadow-indigo-500/20">
-              <ShoppingBag size={26} />
-            </div>
-            <div>
-              <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Centro de Pedidos Web</h2>
-              <div className="flex items-center gap-2 text-xs text-slate-500 font-medium mt-0.5">
-                <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>En vivo • Última sincronización: {lastSyncTime.toLocaleTimeString()}</span>
-              </div>
+      <div className="glass-panel p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-slate-100 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="p-2 sm:p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl sm:rounded-2xl text-white shadow-lg shadow-indigo-500/20 shrink-0">
+            <ShoppingBag size={20} sm:size={26} />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-lg sm:text-2xl font-extrabold text-slate-800 tracking-tight truncate">Centro de Pedidos Web</h2>
+            <div className="flex items-center gap-2 text-xs text-slate-500 font-medium mt-0.5">
+              <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+              <span className="truncate">En vivo • {lastSyncTime.toLocaleTimeString()}</span>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 shrink-0">
           <button 
             onClick={fetchOrders}
             disabled={isRefreshing}
-            className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl transition-all shadow-sm active:scale-95 text-sm"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl sm:rounded-2xl transition-all shadow-sm active:scale-95 text-xs sm:text-sm"
           >
-            <RefreshCw size={16} className={`${isRefreshing ? 'animate-spin text-indigo-600' : ''}`} />
-            <span>{isRefreshing ? 'Actualizando...' : 'Sincronizar'}</span>
+            <RefreshCw size={14} sm:size={16} className={`${isRefreshing ? 'animate-spin text-indigo-600' : ''}`} />
+            <span className="hidden sm:inline">{isRefreshing ? 'Actualizando...' : 'Sincronizar'}</span>
+            <span className="sm:hidden">{isRefreshing ? '...' : 'Sync'}</span>
           </button>
         </div>
       </div>
 
       {/* KPI METRIC CARDS GRID */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 shrink-0">
         
         {/* KPI 1: TOTAL */}
-        <div className="glass-panel p-6 rounded-3xl border border-slate-150 flex items-center justify-between shadow-lg hover:shadow-xl transition-all hover:scale-105 cursor-pointer group">
-          <div>
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Total Pedidos</p>
-            <h3 className="text-4xl font-black text-slate-800 group-hover:text-indigo-600 transition-colors">{totalOrdersCount}</h3>
-            <p className="text-xs text-slate-400 mt-1 font-medium">Todos los estados</p>
+        <div className="glass-panel p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-150 flex items-center justify-between shadow-lg hover:shadow-xl transition-all hover:scale-105 cursor-pointer group">
+          <div className="min-w-0">
+            <p className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Total Pedidos</p>
+            <h3 className="text-2xl sm:text-4xl font-black text-slate-800 group-hover:text-indigo-600 transition-colors">{totalOrdersCount}</h3>
+            <p className="text-[10px] sm:text-xs text-slate-400 mt-1 font-medium">Todos los estados</p>
           </div>
-          <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold shadow-lg shadow-indigo-500/30 group-hover:shadow-indigo-500/50 transition-all">
-            <ShoppingBag size={32} />
+          <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold shadow-lg shadow-indigo-500/30 group-hover:shadow-indigo-500/50 transition-all shrink-0">
+            <ShoppingBag size={20} sm:size={32} />
           </div>
         </div>
 
         {/* KPI 2: PENDIENTES */}
-        <div className={`glass-panel p-6 rounded-3xl border transition-all flex items-center justify-between shadow-lg hover:shadow-xl hover:scale-105 cursor-pointer group ${pendingOrdersCount > 0 ? 'border-amber-400 bg-gradient-to-br from-amber-50 to-orange-50' : 'border-slate-150'}`}>
-          <div>
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Pendientes por Atender</p>
-            <div className="flex items-center gap-3">
-              <h3 className="text-4xl font-black text-amber-600 group-hover:text-amber-500 transition-colors">{pendingOrdersCount}</h3>
+        <div className={`glass-panel p-4 sm:p-6 rounded-2xl sm:rounded-3xl border transition-all flex items-center justify-between shadow-lg hover:shadow-xl hover:scale-105 cursor-pointer group ${pendingOrdersCount > 0 ? 'border-amber-400 bg-gradient-to-br from-amber-50 to-orange-50' : 'border-slate-150'}`}>
+          <div className="min-w-0">
+            <p className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Pendientes</p>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <h3 className="text-2xl sm:text-4xl font-black text-amber-600 group-hover:text-amber-500 transition-colors">{pendingOrdersCount}</h3>
               {pendingOrdersCount > 0 && (
-                <span className="px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-extrabold text-xs rounded-full animate-bounce shadow-lg shadow-amber-500/30">
+                <span className="hidden sm:inline-flex px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-extrabold text-xs rounded-full animate-bounce shadow-lg shadow-amber-500/30">
                   ¡Nuevos!
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-400 mt-1 font-medium">Requieren atención</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 mt-1 font-medium">Por atender</p>
           </div>
-          <div className={`w-16 h-16 rounded-3xl flex items-center justify-center font-bold shadow-lg transition-all ${pendingOrdersCount > 0 ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-amber-500/30 animate-pulse' : 'bg-amber-100 text-amber-600'}`}>
-            <Bell size={32} />
+          <div className={`w-10 h-10 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl flex items-center justify-center font-bold shadow-lg transition-all shrink-0 ${pendingOrdersCount > 0 ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-amber-500/30 animate-pulse' : 'bg-amber-100 text-amber-600'}`}>
+            <Bell size={20} sm:size={32} />
           </div>
         </div>
 
         {/* KPI 3: PROCESANDO */}
-        <div className="glass-panel p-6 rounded-3xl border border-slate-150 flex items-center justify-between shadow-lg hover:shadow-xl hover:scale-105 cursor-pointer group">
-          <div>
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Procesando</p>
-            <h3 className="text-4xl font-black text-purple-600 group-hover:text-purple-500 transition-colors">{preparingOrdersCount}</h3>
-            <p className="text-xs text-slate-400 mt-1 font-medium">En cocina/preparación</p>
+        <div className="glass-panel p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-150 flex items-center justify-between shadow-lg hover:shadow-xl hover:scale-105 cursor-pointer group">
+          <div className="min-w-0">
+            <p className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Procesando</p>
+            <h3 className="text-2xl sm:text-4xl font-black text-purple-600 group-hover:text-purple-500 transition-colors">{preparingOrdersCount}</h3>
+            <p className="text-[10px] sm:text-xs text-slate-400 mt-1 font-medium">En cocina</p>
           </div>
-          <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-purple-500 to-violet-600 text-white flex items-center justify-center font-bold shadow-lg shadow-purple-500/30 group-hover:shadow-purple-500/50 transition-all">
-            <Zap size={32} />
+          <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-purple-500 to-violet-600 text-white flex items-center justify-center font-bold shadow-lg shadow-purple-500/30 group-hover:shadow-purple-500/50 transition-all shrink-0">
+            <Zap size={20} sm:size={32} />
           </div>
         </div>
 
         {/* KPI 4: MONTO TOTAL */}
-        <div className="glass-panel p-6 rounded-3xl border border-slate-150 flex items-center justify-between shadow-lg hover:shadow-xl hover:scale-105 cursor-pointer group">
-          <div>
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Ventas Activas</p>
-            <h3 className="text-3xl font-black text-emerald-600 group-hover:text-emerald-500 transition-colors">{formatCurrency(totalSalesAmount)}</h3>
-            <p className="text-xs text-slate-400 mt-1 font-medium">Pedidos del catálogo</p>
+        <div className="glass-panel p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-150 flex items-center justify-between shadow-lg hover:shadow-xl hover:scale-105 cursor-pointer group">
+          <div className="min-w-0">
+            <p className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Ventas</p>
+            <h3 className="text-xl sm:text-3xl font-black text-emerald-600 group-hover:text-emerald-500 transition-colors truncate">{formatCurrency(totalSalesAmount)}</h3>
+            <p className="text-[10px] sm:text-xs text-slate-400 mt-1 font-medium">Catálogo</p>
           </div>
-          <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center font-bold shadow-lg shadow-emerald-500/30 group-hover:shadow-emerald-500/50 transition-all">
-            <DollarSign size={32} />
+          <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center font-bold shadow-lg shadow-emerald-500/30 group-hover:shadow-emerald-500/50 transition-all shrink-0">
+            <DollarSign size={20} sm:size={32} />
           </div>
         </div>
 
       </div>
 
       {/* FILTER TABS SLIDER */}
-      <div className="glass-panel p-4 rounded-2xl border border-slate-150 shadow-lg">
-        <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-none">
+      <div className="glass-panel p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-150 shadow-lg shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto pb-2 scrollbar-none">
           {[
             { id: 'ALL', label: 'Todos', count: orders.length },
             { id: 'PENDING', label: '⏳ Pendientes', count: orders.filter(o => o.status === 'PENDING').length },
@@ -581,14 +580,14 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
             <button
               key={filter.id}
               onClick={() => setStatusFilter(filter.id)}
-              className={`flex items-center gap-3 px-5 py-3 rounded-xl text-sm font-extrabold whitespace-nowrap transition-all ${
+              className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2 sm:py-3 rounded-xl text-xs sm:text-sm font-extrabold whitespace-nowrap transition-all shrink-0 ${
                 statusFilter === filter.id 
                   ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/30 scale-105' 
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:scale-102'
               }`}
             >
               <span>{filter.label}</span>
-              <span className={`px-3 py-1 rounded-full text-xs font-black ${statusFilter === filter.id ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'}`}>
+              <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-black ${statusFilter === filter.id ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'}`}>
                 {filter.count}
               </span>
             </button>
@@ -597,122 +596,123 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
       </div>
 
       {/* SEARCH BAR */}
-      <div className="glass-panel p-4 rounded-2xl border border-slate-150 shadow-lg flex items-center gap-4">
-        <div className="bg-gradient-to-br from-indigo-100 to-purple-100 p-3 rounded-2xl text-indigo-600">
-          <Search size={20} />
+      <div className="glass-panel p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-150 shadow-lg flex items-center gap-3 sm:gap-4 shrink-0">
+        <div className="bg-gradient-to-br from-indigo-100 to-purple-100 p-2 sm:p-3 rounded-xl sm:rounded-2xl text-indigo-600 shrink-0">
+          <Search size={16} sm:size={20} />
         </div>
         <input 
           type="text" 
-          placeholder="Buscar por cliente, teléfono o # de pedido..."
+          placeholder="Buscar pedido..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1 bg-transparent border-none outline-none text-base font-semibold text-slate-700 placeholder-slate-400"
+          className="flex-1 bg-transparent border-none outline-none text-sm sm:text-base font-semibold text-slate-700 placeholder-slate-400 min-w-0"
         />
         {searchTerm && (
-          <button onClick={() => setSearchTerm('')} className="p-3 text-slate-0 hover:text-rose-500 transition-colors bg-slate-100 rounded-xl hover:bg-rose-100">
-            <XCircle size={20} />
+          <button onClick={() => setSearchTerm('')} className="p-2 sm:p-3 text-slate-400 hover:text-rose-500 transition-colors bg-slate-100 rounded-xl hover:bg-rose-100 shrink-0">
+            <XCircle size={16} sm:size={20} />
           </button>
         )}
       </div>
 
       {/* ORDERS GRID LIST */}
       {loading ? (
-        <div className="glass-panel p-16 rounded-3xl text-center border border-slate-150">
-          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600 font-bold">Cargando pedidos en tiempo real...</p>
+        <div className="glass-panel p-8 sm:p-16 rounded-2xl sm:rounded-3xl text-center border border-slate-150 flex-1 flex items-center justify-center">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-sm sm:text-base text-slate-600 font-bold">Cargando pedidos...</p>
         </div>
       ) : filteredOrders.length === 0 ? (
-        <div className="glass-panel p-16 rounded-3xl text-center border border-slate-150">
-          <ShoppingBag size={56} className="text-slate-300 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-slate-700 mb-1">No hay pedidos disponibles</h3>
-          <p className="text-xs text-slate-400">Los nuevos pedidos realizados por tus clientes en el catálogo web aparecerán aquí al instante.</p>
+        <div className="glass-panel p-8 sm:p-16 rounded-2xl sm:rounded-3xl text-center border border-slate-150 flex-1 flex items-center justify-center">
+          <ShoppingBag size={40} sm:size={56} className="text-slate-300 mx-auto mb-4" />
+          <h3 className="text-base sm:text-lg font-bold text-slate-700 mb-1">No hay pedidos</h3>
+          <p className="text-xs sm:text-sm text-slate-400">Los pedidos aparecerán aquí</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[65vh] overflow-y-auto pr-2 custom-scrollbar">
-          {filteredOrders.map(order => {
-            const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG['PENDING'];
-            const StatusIcon = statusConfig.icon;
-            const orderTypeConfig = ORDER_TYPE_CONFIG[order.order_type] || ORDER_TYPE_CONFIG['DINE_IN'];
-            const actions = getStatusActions(order);
-            
-            // Calculate urgency (Pending > 5 mins)
-            const createdTime = new Date(order.created_at);
-            const diffMins = Math.floor((new Date() - createdTime) / 60000);
-            const isUrgent = order.status === 'PENDING' && diffMins >= 5;
+        <div className="flex-1 overflow-y-auto pr-1 sm:pr-2 custom-scrollbar">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 pb-4">
+            {filteredOrders.map(order => {
+              const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG['PENDING'];
+              const StatusIcon = statusConfig.icon;
+              const orderTypeConfig = ORDER_TYPE_CONFIG[order.order_type] || ORDER_TYPE_CONFIG['DINE_IN'];
+              const actions = getStatusActions(order);
+              
+              // Calculate urgency (Pending > 5 mins)
+              const createdTime = new Date(order.created_at);
+              const diffMins = Math.floor((new Date() - createdTime) / 60000);
+              const isUrgent = order.status === 'PENDING' && diffMins >= 5;
 
-            return (
-              <div
-                key={order.id}
-                className={`glass-panel rounded-3xl border p-6 hover:shadow-2xl transition-all duration-300 flex flex-col justify-between group bg-white hover:-translate-y-2 ${isUrgent ? 'border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.6)] animate-pulse' : 'border-slate-200/80'}`}
-              >
-                <div>
-                  {/* CARD HEADER */}
-                  <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-4">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl font-black text-slate-900 bg-gradient-to-br from-slate-100 to-slate-200 px-4 py-2 rounded-2xl shadow-sm">
-                        #{order.order_number}
-                      </span>
-                      {isUrgent && (
-                        <span className="bg-gradient-to-r from-red-500 to-rose-600 text-white text-xs font-black px-3 py-1.5 rounded-full uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-red-500/30">
-                          <AlertCircle size={12} /> Urgente ({diffMins}m)
+              return (
+                <div
+                  key={order.id}
+                  className={`glass-panel rounded-2xl sm:rounded-3xl border p-4 sm:p-6 hover:shadow-2xl transition-all duration-300 flex flex-col justify-between group bg-white hover:-translate-y-1 sm:hover:-translate-y-2 ${isUrgent ? 'border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.6)] animate-pulse' : 'border-slate-200/80'}`}
+                >
+                  <div>
+                    {/* CARD HEADER */}
+                    <div className="flex items-center justify-between mb-3 sm:mb-4 border-b border-slate-100 pb-3 sm:pb-4">
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                        <span className="text-base sm:text-xl font-black text-slate-900 bg-gradient-to-br from-slate-100 to-slate-200 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl shadow-sm shrink-0">
+                          #{order.order_number}
                         </span>
-                      )}
-                      {!isUrgent && (
-                        <span className={`text-sm font-bold px-3 py-1.5 rounded-xl border shadow-sm ${orderTypeConfig.color}`}>
-                          {orderTypeConfig.icon} {orderTypeConfig.label}
-                        </span>
-                      )}
-                    </div>
+                        {isUrgent && (
+                          <span className="bg-gradient-to-r from-red-500 to-rose-600 text-white text-[10px] sm:text-xs font-black px-2 sm:px-3 py-1 sm:py-1.5 rounded-full uppercase tracking-widest flex items-center gap-1 sm:gap-1.5 shadow-lg shadow-red-500/30 shrink-0">
+                            <AlertCircle size={10} sm:size={12} /> Urgente ({diffMins}m)
+                          </span>
+                        )}
+                        {!isUrgent && (
+                          <span className={`text-[10px] sm:text-sm font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl border shadow-sm shrink-0 ${orderTypeConfig.color}`}>
+                            {orderTypeConfig.icon} {orderTypeConfig.label}
+                          </span>
+                        )}
+                      </div>
 
-                    <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-black shadow-sm ${isUrgent ? 'bg-red-50 text-red-700 border-red-200' : statusConfig.bgColor}`}>
-                      <StatusIcon size={16} />
-                      <span>{statusConfig.label}</span>
+                      <div className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl border text-[10px] sm:text-sm font-black shadow-sm shrink-0 ${isUrgent ? 'bg-red-50 text-red-700 border-red-200' : statusConfig.bgColor}`}>
+                        <StatusIcon size={12} sm:size={16} />
+                        <span className="hidden sm:inline">{statusConfig.label}</span>
+                      </div>
                     </div>
-                  </div>
 
                   {/* CUSTOMER INFO */}
-                  <div className="space-y-3 mb-5">
-                    <div className="flex items-center gap-3 text-base font-bold text-slate-800">
-                      <div className="bg-indigo-100 p-2 rounded-xl text-indigo-600">
-                        <User size={18} />
+                  <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-5">
+                    <div className="flex items-center gap-2 sm:gap-3 text-sm sm:text-base font-bold text-slate-800">
+                      <div className="bg-indigo-100 p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-indigo-600 shrink-0">
+                        <User size={14} sm:size={18} />
                       </div>
-                      <span className="truncate">{order.customer_name}</span>
+                      <span className="truncate min-w-0">{order.customer_name}</span>
                     </div>
 
                     {order.customer_phone && (
-                      <div className="flex items-center justify-between text-sm text-slate-600">
-                        <div className="flex items-center gap-2">
-                          <div className="bg-slate-100 p-2 rounded-xl text-slate-400">
-                            <Phone size={16} />
+                      <div className="flex items-center justify-between text-xs sm:text-sm text-slate-600">
+                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                          <div className="bg-slate-100 p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-slate-400 shrink-0">
+                            <Phone size={14} sm:size={16} />
                           </div>
-                          <span className="font-semibold">{order.customer_phone}</span>
+                          <span className="font-semibold truncate">{order.customer_phone}</span>
                         </div>
                         <a 
                           href={`https://wa.me/${order.customer_phone.replace(/\D/g, '')}`} 
                           target="_blank" 
                           rel="noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="text-xs font-bold text-emerald-600 bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all border border-emerald-200 shadow-sm hover:shadow-md"
+                          className="text-[10px] sm:text-xs font-bold text-emerald-600 bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl flex items-center gap-1 sm:gap-1.5 transition-all border border-emerald-200 shadow-sm hover:shadow-md shrink-0"
                         >
-                          <MessageSquare size={14} /> WhatsApp
+                          <MessageSquare size={12} sm:size={14} /> <span className="hidden sm:inline">WhatsApp</span>
                         </a>
                       </div>
                     )}
 
                     {order.table_name && (
-                      <div className="flex items-center gap-3 text-sm text-slate-600 bg-gradient-to-r from-sky-50 to-blue-50 p-3 rounded-2xl border border-sky-200 shadow-sm">
-                        <div className="bg-sky-100 p-2 rounded-xl text-sky-600">
-                          <MapPin size={16} />
+                      <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-600 bg-gradient-to-r from-sky-50 to-blue-50 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-sky-200 shadow-sm">
+                        <div className="bg-sky-100 p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-sky-600 shrink-0">
+                          <MapPin size={14} sm:size={16} />
                         </div>
-                        <span className="font-semibold">{order.table_name}</span>
+                        <span className="font-semibold truncate">{order.table_name}</span>
                       </div>
                     )}
 
                     {order.customer_address && (
-                      <div className="flex items-center justify-between gap-2 text-sm text-slate-600 bg-gradient-to-r from-slate-50 to-gray-50 p-3 rounded-2xl border border-slate-200 shadow-sm">
-                        <div className="flex items-center gap-2 truncate">
-                          <div className="bg-rose-100 p-2 rounded-xl text-rose-600">
-                            <MapPin size={16} />
+                      <div className="flex items-center justify-between gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-600 bg-gradient-to-r from-slate-50 to-gray-50 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm">
+                        <div className="flex items-center gap-1.5 sm:gap-2 truncate min-w-0">
+                          <div className="bg-rose-100 p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-rose-600 shrink-0">
+                            <MapPin size={14} sm:size={16} />
                           </div>
                           <span className="truncate font-medium">{order.customer_address}</span>
                         </div>
@@ -722,30 +722,30 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
                             e.stopPropagation();
                             window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.customer_address)}`, '_blank');
                           }}
-                          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-rose-50 to-red-50 hover:from-rose-100 hover:to-red-100 text-rose-700 rounded-xl text-xs font-bold border border-rose-200 transition-all active:scale-95 shadow-sm hover:shadow-md"
+                          className="shrink-0 flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-rose-50 to-red-50 hover:from-rose-100 hover:to-red-100 text-rose-700 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold border border-rose-200 transition-all active:scale-95 shadow-sm hover:shadow-md"
                           title="Abrir en Google Maps"
                         >
-                          <Navigation size={12} />
-                          <span>GPS</span>
+                          <Navigation size={10} sm:size={12} />
+                          <span className="hidden sm:inline">GPS</span>
                         </button>
                       </div>
                     )}
                   </div>
 
                   {/* ITEMS PREVIEW */}
-                  <div className="bg-gradient-to-br from-slate-50 to-gray-50 rounded-2xl p-4 border border-slate-200 mb-5 space-y-2 shadow-sm">
-                    <div className="flex justify-between items-center text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  <div className="bg-gradient-to-br from-slate-50 to-gray-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-slate-200 mb-3 sm:mb-5 space-y-1.5 sm:space-y-2 shadow-sm">
+                    <div className="flex justify-between items-center text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 sm:mb-2">
                       <span>Items ({order.items?.length || 0})</span>
                       <span>Cant. × Subtotal</span>
                     </div>
                     {order.items?.slice(0, 3).map((it, idx) => (
-                      <div key={idx} className="flex justify-between items-center text-sm text-slate-700">
-                        <span className="truncate font-semibold max-w-[180px]">{it.product_name}</span>
+                      <div key={idx} className="flex justify-between items-center text-xs sm:text-sm text-slate-700">
+                        <span className="truncate font-semibold max-w-[120px] sm:max-w-[180px]">{it.product_name}</span>
                         <span className="font-bold text-slate-900">{it.quantity}× {formatCurrency(it.unit_price)}</span>
                       </div>
                     ))}
                     {(order.items?.length || 0) > 3 && (
-                      <p className="text-xs font-bold text-indigo-600 pt-2">
+                      <p className="text-[10px] sm:text-xs font-bold text-indigo-600 pt-1 sm:pt-2">
                         + {(order.items?.length || 0) - 3} productos más...
                       </p>
                     )}
@@ -754,30 +754,30 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
 
                 {/* CARD FOOTER & ACTIONS */}
                 <div>
-                  <div className="flex justify-between items-center pt-3 mb-4 border-t border-slate-100">
-                    <span className="text-sm font-bold text-slate-400">Total a Pagar</span>
-                    <span className="text-2xl font-black text-emerald-600">{formatCurrency(order.total)}</span>
+                  <div className="flex justify-between items-center pt-2 sm:pt-3 mb-3 sm:mb-4 border-t border-slate-100">
+                    <span className="text-xs sm:text-sm font-bold text-slate-400">Total</span>
+                    <span className="text-lg sm:text-2xl font-black text-emerald-600">{formatCurrency(order.total)}</span>
                   </div>
 
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-1.5 sm:gap-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
                       <button
                         onClick={() => { setSelectedOrder(order); setShowDetailModal(true); }}
-                        className="flex-1 py-3 px-4 bg-gradient-to-r from-slate-100 to-slate-200 hover:from-slate-200 hover:to-slate-300 text-slate-700 font-bold text-sm rounded-2xl transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-md active:scale-95"
+                        className="flex-1 py-2 sm:py-3 px-3 sm:px-4 bg-gradient-to-r from-slate-100 to-slate-200 hover:from-slate-200 hover:to-slate-300 text-slate-700 font-bold text-xs sm:text-sm rounded-xl sm:rounded-2xl transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm hover:shadow-md active:scale-95"
                       >
-                        <FileText size={16} /> Ver Detalle
+                        <FileText size={14} sm:size={16} /> <span className="hidden sm:inline">Ver Detalle</span>
                       </button>
 
 
                     </div>
 
                     {actions.length > 0 && (
-                      <div className="flex gap-2">
+                      <div className="flex gap-1.5 sm:gap-2">
                         {actions.map((act, idx) => (
                           <button
                             key={act.status || `assign-${idx}`}
                             onClick={() => handleStatusChange(order, act)}
-                            className={`flex-1 py-3 px-4 text-white font-extrabold text-sm rounded-2xl transition-all ${act.color} flex items-center justify-center gap-2 shadow-lg hover:shadow-xl active:scale-95`}
+                            className={`flex-1 py-2 sm:py-3 px-3 sm:px-4 text-white font-extrabold text-xs sm:text-sm rounded-xl sm:rounded-2xl transition-all ${act.color} flex items-center justify-center gap-1.5 sm:gap-2 shadow-lg hover:shadow-xl active:scale-95`}
                           >
                             <span>{act.label}</span>
                           </button>
@@ -789,6 +789,7 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
               </div>
             );
           })}
+          </div>
         </div>
       )}
 
