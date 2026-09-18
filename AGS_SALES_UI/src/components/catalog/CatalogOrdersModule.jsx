@@ -979,6 +979,12 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
                         <span className="text-gray-600">Subtotal</span>
                         <span className="font-medium text-gray-900">{formatCurrency(selectedOrder.subtotal)}</span>
                       </div>
+                      {Number(selectedOrder.delivery_fee || 0) > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Valor Domicilio</span>
+                          <span className="font-medium text-gray-900">{formatCurrency(selectedOrder.delivery_fee)}</span>
+                        </div>
+                      )}
                       {Number(selectedOrder.tax || 0) > 0 && (
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Impuestos</span>
