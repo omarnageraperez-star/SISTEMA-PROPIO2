@@ -341,21 +341,24 @@ export default function SalesHistoryModule({ config, token, systemSettings, user
   const netBalance = totalInflows - totalOutflows;
 
   return (
-    <div className="flex flex-col h-full gap-5 overflow-hidden animate-in fade-in duration-300">
+    <div className="flex flex-col h-full gap-6 overflow-hidden animate-in fade-in duration-300">
       
-      {/* Header Corporativo */}
-      <header className="glass-panel p-6 flex justify-between items-center rounded-2xl shadow-sm border border-white/60 bg-white/40">
+      {/* Header */}
+      <header className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-            <FileText className="text-indigo-500" /> {
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+              <FileText className="text-white" size={20} />
+            </div>
+            {
               activeTab === 'sales' 
                 ? 'Historial de Ventas' 
                 : activeTab === 'movements' 
-                  ? 'Historial de Egresos e Ingresos' 
-                  : 'Historial de Cortes de Caja'
+                  ? 'Movimientos de Caja' 
+                  : 'Cortes de Caja'
             }
           </h1>
-          <p className="text-slate-500 text-xs font-semibold mt-0.5">
+          <p className="text-sm text-gray-500 mt-1">
             {
               activeTab === 'sales' 
                 ? 'Consulta, busca, reimprime y anula las facturas del punto de venta.' 
@@ -367,115 +370,118 @@ export default function SalesHistoryModule({ config, token, systemSettings, user
         </div>
         <button 
           onClick={activeTab === 'sales' ? fetchSales : activeTab === 'movements' ? fetchMovements : fetchShifts}
-          className="bg-white border border-slate-200 text-indigo-650 hover:bg-slate-50 p-2.5 rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-2 font-bold text-xs cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
         >
-          <RefreshCw size={14} className={(activeTab === 'sales' ? loading : activeTab === 'movements' ? loadingMovements : loadingShifts) ? 'animate-spin' : ''} />
-          Actualizar {activeTab === 'sales' ? 'Historial' : activeTab === 'movements' ? 'Movimientos' : 'Cortes'}
+          <RefreshCw size={16} className={(activeTab === 'sales' ? loading : activeTab === 'movements' ? loadingMovements : loadingShifts) ? 'animate-spin' : ''} />
+          Actualizar
         </button>
       </header>
 
-      {/* Tabs Menu */}
-      <div className="flex bg-slate-100 rounded-xl p-1 shadow-inner border border-slate-200 w-fit self-start shrink-0">
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200">
         <button 
           onClick={() => { setActiveTab('sales'); onTabChange && onTabChange('sales'); }}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'sales' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:bg-slate-200'}`}
+          className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'sales' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
         >
-          Facturas de Venta
+          Facturas
         </button>
         <button 
           onClick={() => { setActiveTab('movements'); onTabChange && onTabChange('movements'); }}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'movements' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:bg-slate-200'}`}
+          className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'movements' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
         >
-          Movimientos de Caja (Egresos/Ingresos)
+          Movimientos
         </button>
         {canVoid && (
           <button 
             onClick={() => { setActiveTab('shifts'); onTabChange && onTabChange('shifts'); }}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'shifts' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:bg-slate-200'}`}
+            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'shifts' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
           >
-            Cortes de Caja (Historial)
+            Cortes
           </button>
         )}
       </div>
 
       {activeTab === 'sales' && (
         <>
-          {/* KPI Banner Cards - Sales */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
-            <div className="glass-panel p-4 rounded-xl border-l-4 border-l-emerald-500 bg-white/50 shadow-sm flex items-center gap-3">
-              <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg shrink-0">
-                <CheckCircle size={20} />
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider">Ingresos Netos</span>
-                <h3 className="text-xl font-extrabold text-emerald-800 font-mono leading-tight">{formatPrice(totalRevenue)}</h3>
-              </div>
-            </div>
-
-            <div className="glass-panel p-4 rounded-xl border-l-4 border-l-blue-500 bg-white/50 shadow-sm flex items-center gap-3">
-              <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg shrink-0">
-                <FileText size={20} />
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider">Facturas Válidas</span>
-                <h3 className="text-xl font-extrabold text-blue-800 font-mono leading-tight">{activeSales.length}</h3>
+          {/* KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <CheckCircle size={20} className="text-green-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Ingresos Netos</p>
+                  <p className="text-lg font-semibold text-gray-900">{formatPrice(totalRevenue)}</p>
+                </div>
               </div>
             </div>
 
-            <div className="glass-panel p-4 rounded-xl border-l-4 border-l-red-500 bg-white/50 shadow-sm flex items-center gap-3">
-              <div className="p-2.5 bg-red-50 text-red-600 rounded-lg shrink-0">
-                <XCircle size={20} />
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <FileText size={20} className="text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Facturas Válidas</p>
+                  <p className="text-lg font-semibold text-gray-900">{activeSales.length}</p>
+                </div>
               </div>
-              <div>
-                <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider">Facturas Anuladas</span>
-                <h3 className="text-xl font-extrabold text-red-800 font-mono leading-tight">{cancelledSales.length}</h3>
+            </div>
+
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                  <XCircle size={20} className="text-red-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Facturas Anuladas</p>
+                  <p className="text-lg font-semibold text-gray-900">{cancelledSales.length}</p>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Filters Area - Sales */}
-          <div className="glass-panel p-4 rounded-2xl border border-white/60 bg-white/40 shadow-sm shrink-0 flex flex-wrap items-center gap-3">
-            {/* Search */}
+          {/* Filters */}
+          <div className="bg-white p-4 rounded-lg border border-gray-200 flex flex-wrap items-center gap-4">
             <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
+              <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
               <input 
                 type="text" 
                 placeholder="Buscar factura o cliente..." 
-                className="w-full bg-white/80 border border-slate-200 rounded-xl pl-9 pr-4 py-2 outline-none focus:border-indigo-500 text-xs font-semibold text-slate-700"
+                className="w-full bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-blue-500"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
             </div>
 
-            {/* Date Filters */}
-            <div className="flex items-center gap-2 bg-white/80 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-650 font-semibold">
-              <Calendar size={14} className="text-slate-400" />
+            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm">
+              <Calendar size={16} className="text-gray-400" />
               <input 
                 type="date" 
-                className="bg-transparent border-none outline-none text-slate-700 py-0.5"
+                className="bg-transparent border-none outline-none text-gray-700"
                 value={startDate}
                 onChange={e => setStartDate(e.target.value)}
               />
-              <span className="text-slate-300">al</span>
+              <span className="text-gray-400">-</span>
               <input 
                 type="date" 
-                className="bg-transparent border-none outline-none text-slate-700 py-0.5"
+                className="bg-transparent border-none outline-none text-gray-700"
                 value={endDate}
                 onChange={e => setEndDate(e.target.value)}
               />
               {(startDate || endDate) && (
                 <button 
                   onClick={() => { setStartDate(''); setEndDate(''); }}
-                  className="text-red-500 hover:text-red-700 font-bold ml-1 text-[10px] uppercase"
+                  className="text-red-500 hover:text-red-700 text-xs font-medium ml-1"
                 >
                   Limpiar
                 </button>
               )}
             </div>
 
-            {/* Type Selector */}
             <select 
-              className="bg-white/80 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-indigo-500 text-xs font-semibold text-slate-700 cursor-pointer"
+              className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
               value={typeFilter}
               onChange={e => setTypeFilter(e.target.value)}
             >
@@ -484,9 +490,8 @@ export default function SalesHistoryModule({ config, token, systemSettings, user
               <option value="ELECTRONIC">Factura Electrónica</option>
             </select>
 
-            {/* Status Selector */}
             <select 
-              className="bg-white/80 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-indigo-500 text-xs font-semibold text-slate-700 cursor-pointer"
+              className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value)}
             >
@@ -496,82 +501,71 @@ export default function SalesHistoryModule({ config, token, systemSettings, user
             </select>
           </div>
 
-          {/* Sales List Table */}
-          <div className="flex-1 glass-panel border border-slate-100 rounded-2xl overflow-hidden shadow-sm flex flex-col bg-white">
-            <div className="flex-1 overflow-y-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold text-xs select-none">
-                    <th className="py-3.5 px-4 font-extrabold">Factura</th>
-                    <th className="py-3.5 px-4 font-extrabold">Fecha y Hora</th>
-                    <th className="py-3.5 px-4 font-extrabold">Cliente</th>
-                    <th className="py-3.5 px-4 font-extrabold">Tipo</th>
-                    <th className="py-3.5 px-4 text-right font-extrabold">Total</th>
-                    <th className="py-3.5 px-4 text-center font-extrabold">Estado</th>
-                    <th className="py-3.5 px-4 text-center font-extrabold">Acciones</th>
+          {/* Sales Table */}
+          <div className="flex-1 bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Factura</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fecha</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Cliente</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tipo</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Total</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Estado</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-gray-100">
                   {filteredSales.map((sale) => (
-                    <tr key={sale.id} className="hover:bg-slate-50/50 text-slate-700 font-medium text-xs transition-colors">
-                      <td className="py-3 px-4 font-bold text-slate-800 font-mono">
-                        {sale.invoice_number || `TEMP-${sale.id}`}
-                      </td>
-                      <td className="py-3 px-4 text-slate-500">
-                        {new Date(sale.created_at).toLocaleString()}
-                      </td>
-                      <td className="py-3 px-4">
-                        {sale.customer_name || 'Cliente Final'}
-                      </td>
-                      <td className="py-3 px-4 select-none">
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                    <tr key={sale.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900">{sale.invoice_number || `TEMP-${sale.id}`}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{new Date(sale.created_at).toLocaleString()}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700">{sale.customer_name || 'Cliente Final'}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded ${
                           sale.invoice_type === 'ELECTRONIC'
-                            ? 'bg-purple-50 text-purple-700 border border-purple-100'
-                            : 'bg-blue-50 text-blue-700 border border-blue-100'
+                            ? 'bg-purple-100 text-purple-700'
+                            : 'bg-blue-100 text-blue-700'
                         }`}>
-                          {sale.invoice_type === 'ELECTRONIC' ? 'Factura Electrónica' : 'POS'}
+                          {sale.invoice_type === 'ELECTRONIC' ? 'Electrónica' : 'POS'}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-right font-bold text-slate-850 font-mono">
-                        {formatPrice(sale.total)}
-                      </td>
-                      <td className="py-3 px-4 text-center select-none">
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">{formatPrice(sale.total)}</td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                           sale.status === 'COMPLETED'
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                            : 'bg-red-50 text-red-650 border border-red-100'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-red-100 text-red-700'
                         }`}>
                           {sale.status === 'COMPLETED' ? 'Válida' : 'Anulada'}
                         </span>
                       </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center justify-center gap-1.5">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-2">
                           <button 
                             onClick={() => setSelectedSale(sale)}
-                            title="Ver detalle de factura"
-                            className="p-1.5 text-slate-500 hover:text-indigo-650 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-gray-100 rounded transition-colors"
                           >
-                            <Eye size={15} />
+                            <Eye size={16} />
                           </button>
                           <button 
                             onClick={() => printTicket(sale, systemSettings, systemSettings?.ticket_logo || config?.ticket_logo, { preview: true, printerName: config?.default_printer })}
-                            title="Reimprimir ticket de venta"
-                            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-gray-100 rounded transition-colors"
                           >
-                            <Printer size={15} />
+                            <Printer size={16} />
                           </button>
                           {canVoid && (
                             <button 
                               disabled={sale.status === 'CANCELLED'}
                               onClick={() => handleAnular(sale)}
-                              title={sale.status === 'CANCELLED' ? 'Esta factura ya está anulada' : 'Anular factura'}
-                              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                              className={`p-1.5 rounded transition-colors ${
                                 sale.status === 'CANCELLED'
-                                  ? 'text-slate-200 cursor-not-allowed'
-                                  : 'text-slate-400 hover:text-red-650 hover:bg-red-50'
+                                  ? 'text-gray-300 cursor-not-allowed'
+                                  : 'text-gray-400 hover:text-red-600 hover:bg-gray-100'
                               }`}
                             >
-                              <XCircle size={15} />
+                              <XCircle size={16} />
                             </button>
                           )}
                         </div>
@@ -581,8 +575,8 @@ export default function SalesHistoryModule({ config, token, systemSettings, user
                   
                   {filteredSales.length === 0 && (
                     <tr>
-                      <td colSpan="7" className="py-8 text-center text-slate-400 font-semibold">
-                        {loading ? 'Cargando listado de facturas...' : 'No se encontraron facturas con los filtros seleccionados.'}
+                      <td colSpan={7} className="px-4 py-8 text-center text-sm text-gray-500">
+                        {loading ? 'Cargando...' : 'No se encontraron facturas'}
                       </td>
                     </tr>
                   )}

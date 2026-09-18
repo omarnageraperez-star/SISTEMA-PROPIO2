@@ -783,265 +783,235 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
 
       {/* RICH ORDER DETAIL MODAL */}
       {showDetailModal && selectedOrder && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col border border-gray-100">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col border border-gray-200">
             
             {/* MODAL HEADER */}
-            <div className="px-6 py-5 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white flex justify-between items-start">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-white/20 rounded-lg">
-                    <ShoppingBag size={24} />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-bold">Pedido #{selectedOrder.order_number}</h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className={`text-xs font-semibold px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm border border-white/30`}>
-                        {STATUS_CONFIG[selectedOrder.status]?.label}
-                      </span>
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${ORDER_TYPE_CONFIG[selectedOrder.order_type]?.color}`}>
-                        {ORDER_TYPE_CONFIG[selectedOrder.order_type]?.icon} {ORDER_TYPE_CONFIG[selectedOrder.order_type]?.label}
-                      </span>
-                    </div>
+            <div className="px-6 py-5 bg-white border-b border-gray-200 flex justify-between items-center">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <ShoppingBag size={24} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Pedido #{selectedOrder.order_number}</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`text-xs font-medium px-2.5 py-1 rounded-md ${STATUS_CONFIG[selectedOrder.status]?.badgeColor} text-white`}>
+                      {STATUS_CONFIG[selectedOrder.status]?.label}
+                    </span>
+                    <span className={`text-xs font-medium px-2.5 py-1 rounded-md ${ORDER_TYPE_CONFIG[selectedOrder.order_type]?.color}`}>
+                      {ORDER_TYPE_CONFIG[selectedOrder.order_type]?.icon} {ORDER_TYPE_CONFIG[selectedOrder.order_type]?.label}
+                    </span>
                   </div>
                 </div>
-                <p className="text-sm text-white/80 mt-2">Registrado el {formatDateTime(selectedOrder.created_at)}</p>
               </div>
-
-              <button
-                onClick={() => setShowDetailModal(false)}
-                className="p-2 hover:bg-white/10 rounded-xl transition-colors"
-              >
-                <XCircle size={24} />
-              </button>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-gray-500">{formatDateTime(selectedOrder.created_at)}</span>
+                <button
+                  onClick={() => setShowDetailModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <XCircle size={22} className="text-gray-500" />
+                </button>
+              </div>
             </div>
 
             {/* MODAL BODY */}
-            <div className="p-6 overflow-y-auto space-y-6 flex-1 bg-gray-50">
-              
-              {/* CUSTOMER DETAILS CARD */}
-              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="p-2 bg-indigo-100 rounded-lg">
-                    <User size={20} className="text-indigo-600" />
-                  </div>
-                  <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Información del Cliente</h4>
-                </div>
+            <div className="p-6 overflow-y-auto flex-1 bg-gray-50">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                    <User size={18} className="text-indigo-500" />
-                    <div>
-                      <p className="text-xs text-gray-500">Nombre</p>
-                      <p className="text-sm font-semibold text-gray-900">{selectedOrder.customer_name}</p>
-                    </div>
-                  </div>
-
-                  {selectedOrder.customer_phone && (
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                      <Phone size={18} className="text-green-500" />
-                      <div>
-                        <p className="text-xs text-gray-500">Teléfono</p>
-                        <p className="text-sm font-semibold text-gray-900">{selectedOrder.customer_phone}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedOrder.customer_address && (
-                    <div className="md:col-span-2 flex items-center justify-between gap-3 p-3 bg-gray-50 rounded-xl">
-                      <div className="flex items-center gap-3 flex-1">
-                        <MapPin size={18} className="text-red-500" />
-                        <div className="flex-1">
-                          <p className="text-xs text-gray-500">Dirección</p>
-                          <p className="text-sm font-semibold text-gray-900">{selectedOrder.customer_address}</p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedOrder.customer_address)}`, '_blank');
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-semibold transition-colors shadow-sm"
-                      >
-                        <Navigation size={16} />
-                        <span>Maps</span>
-                      </button>
-                    </div>
-                  )}
-
-                  {selectedOrder.table_name && (
-                    <div className="md:col-span-2 flex items-center gap-3 p-3 bg-sky-50 rounded-xl border border-sky-200">
-                      <MapPin size={18} className="text-sky-600" />
-                      <div>
-                        <p className="text-xs text-sky-600">Mesa</p>
-                        <p className="text-sm font-bold text-sky-900">{selectedOrder.table_name}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* DRIVER ASSIGNMENT (Solo para DELIVERY) */}
-                {selectedOrder && selectedOrder.order_type === 'DELIVERY' && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <div className="flex items-center justify-between gap-3">
+                {/* LEFT COLUMN - CUSTOMER INFO */}
+                <div className="lg:col-span-2 space-y-6">
+                  {/* CUSTOMER DETAILS CARD */}
+                  <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <User size={18} className="text-blue-600" />
+                      Cliente
+                    </h4>
+                    
+                    <div className="space-y-3">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-purple-100 rounded-lg">
-                          <Truck size={18} className="text-purple-600" />
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Domiciliario</p>
-                          <p className="text-sm font-semibold text-gray-900">
-                            {selectedOrder.assigned_driver_info 
-                              ? `${selectedOrder.assigned_driver_info.full_name || selectedOrder.assigned_driver_info.username}`
-                              : 'Sin asignar'
-                            }
-                          </p>
-                        </div>
+                        <span className="text-xs text-gray-500 w-20">Nombre</span>
+                        <span className="text-sm font-medium text-gray-900">{selectedOrder.customer_name}</span>
                       </div>
-                      {!selectedOrder.assigned_driver && (
-                        <button
-                          onClick={async () => {
-                            await fetchAvailableDrivers();
-                            const { value: driverId } = await Swal.fire({
-                              title: 'Asignar Domiciliario',
-                              input: 'select',
-                              inputOptions: availableDrivers.reduce((acc, driver) => {
-                                acc[driver.id] = `${driver.first_name} ${driver.last_name} (${driver.username})`;
-                                return acc;
-                              }, {}),
-                              inputPlaceholder: 'Selecciona un domiciliario',
-                              showCancelButton: true
-                            });
-                            if (driverId) {
-                              await assignDriver(selectedOrder.id, parseInt(driverId));
-                            }
-                          }}
-                          className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-semibold transition-colors shadow-sm"
-                        >
-                          <User size={16} />
-                          <span>Asignar</span>
-                        </button>
+
+                      {selectedOrder.customer_phone && (
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-gray-500 w-20">Teléfono</span>
+                          <span className="text-sm font-medium text-gray-900">{selectedOrder.customer_phone}</span>
+                        </div>
+                      )}
+
+                      {selectedOrder.customer_address && (
+                        <div className="flex items-center justify-between gap-3 p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center gap-3 flex-1">
+                            <MapPin size={16} className="text-red-500" />
+                            <span className="text-sm font-medium text-gray-900">{selectedOrder.customer_address}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedOrder.customer_address)}`, '_blank');
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors"
+                          >
+                            <Navigation size={14} />
+                            Maps
+                          </button>
+                        </div>
+                      )}
+
+                      {selectedOrder.table_name && (
+                        <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                          <MapPin size={16} className="text-blue-600" />
+                          <span className="text-sm font-medium text-blue-900">Mesa: {selectedOrder.table_name}</span>
+                        </div>
                       )}
                     </div>
-                  </div>
-                )}
-              </div>
 
-              {/* ITEMS BREAKDOWN TABLE */}
-              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <PackageCheck size={20} className="text-green-600" />
-                  </div>
-                  <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Productos ({selectedOrder.items?.length || 0})</h4>
-                </div>
-                <div className="space-y-2">
-                  {selectedOrder.items?.map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold text-gray-900">{item.product_name}</p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {item.quantity} × {formatCurrency(item.unit_price)}
-                        </p>
+                    {/* DRIVER ASSIGNMENT (Solo para DELIVERY) */}
+                    {selectedOrder && selectedOrder.order_type === 'DELIVERY' && (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Truck size={18} className="text-purple-600" />
+                            <span className="text-sm font-medium text-gray-900">
+                              {selectedOrder.assigned_driver_info 
+                                ? selectedOrder.assigned_driver_info.full_name || selectedOrder.assigned_driver_info.username
+                                : 'Sin asignar'
+                              }
+                            </span>
+                          </div>
+                          {!selectedOrder.assigned_driver && (
+                            <button
+                              onClick={async () => {
+                                await fetchAvailableDrivers();
+                                const { value: driverId } = await Swal.fire({
+                                  title: 'Asignar Domiciliario',
+                                  input: 'select',
+                                  inputOptions: availableDrivers.reduce((acc, driver) => {
+                                    acc[driver.id] = `${driver.first_name} ${driver.last_name} (${driver.username})`;
+                                    return acc;
+                                  }, {}),
+                                  inputPlaceholder: 'Selecciona un domiciliario',
+                                  showCancelButton: true
+                                });
+                                if (driverId) {
+                                  await assignDriver(selectedOrder.id, parseInt(driverId));
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-medium transition-colors"
+                            >
+                              Asignar
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <span className="text-sm font-bold text-green-600 ml-4">
-                        {formatCurrency(item.subtotal)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                    )}
+                  </div>
 
-              {/* NOTES */}
-              {selectedOrder.notes && (
-                <div className="bg-amber-50 p-5 rounded-2xl border border-amber-200">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="p-2 bg-amber-200 rounded-lg">
-                      <MessageSquare size={18} className="text-amber-700" />
+                  {/* ITEMS TABLE */}
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="px-5 py-4 border-b border-gray-200">
+                      <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                        <PackageCheck size={18} className="text-green-600" />
+                        Productos ({selectedOrder.items?.length || 0})
+                      </h4>
                     </div>
-                    <h4 className="text-sm font-bold text-amber-800 uppercase tracking-wide">Notas del Cliente</h4>
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="text-left text-xs font-medium text-gray-500 px-5 py-3">Producto</th>
+                          <th className="text-right text-xs font-medium text-gray-500 px-5 py-3">Cantidad</th>
+                          <th className="text-right text-xs font-medium text-gray-500 px-5 py-3">Precio</th>
+                          <th className="text-right text-xs font-medium text-gray-500 px-5 py-3">Subtotal</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {selectedOrder.items?.map((item, idx) => (
+                          <tr key={idx} className="hover:bg-gray-50">
+                            <td className="px-5 py-3 text-sm font-medium text-gray-900">{item.product_name}</td>
+                            <td className="px-5 py-3 text-sm text-gray-600 text-right">{item.quantity}</td>
+                            <td className="px-5 py-3 text-sm text-gray-600 text-right">{formatCurrency(item.unit_price)}</td>
+                            <td className="px-5 py-3 text-sm font-semibold text-gray-900 text-right">{formatCurrency(item.subtotal)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                  <p className="text-sm text-amber-700 font-medium">{selectedOrder.notes}</p>
-                </div>
-              )}
 
-              {/* DELIVERY PHOTO EVIDENCE */}
-              {selectedOrder.delivery_photo && (
-                <div className="bg-green-50 p-5 rounded-2xl border border-green-200">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="p-2 bg-green-200 rounded-lg">
-                      <CheckCircle size={18} className="text-green-700" />
-                    </div>
-                    <h4 className="text-sm font-bold text-green-800 uppercase tracking-wide">Evidencia de Entrega</h4>
-                  </div>
-                  <div className="flex flex-col items-center gap-4">
-                    <img 
-                      src={selectedOrder.delivery_photo} 
-                      alt="Evidencia de entrega" 
-                      className="max-w-full max-h-72 rounded-xl border-2 border-green-300 shadow-md object-contain bg-white"
-                    />
-                    <button
-                      onClick={() => {
-                        const win = window.open();
-                        win.document.write(`<img src="${selectedOrder.delivery_photo}" style="max-width:100%;max-height:100vh;margin:auto;display:block;">`);
-                        win.document.title = `Evidencia de Entrega - Pedido #${selectedOrder.order_number}`;
-                      }}
-                      className="flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
-                    >
-                      <ExternalLink size={16} />
-                      <span>Abrir en nueva pestaña</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* FINANCIAL SUMMARY */}
-              <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white p-6 rounded-2xl shadow-lg">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="p-2 bg-white/10 rounded-lg">
-                    <DollarSign size={20} className="text-green-400" />
-                  </div>
-                  <h4 className="text-sm font-bold uppercase tracking-wide">Resumen del Pedido</h4>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-400">Subtotal</span>
-                    <span className="text-sm font-semibold text-gray-200">{formatCurrency(selectedOrder.subtotal)}</span>
-                  </div>
-                  {Number(selectedOrder.tax || 0) > 0 && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-400">Impuestos</span>
-                      <span className="text-sm font-semibold text-gray-200">{formatCurrency(selectedOrder.tax)}</span>
+                  {/* NOTES */}
+                  {selectedOrder.notes && (
+                    <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
+                      <h4 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                        <MessageSquare size={16} className="text-amber-600" />
+                        Notas
+                      </h4>
+                      <p className="text-sm text-amber-900">{selectedOrder.notes}</p>
                     </div>
                   )}
-                  <div className="flex justify-between items-center pt-3 border-t border-gray-700">
-                    <span className="text-base font-bold">Total</span>
-                    <span className="text-2xl font-bold text-green-400">{formatCurrency(selectedOrder.total)}</span>
+                </div>
+
+                  {/* DELIVERY PHOTO */}
+                  {selectedOrder.delivery_photo && (
+                    <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+                      <h4 className="text-sm font-semibold text-green-800 mb-3 flex items-center gap-2">
+                        <CheckCircle size={16} className="text-green-600" />
+                        Evidencia de Entrega
+                      </h4>
+                      <img 
+                        src={selectedOrder.delivery_photo} 
+                        alt="Evidencia de entrega" 
+                        className="w-full rounded-lg border border-green-300 object-contain bg-white"
+                      />
+                    </div>
+                  )}
+
+                {/* RIGHT COLUMN - SUMMARY & ACTIONS */}
+                <div className="space-y-6">
+                  {/* FINANCIAL SUMMARY */}
+                  <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <DollarSign size={18} className="text-green-600" />
+                      Resumen
+                    </h4>
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Subtotal</span>
+                        <span className="font-medium text-gray-900">{formatCurrency(selectedOrder.subtotal)}</span>
+                      </div>
+                      {Number(selectedOrder.tax || 0) > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Impuestos</span>
+                          <span className="font-medium text-gray-900">{formatCurrency(selectedOrder.tax)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-base font-bold pt-3 border-t border-gray-200">
+                        <span className="text-gray-900">Total</span>
+                        <span className="text-green-600">{formatCurrency(selectedOrder.total)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* STATUS ACTIONS */}
+                  <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <RefreshCw size={18} className="text-blue-600" />
+                      Cambiar Estado
+                    </h4>
+                    <div className="space-y-2">
+                      {getStatusActions(selectedOrder).map((act, idx) => (
+                        <button
+                          key={act.status || `assign-modal-${idx}`}
+                          onClick={() => handleStatusChange(selectedOrder, act)}
+                          className={`w-full py-2.5 px-4 rounded-lg text-sm font-medium text-white transition-colors ${act.color}`}
+                        >
+                          {act.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
-
-              {/* STATUS ACTION BUTTONS */}
-              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <RefreshCw size={20} className="text-blue-600" />
-                  </div>
-                  <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Acciones</h4>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {getStatusActions(selectedOrder).map(act => (
-                    <button
-                      key={act.status}
-                      onClick={() => handleStatusChange(selectedOrder, act.status)}
-                      className={`py-3 px-4 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105 shadow-md ${act.color}`}
-                    >
-                      {act.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
             </div>
 
           </div>
