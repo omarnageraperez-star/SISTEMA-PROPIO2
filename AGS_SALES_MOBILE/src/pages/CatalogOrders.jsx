@@ -78,6 +78,7 @@ export default function CatalogOrders({ auth, onLogout }) {
   const [gpsActive, setGpsActive] = useState(false);
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
   const [processingPhoto, setProcessingPhoto] = useState(false);
+  const [notifiedOrderIds, setNotifiedOrderIds] = useState(new Set());
   const pollingRef = useRef(null);
   const gpsRef = useRef(null);
 
@@ -167,25 +168,31 @@ export default function CatalogOrders({ auth, onLogout }) {
         setPendingCount(data.pending_count);
         
         if (data.has_new && data.order) {
-          // Si es un pedido de domicilio asignado al domiciliario, usar notificación especial
-          if (data.is_driver_order && data.order.order_type === 'DELIVERY') {
-            sendDeliveryNotification({
-              title: '🛵 ¡Nuevo Domicilio Asignado!',
-              body: `Pedido #${data.order.order_number} - ${data.order.customer_name} - Dirección: ${data.order.customer_address || 'No especificada'}`
-            });
-          } else {
-            sendNativeNotification({
-              title: '¡Nuevo Pedido del Catálogo!',
-              body: `Pedido #${data.order.order_number} de ${data.order.customer_name} - ${fmt(data.order.total)}`
+          // Verificar si este pedido ya fue notificado
+          if (!notifiedOrderIds.has(data.order.id)) {
+            // Si es un pedido de domicilio asignado al domiciliario, usar notificación especial
+            if (data.is_driver_order && data.order.order_type === 'DELIVERY') {
+              sendDeliveryNotification({
+                title: '🛵 ¡Nuevo Domicilio Asignado!',
+                body: `Pedido #${data.order.order_number} - ${data.order.customer_name} - Dirección: ${data.order.customer_address || 'No especificada'}`
+              });
+            } else {
+              sendNativeNotification({
+                title: '¡Nuevo Pedido del Catálogo!',
+                body: `Pedido #${data.order.order_number} de ${data.order.customer_name} - ${fmt(data.order.total)}`
+              });
+            }
+            
+            // Marcar este pedido como notificado
+            setNotifiedOrderIds(prev => new Set(prev).add(data.order.id));
+            
+            fetchOrders();
+            Toast.fire({
+              icon: 'info',
+              title: `Nuevo pedido #${data.order.order_number}`,
+              timer: 4000
             });
           }
-          
-          fetchOrders();
-          Toast.fire({
-            icon: 'info',
-            title: `Nuevo pedido #${data.order.order_number}`,
-            timer: 4000
-          });
         }
       }
     } catch (e) {
