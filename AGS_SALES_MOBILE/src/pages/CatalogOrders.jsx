@@ -1055,31 +1055,37 @@ export default function CatalogOrders({ auth, onLogout }) {
               <div style={{ marginBottom: 20 }}>
                 <h4 style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9', marginBottom: 12 }}>Items del Pedido</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {selectedOrder.items?.map((item, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.03)',
-                        borderRadius: 8,
-                        padding: 12,
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}
-                    >
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: '#e2e8f0' }}>
-                          {item.product_name}
+                  {selectedOrder.items && selectedOrder.items.length > 0 ? (
+                    selectedOrder.items.map((item, index) => (
+                      <div
+                        key={index}
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.03)',
+                          borderRadius: 8,
+                          padding: 12,
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: '#e2e8f0' }}>
+                            {item.product_name || 'Producto'}
+                          </div>
+                          <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                            Cantidad: {item.quantity || 0} × {fmt(item.unit_price || 0)}
+                          </div>
                         </div>
-                        <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                          Cantidad: {item.quantity} × {fmt(item.unit_price)}
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#f97316' }}>
+                          {fmt(item.subtotal || 0)}
                         </div>
                       </div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#f97316' }}>
-                        {fmt(item.subtotal)}
-                      </div>
+                    ))
+                  ) : (
+                    <div style={{ fontSize: 13, color: '#64748b', padding: 12, textAlign: 'center' }}>
+                      No hay items disponibles
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
 
@@ -1145,15 +1151,21 @@ export default function CatalogOrders({ auth, onLogout }) {
               <div style={{ marginBottom: 20, background: 'rgba(255, 255, 255, 0.03)', borderRadius: 12, padding: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <span style={{ fontSize: 13, color: '#94a3b8' }}>Subtotal</span>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: '#e2e8f0' }}>{fmt(selectedOrder.subtotal)}</span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: '#e2e8f0' }}>{fmt(selectedOrder.subtotal || 0)}</span>
                 </div>
+                {selectedOrder.delivery_fee && Number(selectedOrder.delivery_fee) > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ fontSize: 13, color: '#94a3b8' }}>Valor Domicilio</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: '#e2e8f0' }}>{fmt(selectedOrder.delivery_fee)}</span>
+                  </div>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <span style={{ fontSize: 13, color: '#94a3b8' }}>Impuestos</span>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: '#e2e8f0' }}>{fmt(selectedOrder.tax)}</span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: '#e2e8f0' }}>{fmt(selectedOrder.tax || 0)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
                   <span style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9' }}>Total</span>
-                  <span style={{ fontSize: 18, fontWeight: 800, color: '#f97316' }}>{fmt(selectedOrder.total)}</span>
+                  <span style={{ fontSize: 18, fontWeight: 800, color: '#f97316' }}>{fmt(selectedOrder.total || 0)}</span>
                 </div>
               </div>
 
