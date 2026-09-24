@@ -481,9 +481,11 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
         """Actualizar el valor del domicilio (solo el domiciliario asignado puede hacerlo)"""
         order = self.get_object()
         
-        # Verificar que el usuario es el domiciliario asignado
-        if order.assigned_driver != request.user:
-            return Response({'error': 'Solo el domiciliario asignado puede actualizar el valor del domicilio'}, status=403)
+        # Verificar que el usuario es el domiciliario asignado O un admin/staff del sistema
+        is_driver = order.assigned_driver == request.user
+        is_staff = hasattr(request.user, 'role') and request.user.role in ['ADMIN', 'CASHIER', 'MANAGER']
+        if not is_driver and not is_staff:
+            return Response({'error': 'No tienes permiso para actualizar el valor del domicilio'}, status=403)
         
         delivery_fee = request.data.get('delivery_fee')
         if delivery_fee is None:

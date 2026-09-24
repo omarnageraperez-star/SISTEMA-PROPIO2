@@ -979,12 +979,51 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
                         <span className="text-gray-600">Subtotal</span>
                         <span className="font-medium text-gray-900">{formatCurrency(selectedOrder.subtotal)}</span>
                       </div>
-                      {Number(selectedOrder.delivery_fee || 0) > 0 && (
-                        <div className="flex justify-between text-sm">
+                      {selectedOrder.order_type === 'DELIVERY' && (
+                        <div className="flex justify-between text-sm items-center">
                           <span className="text-gray-600">Valor Domicilio</span>
-                          <span className="font-medium text-gray-900">{formatCurrency(selectedOrder.delivery_fee)}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900">{formatCurrency(selectedOrder.delivery_fee || 0)}</span>
+                            <button
+                              onClick={async () => {
+                                const { value: fee } = await Swal.fire({
+                                  title: 'Valor del Domicilio',
+                                  input: 'number',
+                                  inputLabel: 'Ingresa el valor del domicilio',
+                                  inputValue: selectedOrder.delivery_fee || 0,
+                                  inputAttributes: { min: 0, step: 100 },
+                                  showCancelButton: true,
+                                  confirmButtonText: 'Guardar',
+                                  cancelButtonText: 'Cancelar',
+                                });
+                                if (fee !== undefined && fee !== '' && !isNaN(parseFloat(fee))) {
+                                  try {
+                                    const cleanBaseUrl = config.apiUrl.endsWith('/') ? config.apiUrl : config.apiUrl + '/';
+                                    const res = await apiRequest(
+                                      `${cleanBaseUrl}catalog-orders/orders/${selectedOrder.id}/update-delivery-fee/`,
+                                      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delivery_fee: parseFloat(fee) }) },
+                                      token
+                                    );
+                                    if (res.ok) {
+                                      fetchOrders();
+                                      setShowDetailModal(false);
+                                    } else {
+                                      const err = await res.json();
+                                      Swal.fire('Error', err.error || 'No se pudo actualizar', 'error');
+                                    }
+                                  } catch (e) {
+                                    Swal.fire('Error', 'Error de conexión', 'error');
+                                  }
+                                }
+                              }}
+                              className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg px-2 py-1 transition-colors"
+                            >
+                              ✏️ Editar
+                            </button>
+                          </div>
                         </div>
                       )}
+
                       {Number(selectedOrder.tax || 0) > 0 && (
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Impuestos</span>
