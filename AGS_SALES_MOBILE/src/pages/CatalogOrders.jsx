@@ -306,9 +306,9 @@ export default function CatalogOrders({ auth, onLogout }) {
   const updateDeliveryFee = async (orderId) => {
     const { value: fee } = await DarkSwal.fire({
       title: 'Valor del Domicilio',
-      input: 'number',
-      inputLabel: 'Ingresa el valor del domicilio',
-      inputPlaceholder: '0',
+      input: 'text',
+      inputLabel: 'Ingresa el valor del domicilio (ej: 5000)',
+      inputPlaceholder: '5000',
       inputAttributes: {
         min: 0,
         step: 'any'
@@ -319,29 +319,36 @@ export default function CatalogOrders({ auth, onLogout }) {
       confirmButtonColor: '#3b82f6'
     });
 
-    if (fee && !isNaN(parseFloat(fee))) {
-      try {
-        const res = await apiRequest(
-          apiUrl(auth.apiUrl, `catalog-orders/orders/${orderId}/update-delivery-fee/`),
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ delivery_fee: parseFloat(fee) })
-          },
-          auth.token
-        );
-        if (res.ok) {
-          Toast.fire({
-            icon: 'success',
-            title: 'Valor del domicilio actualizado',
-            timer: 2000
-          });
-          fetchOrders();
-        } else {
-          throw new Error('Error al actualizar valor');
+    if (fee !== undefined && fee !== '') {
+      const cleanFee = fee.replace(/[^\d.]/g, '');
+      const parsedFee = parseFloat(cleanFee);
+      
+      if (!isNaN(parsedFee)) {
+        try {
+          const res = await apiRequest(
+            apiUrl(auth.apiUrl, `catalog-orders/orders/${orderId}/update-delivery-fee/`),
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ delivery_fee: parsedFee })
+            },
+            auth.token
+          );
+          if (res.ok) {
+            Toast.fire({
+              icon: 'success',
+              title: 'Valor del domicilio actualizado',
+              timer: 2000
+            });
+            fetchOrders();
+          } else {
+            throw new Error('Error al actualizar valor');
+          }
+        } catch (e) {
+          DarkSwal.fire('Error', 'No se pudo actualizar el valor del domicilio', 'error');
         }
-      } catch (e) {
-        DarkSwal.fire('Error', 'No se pudo actualizar el valor del domicilio', 'error');
+      } else {
+        DarkSwal.fire('Error', 'Por favor ingresa solo números', 'error');
       }
     }
   };

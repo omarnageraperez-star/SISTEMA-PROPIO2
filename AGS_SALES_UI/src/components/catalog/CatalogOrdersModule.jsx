@@ -988,22 +988,28 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
                               onClick={async () => {
                                 const { value: fee } = await Swal.fire({
                                   title: 'Valor del Domicilio',
-                                  input: 'number',
-                                  inputLabel: 'Ingresa el valor del domicilio',
-                                  inputValue: selectedOrder.delivery_fee ? parseFloat(selectedOrder.delivery_fee) : 0,
+                                  input: 'text',
+                                  inputLabel: 'Ingresa el valor del domicilio (ej: 5000)',
+                                  inputValue: selectedOrder.delivery_fee ? parseFloat(selectedOrder.delivery_fee) : '',
                                   inputAttributes: { min: 0, step: 'any' },
                                   showCancelButton: true,
                                   confirmButtonText: 'Guardar',
                                   cancelButtonText: 'Cancelar',
                                 });
-                                if (fee !== undefined && fee !== '' && !isNaN(parseFloat(fee))) {
-                                  try {
-                                    const cleanBaseUrl = config.apiUrl.endsWith('/') ? config.apiUrl : config.apiUrl + '/';
-                                    const res = await apiRequest(
-                                      `${cleanBaseUrl}catalog-orders/orders/${selectedOrder.id}/update-delivery-fee/`,
-                                      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delivery_fee: parseFloat(fee) }) },
-                                      token
-                                    );
+                                
+                                if (fee !== undefined && fee !== '') {
+                                  // Limpiar comas o puntos si el usuario los escribió por error
+                                  const cleanFee = fee.replace(/[^\d.]/g, '');
+                                  const parsedFee = parseFloat(cleanFee);
+                                  
+                                  if (!isNaN(parsedFee)) {
+                                    try {
+                                      const cleanBaseUrl = config.apiUrl.endsWith('/') ? config.apiUrl : config.apiUrl + '/';
+                                      const res = await apiRequest(
+                                        `${cleanBaseUrl}catalog-orders/orders/${selectedOrder.id}/update-delivery-fee/`,
+                                        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delivery_fee: parsedFee }) },
+                                        token
+                                      );
                                     if (res.ok) {
                                       fetchOrders();
                                       setShowDetailModal(false);
@@ -1014,6 +1020,8 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
                                   } catch (e) {
                                     Swal.fire('Error', 'Error de conexión', 'error');
                                   }
+                                } else if (fee !== undefined) {
+                                  Swal.fire('Error', 'Por favor ingresa solo números', 'error');
                                 }
                               }}
                               className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg px-2 py-1 transition-colors"
