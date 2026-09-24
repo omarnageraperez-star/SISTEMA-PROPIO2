@@ -372,6 +372,7 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Pedido no encontrado'}, status=404)
             
         return Response({
+            'id': order.id,
             'order_number': order.order_number,
             'status': order.status,
             'order_type': order.order_type,
