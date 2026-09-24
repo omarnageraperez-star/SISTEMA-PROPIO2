@@ -311,7 +311,7 @@ export default function CatalogOrders({ auth, onLogout }) {
       inputPlaceholder: '0',
       inputAttributes: {
         min: 0,
-        step: 100
+        step: 'any'
       },
       showCancelButton: true,
       confirmButtonText: 'Actualizar',
