@@ -13,7 +13,7 @@ import WebScannerModal from '../components/WebScannerModal';
 import { hasPermission } from '../lib/permissionsConfig';
 import { checkAndNotifyExpiringProducts } from '../lib/notifications';
 
-const BASE_FIELDS = { name: '', sku: '', internal_code: '', price: '', cost: '', stock: '', category: '', description: '', has_expiration: false, expiration_date: '' };
+const BASE_FIELDS = { name: '', sku: '', internal_code: '', price: '', cost: '', stock: '', category: '', description: '', has_expiration: false, expiration_date: '', measurement_unit: 'Unidad' };
 
 const compressImage = (file, maxWidth = 800, maxHeight = 800) => {
   return new Promise((resolve) => {
@@ -320,6 +320,7 @@ export default function Inventory({ auth }) {
       description: p.description || '',
       has_expiration: Boolean(rawDate),
       expiration_date: rawDate,
+      measurement_unit: p.measurement_unit || 'Unidad',
     });
     setImgPreview(p.image ? buildImgUrl(p.image) : null);
     setImgFile(null);
@@ -392,6 +393,7 @@ export default function Inventory({ auth }) {
         category: form.category ? parseInt(form.category) : null,
         description: form.description || null,
         expiration_date: expDateClean,
+        measurement_unit: form.measurement_unit || 'Unidad',
         image: imageUrl || null,
       };
 
@@ -1615,6 +1617,31 @@ export default function Inventory({ auth }) {
                     }}>
                       <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#ffffff', transform: 'translateX(20px)', transition: 'transform 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.3)' }} />
                     </div>
+                  </div>
+
+                  {/* Row Unidad de medida */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0', borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: '#ffffff' }}>Unidad de Medida</span>
+                    <select
+                      value={form.measurement_unit || 'Unidad'}
+                      onChange={e => setForm(p => ({ ...p, measurement_unit: e.target.value }))}
+                      style={{
+                        background: '#090b10',
+                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        borderRadius: 12,
+                        padding: '8px 12px',
+                        color: '#ffffff',
+                        fontSize: 14,
+                        fontWeight: 600,
+                        outline: 'none',
+                      }}
+                    >
+                      <option value="Unidad">Unidad</option>
+                      <option value="Kilogramo (Kg)">Kilogramo (Kg)</option>
+                      <option value="Libra (Lb)">Libra (Lb)</option>
+                      <option value="Gramo (Gr)">Gramo (Gr)</option>
+                      <option value="A Granel">A Granel (decimal)</option>
+                    </select>
                   </div>
 
                   {/* Row Stock actual */}

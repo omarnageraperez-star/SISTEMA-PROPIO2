@@ -116,30 +116,8 @@ class LicensingMiddleware:
         except Exception:
             pass
 
-        # Check device locking (if X-Device-UUID is provided by the desktop app)
-        device_uuid = request.META.get('HTTP_X_DEVICE_UUID')
-        if device_uuid:
-            registered_device = settings_dict.get('license_device_id', '')
-            if not registered_device:
-                # Auto-register this device UUID on first connection
-                try:
-                    from apps.users.models import SystemSetting
-                    setting, created = SystemSetting.objects.get_or_create(key='license_device_id')
-                    setting.value = device_uuid
-                    setting.save()
-                    # Clear cache
-                    cache.delete('_license_settings')
-                    settings_dict['license_device_id'] = device_uuid
-                except Exception:
-                    pass
-            elif registered_device != device_uuid:
-                # Device mismatch block
-                return JsonResponse({
-                    'error': 'license_device_mismatch',
-                    'detail': 'Esta licencia ya está vinculada a otro equipo de cómputo. No se permite el acceso desde múltiples dispositivos.',
-                    'contact_phone': settings_dict.get('license_contact', '+57 300 000 0000'),
-                    'payment_methods': 'Por favor contáctenos para transferir la licencia o adquirir licencias adicionales.'
-                }, status=402)
+        # Device locking logic removed as requested by user
+
 
         # Send Automatic SMTP Notification (using DB tracking so it only ever triggers ONCE per expiration setting)
         if expires_at:

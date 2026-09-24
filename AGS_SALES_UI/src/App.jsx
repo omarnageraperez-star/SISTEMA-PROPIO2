@@ -5716,41 +5716,7 @@ function App() {
                         />
                       </div>
                     </div>
-                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col gap-2">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">🔒 Dispositivo Vinculado (Hardware UUID)</label>
-                      <div className="flex items-center gap-3">
-                        <input 
-                          type="text" 
-                          readOnly 
-                          className="glass-input text-xs font-mono !bg-slate-100 flex-1 cursor-default select-all" 
-                          value={systemSettings.license_device_id || 'Ningún dispositivo registrado (se auto-vinculará al primer inicio)'} 
-                        />
-                        {systemSettings.license_device_id && (
-                          <button 
-                            type="button" 
-                            onClick={() => {
-                              Swal.fire({
-                                title: '¿Desvincular Dispositivo?',
-                                text: "El sistema permitirá el registro de una nueva máquina al iniciar sesión.",
-                                icon: 'warning',
-                                showCancelButton: true,
-                                confirmButtonColor: '#3085d6',
-                                cancelButtonColor: '#d33',
-                                confirmButtonText: 'Sí, desvincular',
-                                cancelButtonText: 'Cancelar'
-                              }).then((result) => {
-                                if (result.isConfirmed) {
-                                  setSystemSettings({ ...systemSettings, license_device_id: '' });
-                                }
-                              });
-                            }}
-                            className="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-2 rounded-xl text-xs font-bold border border-red-200 shadow-sm transition-all"
-                          >
-                            Liberar
-                          </button>
-                        )}
-                      </div>
-                    </div>
+
                     <div>
                       <label className="text-sm font-semibold text-gray-700 ml-1">Mensaje de Suspensión</label>
                       <textarea 

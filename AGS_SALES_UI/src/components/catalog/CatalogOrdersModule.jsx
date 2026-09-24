@@ -478,12 +478,12 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
     <div className="flex flex-col h-full overflow-hidden animate-in fade-in duration-300">
       
       {/* HEADER & TOP CONTROL CENTER */}
-      <div className="glass-panel p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-slate-100 shrink-0">
-        <div className="flex items-center gap-3">
+      <div className="glass-panel p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-slate-100 shrink-0">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className="p-2 sm:p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl sm:rounded-2xl text-white shadow-lg shadow-indigo-500/20 shrink-0">
             <ShoppingBag size={20} sm:size={26} />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h2 className="text-lg sm:text-2xl font-extrabold text-slate-800 tracking-tight truncate">Centro de Pedidos Web</h2>
             <div className="flex items-center gap-2 text-xs text-slate-500 font-medium mt-0.5">
               <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
@@ -492,7 +492,26 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* SEARCH BAR IN HEADER */}
+          <div className="glass-panel p-2 sm:p-2.5 rounded-xl sm:rounded-xl border border-slate-150 flex items-center gap-2 shrink-0">
+            <div className="bg-gradient-to-br from-indigo-100 to-purple-100 p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-indigo-600 shrink-0">
+              <Search size={14} sm:size={16} />
+            </div>
+            <input 
+              type="text" 
+              placeholder="Buscar..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-32 sm:w-48 bg-transparent border-none outline-none text-xs sm:text-sm font-semibold text-slate-700 placeholder-slate-400 min-w-0"
+            />
+            {searchTerm && (
+              <button onClick={() => setSearchTerm('')} className="p-1.5 sm:p-2 text-slate-400 hover:text-rose-500 transition-colors bg-slate-100 rounded-lg hover:bg-rose-100 shrink-0">
+                <XCircle size={12} sm:size={14} />
+              </button>
+            )}
+          </div>
+
           <button 
             onClick={fetchOrders}
             disabled={isRefreshing}
@@ -506,60 +525,51 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
       </div>
 
       {/* KPI METRIC CARDS GRID */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 shrink-0">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 shrink-0">
         
         {/* KPI 1: TOTAL */}
-        <div className="glass-panel p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-150 flex items-center justify-between shadow-lg hover:shadow-xl transition-all hover:scale-105 cursor-pointer group">
+        <div className="glass-panel p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-150 flex items-center justify-between shadow-lg hover:shadow-xl transition-all hover:scale-105 cursor-pointer group">
           <div className="min-w-0">
-            <p className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Total Pedidos</p>
-            <h3 className="text-2xl sm:text-4xl font-black text-slate-800 group-hover:text-indigo-600 transition-colors">{totalOrdersCount}</h3>
-            <p className="text-[10px] sm:text-xs text-slate-400 mt-1 font-medium">Todos los estados</p>
+            <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total</p>
+            <h3 className="text-xl sm:text-3xl font-black text-slate-800 group-hover:text-indigo-600 transition-colors">{totalOrdersCount}</h3>
           </div>
-          <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold shadow-lg shadow-indigo-500/30 group-hover:shadow-indigo-500/50 transition-all shrink-0">
-            <ShoppingBag size={20} sm:size={32} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold shadow-lg shadow-indigo-500/30 group-hover:shadow-indigo-500/50 transition-all shrink-0">
+            <ShoppingBag size={16} sm:size={24} />
           </div>
         </div>
 
         {/* KPI 2: PENDIENTES */}
-        <div className={`glass-panel p-4 sm:p-6 rounded-2xl sm:rounded-3xl border transition-all flex items-center justify-between shadow-lg hover:shadow-xl hover:scale-105 cursor-pointer group ${pendingOrdersCount > 0 ? 'border-amber-400 bg-gradient-to-br from-amber-50 to-orange-50' : 'border-slate-150'}`}>
+        <div className={`glass-panel p-3 sm:p-4 rounded-xl sm:rounded-2xl border transition-all flex items-center justify-between shadow-lg hover:shadow-xl hover:scale-105 cursor-pointer group ${pendingOrdersCount > 0 ? 'border-amber-400 bg-gradient-to-br from-amber-50 to-orange-50' : 'border-slate-150'}`}>
           <div className="min-w-0">
-            <p className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Pendientes</p>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <h3 className="text-2xl sm:text-4xl font-black text-amber-600 group-hover:text-amber-500 transition-colors">{pendingOrdersCount}</h3>
-              {pendingOrdersCount > 0 && (
-                <span className="hidden sm:inline-flex px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-extrabold text-xs rounded-full animate-bounce shadow-lg shadow-amber-500/30">
-                  ¡Nuevos!
-                </span>
-              )}
+            <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">Pendientes</p>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <h3 className="text-xl sm:text-3xl font-black text-amber-600 group-hover:text-amber-500 transition-colors">{pendingOrdersCount}</h3>
             </div>
-            <p className="text-[10px] sm:text-xs text-slate-400 mt-1 font-medium">Por atender</p>
           </div>
-          <div className={`w-10 h-10 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl flex items-center justify-center font-bold shadow-lg transition-all shrink-0 ${pendingOrdersCount > 0 ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-amber-500/30 animate-pulse' : 'bg-amber-100 text-amber-600'}`}>
-            <Bell size={20} sm:size={32} />
+          <div className={`w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center font-bold shadow-lg transition-all shrink-0 ${pendingOrdersCount > 0 ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-amber-500/30 animate-pulse' : 'bg-amber-100 text-amber-600'}`}>
+            <Bell size={16} sm:size={24} />
           </div>
         </div>
 
         {/* KPI 3: PROCESANDO */}
-        <div className="glass-panel p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-150 flex items-center justify-between shadow-lg hover:shadow-xl hover:scale-105 cursor-pointer group">
+        <div className="glass-panel p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-150 flex items-center justify-between shadow-lg hover:shadow-xl hover:scale-105 cursor-pointer group">
           <div className="min-w-0">
-            <p className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Procesando</p>
-            <h3 className="text-2xl sm:text-4xl font-black text-purple-600 group-hover:text-purple-500 transition-colors">{preparingOrdersCount}</h3>
-            <p className="text-[10px] sm:text-xs text-slate-400 mt-1 font-medium">En cocina</p>
+            <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">Procesando</p>
+            <h3 className="text-xl sm:text-3xl font-black text-purple-600 group-hover:text-purple-500 transition-colors">{preparingOrdersCount}</h3>
           </div>
-          <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-purple-500 to-violet-600 text-white flex items-center justify-center font-bold shadow-lg shadow-purple-500/30 group-hover:shadow-purple-500/50 transition-all shrink-0">
-            <Zap size={20} sm:size={32} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-purple-500 to-violet-600 text-white flex items-center justify-center font-bold shadow-lg shadow-purple-500/30 group-hover:shadow-purple-500/50 transition-all shrink-0">
+            <Zap size={16} sm:size={24} />
           </div>
         </div>
 
         {/* KPI 4: MONTO TOTAL */}
-        <div className="glass-panel p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-150 flex items-center justify-between shadow-lg hover:shadow-xl hover:scale-105 cursor-pointer group">
+        <div className="glass-panel p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-150 flex items-center justify-between shadow-lg hover:shadow-xl hover:scale-105 cursor-pointer group">
           <div className="min-w-0">
-            <p className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Ventas</p>
-            <h3 className="text-xl sm:text-3xl font-black text-emerald-600 group-hover:text-emerald-500 transition-colors truncate">{formatCurrency(totalSalesAmount)}</h3>
-            <p className="text-[10px] sm:text-xs text-slate-400 mt-1 font-medium">Catálogo</p>
+            <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">Ventas</p>
+            <h3 className="text-lg sm:text-2xl font-black text-emerald-600 group-hover:text-emerald-500 transition-colors truncate">{formatCurrency(totalSalesAmount)}</h3>
           </div>
-          <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center font-bold shadow-lg shadow-emerald-500/30 group-hover:shadow-emerald-500/50 transition-all shrink-0">
-            <DollarSign size={20} sm:size={32} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center font-bold shadow-lg shadow-emerald-500/30 group-hover:shadow-emerald-500/50 transition-all shrink-0">
+            <DollarSign size={16} sm:size={24} />
           </div>
         </div>
 
@@ -567,7 +577,7 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
 
       {/* FILTER TABS SLIDER */}
       <div className="glass-panel p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-150 shadow-lg shrink-0">
-        <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto pb-2 scrollbar-none">
+        <div className="flex items-center gap-3 sm:gap-4 overflow-x-auto pb-2 scrollbar-none">
           {[
             { id: 'ALL', label: 'Todos', count: orders.length },
             { id: 'PENDING', label: '⏳ Pendientes', count: orders.filter(o => o.status === 'PENDING').length },
@@ -580,38 +590,19 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
             <button
               key={filter.id}
               onClick={() => setStatusFilter(filter.id)}
-              className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2 sm:py-3 rounded-xl text-xs sm:text-sm font-extrabold whitespace-nowrap transition-all shrink-0 ${
+              className={`flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-extrabold whitespace-nowrap transition-all shrink-0 ${
                 statusFilter === filter.id 
                   ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/30 scale-105' 
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:scale-102'
               }`}
             >
               <span>{filter.label}</span>
-              <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-black ${statusFilter === filter.id ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'}`}>
+              <span className={`px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-black ${statusFilter === filter.id ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'}`}>
                 {filter.count}
               </span>
             </button>
           ))}
         </div>
-      </div>
-
-      {/* SEARCH BAR */}
-      <div className="glass-panel p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-150 shadow-lg flex items-center gap-3 sm:gap-4 shrink-0">
-        <div className="bg-gradient-to-br from-indigo-100 to-purple-100 p-2 sm:p-3 rounded-xl sm:rounded-2xl text-indigo-600 shrink-0">
-          <Search size={16} sm:size={20} />
-        </div>
-        <input 
-          type="text" 
-          placeholder="Buscar pedido..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1 bg-transparent border-none outline-none text-sm sm:text-base font-semibold text-slate-700 placeholder-slate-400 min-w-0"
-        />
-        {searchTerm && (
-          <button onClick={() => setSearchTerm('')} className="p-2 sm:p-3 text-slate-400 hover:text-rose-500 transition-colors bg-slate-100 rounded-xl hover:bg-rose-100 shrink-0">
-            <XCircle size={16} sm:size={20} />
-          </button>
-        )}
       </div>
 
       {/* ORDERS GRID LIST */}
