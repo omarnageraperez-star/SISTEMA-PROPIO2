@@ -619,7 +619,7 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto pr-1 sm:pr-2 custom-scrollbar">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 pb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 pb-4">
             {filteredOrders.map(order => {
               const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG['PENDING'];
               const StatusIcon = statusConfig.icon;
@@ -634,152 +634,142 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
               return (
                 <div
                   key={order.id}
-                  className={`glass-panel rounded-2xl sm:rounded-3xl border p-4 sm:p-6 hover:shadow-2xl transition-all duration-300 flex flex-col justify-between group bg-white hover:-translate-y-1 sm:hover:-translate-y-2 ${isUrgent ? 'border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.6)] animate-pulse' : 'border-slate-200/80'}`}
+                  className={`relative overflow-hidden rounded-xl border bg-white flex flex-col transition-all duration-200 group hover:-translate-y-0.5 hover:shadow-lg ${
+                    isUrgent
+                      ? 'border-red-400 shadow-[0_0_0_2px_rgba(239,68,68,0.15)] animate-pulse'
+                      : 'border-slate-200 shadow-sm'
+                  }`}
                 >
-                  <div>
-                    {/* CARD HEADER */}
-                    <div className="flex items-center justify-between mb-3 sm:mb-4 border-b border-slate-100 pb-3 sm:pb-4">
-                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                        <span className="text-base sm:text-xl font-black text-slate-900 bg-gradient-to-br from-slate-100 to-slate-200 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl shadow-sm shrink-0">
-                          #{order.order_number}
-                        </span>
-                        {isUrgent && (
-                          <span className="bg-gradient-to-r from-red-500 to-rose-600 text-white text-[10px] sm:text-xs font-black px-2 sm:px-3 py-1 sm:py-1.5 rounded-full uppercase tracking-widest flex items-center gap-1 sm:gap-1.5 shadow-lg shadow-red-500/30 shrink-0">
-                            <AlertCircle size={10} sm:size={12} /> Urgente ({diffMins}m)
+                  {/* Status accent bar */}
+                  <div className={`h-1 w-full ${statusConfig.badgeColor}`} />
+
+                  <div className="p-3 flex flex-col gap-2.5 flex-1">
+                    {/* HEADER ROW */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-sm font-black text-slate-800 tracking-tight">
+                            #{order.order_number}
                           </span>
-                        )}
-                        {!isUrgent && (
-                          <span className={`text-[10px] sm:text-sm font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl border shadow-sm shrink-0 ${orderTypeConfig.color}`}>
-                            {orderTypeConfig.icon} {orderTypeConfig.label}
-                          </span>
-                        )}
+                          {isUrgent ? (
+                            <span className="inline-flex items-center gap-0.5 text-[9px] font-black bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full uppercase tracking-wide border border-red-200">
+                              <AlertCircle size={8} /> {diffMins}m
+                            </span>
+                          ) : (
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${orderTypeConfig.color}`}>
+                              {orderTypeConfig.icon} {orderTypeConfig.label}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{formatDateTime(order.created_at)}</p>
                       </div>
-
-                      <div className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl border text-[10px] sm:text-sm font-black shadow-sm shrink-0 ${isUrgent ? 'bg-red-50 text-red-700 border-red-200' : statusConfig.bgColor}`}>
-                        <StatusIcon size={12} sm:size={16} />
-                        <span className="hidden sm:inline">{statusConfig.label}</span>
+                      <div className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-bold shrink-0 ${isUrgent ? 'bg-red-50 text-red-600 border-red-200' : statusConfig.bgColor}`}>
+                        <StatusIcon size={10} />
+                        <span>{statusConfig.label}</span>
                       </div>
                     </div>
 
-                  {/* CUSTOMER INFO */}
-                  <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-5">
-                    <div className="flex items-center gap-2 sm:gap-3 text-sm sm:text-base font-bold text-slate-800">
-                      <div className="bg-indigo-100 p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-indigo-600 shrink-0">
-                        <User size={14} sm:size={18} />
-                      </div>
-                      <span className="truncate min-w-0">{order.customer_name}</span>
-                    </div>
+                    {/* DIVIDER */}
+                    <div className="border-t border-slate-100" />
 
-                    {order.customer_phone && (
-                      <div className="flex items-center justify-between text-xs sm:text-sm text-slate-600">
-                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                          <div className="bg-slate-100 p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-slate-400 shrink-0">
-                            <Phone size={14} sm:size={16} />
+                    {/* CUSTOMER INFO */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <User size={12} className="text-indigo-400 shrink-0" />
+                        <span className="text-xs font-semibold text-slate-700 truncate">{order.customer_name}</span>
+                      </div>
+
+                      {order.customer_phone && (
+                        <div className="flex items-center justify-between gap-1">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Phone size={12} className="text-slate-400 shrink-0" />
+                            <span className="text-xs text-slate-500 truncate">{order.customer_phone}</span>
                           </div>
-                          <span className="font-semibold truncate">{order.customer_phone}</span>
+                          <a
+                            href={`https://wa.me/${order.customer_phone.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors shrink-0"
+                          >
+                            <MessageSquare size={9} /> WA
+                          </a>
                         </div>
-                        <a 
-                          href={`https://wa.me/${order.customer_phone.replace(/\D/g, '')}`} 
-                          target="_blank" 
-                          rel="noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-[10px] sm:text-xs font-bold text-emerald-600 bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl flex items-center gap-1 sm:gap-1.5 transition-all border border-emerald-200 shadow-sm hover:shadow-md shrink-0"
-                        >
-                          <MessageSquare size={12} sm:size={14} /> <span className="hidden sm:inline">WhatsApp</span>
-                        </a>
-                      </div>
-                    )}
+                      )}
 
-                    {order.table_name && (
-                      <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-600 bg-gradient-to-r from-sky-50 to-blue-50 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-sky-200 shadow-sm">
-                        <div className="bg-sky-100 p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-sky-600 shrink-0">
-                          <MapPin size={14} sm:size={16} />
+                      {order.table_name && (
+                        <div className="flex items-center gap-2">
+                          <MapPin size={12} className="text-sky-400 shrink-0" />
+                          <span className="text-xs text-sky-600 font-medium truncate">Mesa: {order.table_name}</span>
                         </div>
-                        <span className="font-semibold truncate">{order.table_name}</span>
-                      </div>
-                    )}
+                      )}
 
-                    {order.customer_address && (
-                      <div className="flex items-center justify-between gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-600 bg-gradient-to-r from-slate-50 to-gray-50 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm">
-                        <div className="flex items-center gap-1.5 sm:gap-2 truncate min-w-0">
-                          <div className="bg-rose-100 p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-rose-600 shrink-0">
-                            <MapPin size={14} sm:size={16} />
+                      {order.customer_address && (
+                        <div className="flex items-center justify-between gap-1">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <MapPin size={12} className="text-rose-400 shrink-0" />
+                            <span className="text-[11px] text-slate-500 truncate">{order.customer_address}</span>
                           </div>
-                          <span className="truncate font-medium">{order.customer_address}</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.customer_address)}`, '_blank');
+                            }}
+                            className="flex items-center gap-1 px-1.5 py-0.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-md text-[10px] font-bold border border-rose-200 shrink-0 transition-colors"
+                          >
+                            <Navigation size={9} /> GPS
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.customer_address)}`, '_blank');
-                          }}
-                          className="shrink-0 flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-rose-50 to-red-50 hover:from-rose-100 hover:to-red-100 text-rose-700 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold border border-rose-200 transition-all active:scale-95 shadow-sm hover:shadow-md"
-                          title="Abrir en Google Maps"
-                        >
-                          <Navigation size={10} sm:size={12} />
-                          <span className="hidden sm:inline">GPS</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* ITEMS PREVIEW */}
-                  <div className="bg-gradient-to-br from-slate-50 to-gray-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-slate-200 mb-3 sm:mb-5 space-y-1.5 sm:space-y-2 shadow-sm">
-                    <div className="flex justify-between items-center text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 sm:mb-2">
-                      <span>Items ({order.items?.length || 0})</span>
-                      <span>Cant. × Subtotal</span>
+                      )}
                     </div>
-                    {order.items?.slice(0, 3).map((it, idx) => (
-                      <div key={idx} className="flex justify-between items-center text-xs sm:text-sm text-slate-700">
-                        <span className="truncate font-semibold max-w-[120px] sm:max-w-[180px]">{it.product_name}</span>
-                        <span className="font-bold text-slate-900">{it.quantity}× {formatCurrency(it.unit_price)}</span>
+
+                    {/* ITEMS */}
+                    <div className="bg-slate-50 rounded-lg px-2.5 py-2 border border-slate-100 space-y-1">
+                      <div className="flex justify-between text-[9px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-1 mb-1">
+                        <span>{order.items?.length || 0} ítems</span>
+                        <span>Cant × Precio</span>
                       </div>
-                    ))}
-                    {(order.items?.length || 0) > 3 && (
-                      <p className="text-[10px] sm:text-xs font-bold text-indigo-600 pt-1 sm:pt-2">
-                        + {(order.items?.length || 0) - 3} productos más...
-                      </p>
-                    )}
-                  </div>
-                </div>
+                      {order.items?.slice(0, 3).map((it, idx) => (
+                        <div key={idx} className="flex justify-between items-center">
+                          <span className="text-[11px] font-medium text-slate-600 truncate max-w-[55%]">{it.product_name}</span>
+                          <span className="text-[11px] font-bold text-slate-800">{it.quantity}× {formatCurrency(it.unit_price)}</span>
+                        </div>
+                      ))}
+                      {(order.items?.length || 0) > 3 && (
+                        <p className="text-[10px] text-indigo-500 font-bold pt-0.5">+{(order.items?.length || 0) - 3} más...</p>
+                      )}
+                    </div>
 
-                {/* CARD FOOTER & ACTIONS */}
-                <div>
-                  <div className="flex justify-between items-center pt-2 sm:pt-3 mb-3 sm:mb-4 border-t border-slate-100">
-                    <span className="text-xs sm:text-sm font-bold text-slate-400">Total</span>
-                    <span className="text-lg sm:text-2xl font-black text-emerald-600">{formatCurrency(order.total)}</span>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5 sm:gap-2">
-                    <div className="flex items-center gap-1.5 sm:gap-2">
+                    {/* FOOTER */}
+                    <div className="flex items-center justify-between border-t border-slate-100 pt-2 mt-auto">
+                      <span className="text-base font-black text-emerald-600">{formatCurrency(order.total)}</span>
                       <button
                         onClick={() => { setSelectedOrder(order); setShowDetailModal(true); }}
-                        className="flex-1 py-2 sm:py-3 px-3 sm:px-4 bg-gradient-to-r from-slate-100 to-slate-200 hover:from-slate-200 hover:to-slate-300 text-slate-700 font-bold text-xs sm:text-sm rounded-xl sm:rounded-2xl transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm hover:shadow-md active:scale-95"
+                        className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors border border-slate-200"
                       >
-                        <FileText size={14} sm:size={16} /> <span className="hidden sm:inline">Ver Detalle</span>
+                        <FileText size={11} /> Detalle
                       </button>
-
-
                     </div>
 
+                    {/* ACTIONS */}
                     {actions.length > 0 && (
-                      <div className="flex gap-1.5 sm:gap-2">
+                      <div className="flex gap-1.5">
                         {actions.map((act, idx) => (
                           <button
                             key={act.status || `assign-${idx}`}
                             onClick={() => handleStatusChange(order, act)}
-                            className={`flex-1 py-2 sm:py-3 px-3 sm:px-4 text-white font-extrabold text-xs sm:text-sm rounded-xl sm:rounded-2xl transition-all ${act.color} flex items-center justify-center gap-1.5 sm:gap-2 shadow-lg hover:shadow-xl active:scale-95`}
+                            className={`flex-1 py-1.5 px-2 text-white font-bold text-[11px] rounded-lg transition-all ${act.color} flex items-center justify-center shadow-sm hover:shadow active:scale-95`}
                           >
-                            <span>{act.label}</span>
+                            {act.label}
                           </button>
                         ))}
                       </div>
                     )}
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
           </div>
         </div>
       )}

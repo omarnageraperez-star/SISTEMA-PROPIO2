@@ -162,8 +162,9 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
             if request.data.get('delivery_photo'):
                 order.delivery_photo = request.data.get('delivery_photo')
             
-            # Si se confirma el pedido, convertir a venta (el SaleSerializer maneja el stock)
-            if new_status == 'CONFIRMED' and old_status == 'PENDING':
+            # Si el pedido entra a un estado activo (Confirmado, En preparación, Listo, o Entregado), convertir a venta
+            active_statuses = ['CONFIRMED', 'PREPARING', 'READY', 'DELIVERED']
+            if new_status in active_statuses and old_status not in active_statuses:
                 # Autoconvertir a Venta POS si no tiene
                 if not order.related_sale:
                     try:

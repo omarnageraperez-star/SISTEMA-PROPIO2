@@ -681,27 +681,42 @@ export default function CatalogOrders({ auth, onLogout }) {
                   key={order.id}
                   onClick={() => { setSelectedOrder(order); setShowDetailModal(true); }}
                   style={{
-                    background: 'rgba(30, 41, 59, 0.4)',
-                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                    background: 'linear-gradient(145deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%)',
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
                     borderRadius: 16,
-                    padding: 16,
+                    padding: 18,
                     cursor: 'pointer',
-                    transition: 'all 0.2s'
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.25)',
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column'
                   }}
                 >
+                  {/* Status Color Accent Bar */}
+                  <div style={{
+                    position: 'absolute',
+                    top: 0, left: 0, bottom: 0,
+                    width: '4px',
+                    background: statusConfig.color,
+                    boxShadow: `0 0 10px ${statusConfig.color}80`
+                  }} />
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                        <span style={{ fontSize: 14, fontWeight: 800, color: '#f1f5f9' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                        <span style={{ fontSize: 16, fontWeight: 900, color: '#ffffff', letterSpacing: '0.5px', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
                           #{order.order_number}
                         </span>
                         <span style={{ fontSize: 12, color: '#64748b' }}>
                           {orderTypeConfig.label}
                         </span>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <User size={12} color="#64748b" />
-                        <span style={{ fontSize: 12, color: '#94a3b8' }}>{order.customer_name}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                        <User size={14} color="#94a3b8" />
+                        <span style={{ fontSize: 13, color: '#cbd5e1', fontWeight: 500 }}>{order.customer_name}</span>
                       </div>
                       {order.table_name && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
@@ -711,16 +726,18 @@ export default function CatalogOrders({ auth, onLogout }) {
                       )}
                     </div>
                     <div style={{
-                      padding: '6px 12px',
+                      padding: '6px 14px',
                       borderRadius: 20,
-                      background: `${statusConfig.color}20`,
+                      background: `linear-gradient(135deg, ${statusConfig.color}20 0%, ${statusConfig.color}10 100%)`,
                       border: `1px solid ${statusConfig.color}40`,
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 4
+                      gap: 6,
+                      boxShadow: `0 2px 10px ${statusConfig.color}15`,
+                      backdropFilter: 'blur(4px)'
                     }}>
-                      <StatusIcon size={12} color={statusConfig.color} />
-                      <span style={{ fontSize: 11, fontWeight: 700, color: statusConfig.color }}>
+                      <StatusIcon size={14} color={statusConfig.color} />
+                      <span style={{ fontSize: 12, fontWeight: 800, color: statusConfig.color, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                         {statusConfig.label}
                       </span>
                     </div>
@@ -772,16 +789,22 @@ export default function CatalogOrders({ auth, onLogout }) {
                   )}
 
                   {/* Order Footer & Quick Actions */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div>
-                      <span style={{ fontSize: 11, color: '#64748b' }}>
-                        {formatDateTime(order.created_at)}
-                      </span>
-                      <span style={{ fontSize: 11, color: '#64748b', marginLeft: 8 }}>
-                        {order.items?.length || 0} items
-                      </span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, marginTop: 4, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#94a3b8' }}>
+                        <Clock size={12} />
+                        <span style={{ fontSize: 11, fontWeight: 600 }}>
+                          {formatDateTime(order.created_at)}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#94a3b8', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: 12 }}>
+                        <Package size={12} />
+                        <span style={{ fontSize: 11, fontWeight: 700 }}>
+                          {order.items?.length || 0} items
+                        </span>
+                      </div>
                     </div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: '#f97316' }}>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: '#f97316', textShadow: '0 2px 4px rgba(249, 115, 22, 0.2)' }}>
                       {fmt(order.total)}
                     </div>
                   </div>
