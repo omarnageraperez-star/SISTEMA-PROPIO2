@@ -156,8 +156,11 @@ export default function CatalogOrders({ auth, onLogout }) {
   }, []);
 
   const startPolling = () => {
-    // Verificar nuevos pedidos cada 5 segundos para actualización más rápida
-    pollingRef.current = setInterval(checkNewOrders, 5000);
+    // Sincronización silenciosa en segundo plano cada 2 segundos
+    pollingRef.current = setInterval(() => {
+      checkNewOrders();
+      fetchOrders(true);
+    }, 2000);
   };
 
   const checkNewOrders = async () => {
@@ -186,7 +189,7 @@ export default function CatalogOrders({ auth, onLogout }) {
             // Marcar este pedido como notificado
             setNotifiedOrderIds(prev => new Set(prev).add(data.order.id));
             
-            fetchOrders();
+            fetchOrders(true);
             Toast.fire({
               icon: 'info',
               title: `Nuevo pedido #${data.order.order_number}`,
@@ -216,8 +219,8 @@ export default function CatalogOrders({ auth, onLogout }) {
     setFilteredOrders(result);
   }, [statusFilter, orders, isDeliveryDriver]);
 
-  const fetchOrders = async () => {
-    setLoading(true);
+  const fetchOrders = async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     try {
       // Si es domiciliario, usar endpoint my-orders para ver solo sus pedidos asignados
       const endpoint = isDeliveryDriver ? 'catalog-orders/orders/my-orders/' : 'catalog-orders/orders/';
@@ -244,9 +247,9 @@ export default function CatalogOrders({ auth, onLogout }) {
       }
     } catch (e) {
       console.error('Error fetching orders:', e);
-      DarkSwal.fire('Error', 'No se pudieron cargar los pedidos', 'error');
+      if (!isBackground) DarkSwal.fire('Error', 'No se pudieron cargar los pedidos', 'error');
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
   };
 

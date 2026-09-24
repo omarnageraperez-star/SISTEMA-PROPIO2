@@ -94,7 +94,10 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
       Notification.requestPermission();
     }
     fetchOrders();
-    const interval = setInterval(checkNewOrders, 3000); // Polling every 3s
+    const interval = setInterval(() => {
+      checkNewOrders();
+      fetchOrders(true);
+    }, 2000); // Polling silent every 2s
     return () => clearInterval(interval);
   }, []);
 
@@ -194,7 +197,7 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
             }
           });
           
-          fetchOrders();
+          fetchOrders(true);
         }
       }
     } catch (e) {
@@ -218,9 +221,11 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
     setFilteredOrders(filtered);
   }, [statusFilter, orders, searchTerm]);
 
-  const fetchOrders = async () => {
-    setIsRefreshing(true);
-    setLoading(true);
+  const fetchOrders = async (isBackground = false) => {
+    if (!isBackground) {
+      setIsRefreshing(true);
+      setLoading(true);
+    }
     try {
       const cleanBaseUrl = config.apiUrl.endsWith('/') ? config.apiUrl : config.apiUrl + '/';
       const res = await apiRequest(`${cleanBaseUrl}catalog-orders/orders/`, {}, token);
@@ -236,8 +241,10 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
     } catch (e) {
       console.error('Error fetching orders:', e);
     } finally {
-      setLoading(false);
-      setIsRefreshing(false);
+      if (!isBackground) {
+        setLoading(false);
+        setIsRefreshing(false);
+      }
     }
   };
 
