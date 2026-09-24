@@ -483,7 +483,7 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
         
         # Verificar que el usuario es el domiciliario asignado O un admin/staff del sistema
         is_driver = order.assigned_driver == request.user
-        is_staff = hasattr(request.user, 'role') and request.user.role in ['ADMIN', 'CASHIER', 'MANAGER']
+        is_staff = request.user.is_staff or request.user.is_superuser or (hasattr(request.user, 'role') and request.user.role in ['SUPERADMIN', 'ADMIN', 'CASHIER'])
         if not is_driver and not is_staff:
             return Response({'error': 'No tienes permiso para actualizar el valor del domicilio'}, status=403)
         
