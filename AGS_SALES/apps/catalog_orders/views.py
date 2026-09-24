@@ -568,24 +568,40 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
             driver_orders_cache_key = f'driver_orders_{request.user.id}'
             last_driver_order_id = cache.get(driver_orders_cache_key)
             
-            # Obtener el último pedido asignado a este domiciliario
+            # Si no está en caché (p.ej. tras reinicio del servidor), recuperar desde DB
+            if last_driver_order_id is None:
+                db_key = f'last_driver_order_{request.user.id}'
+                db_setting = SystemSetting.objects.filter(key=db_key).first()
+                last_driver_order_id = int(db_setting.value) if db_setting else 0
+                cache.set(driver_orders_cache_key, last_driver_order_id, timeout=300)
+            
+            # Solo buscar pedidos en estado READY (listos para entrega, aún no despachados)
             recent_driver_order = self.queryset.filter(
                 assigned_driver=request.user,
-                status__in=['READY', 'DELIVERED']
+                status='READY'
             ).select_related('table', 'processed_by', 'assigned_driver').prefetch_related('items', 'items__product').order_by('-id').first()
             
-            if recent_driver_order:
-                if last_driver_order_id is None or recent_driver_order.id > last_driver_order_id:
-                    # Actualizar cache
-                    cache.set(driver_orders_cache_key, recent_driver_order.id, timeout=300)
-                    
-                    serializer = self.get_serializer(recent_driver_order)
-                    return Response({
-                        'has_new': True,
-                        'order': serializer.data,
-                        'pending_count': pending_count,
-                        'is_driver_order': True
-                    })
+            if recent_driver_order and recent_driver_order.id > last_driver_order_id:
+                # Guardar en caché Y en DB para sobrevivir reinicios del servidor
+                cache.set(driver_orders_cache_key, recent_driver_order.id, timeout=300)
+                SystemSetting.objects.update_or_create(
+                    key=f'last_driver_order_{request.user.id}',
+                    defaults={'value': str(recent_driver_order.id)}
+                )
+                
+                serializer = self.get_serializer(recent_driver_order)
+                return Response({
+                    'has_new': True,
+                    'order': serializer.data,
+                    'pending_count': pending_count,
+                    'is_driver_order': True
+                })
+            
+            # No hay nuevos pedidos para el domiciliario
+            return Response({
+                'has_new': False,
+                'pending_count': pending_count
+            })
         
         # Para usuarios no domiciliarios, verificar pedidos pendientes
         recent_order = self.queryset.filter(status='PENDING').select_related('table', 'processed_by').prefetch_related('items', 'items__product').order_by('-id').first()
@@ -599,7 +615,7 @@ class CatalogOrderViewSet(viewsets.ModelViewSet):
             
             last_notified_id = int(last_notified_setting.value)
             
-            # Si el pedido actual es más nuevo que el último notificado
+            # Solo notificar si el pedido es más nuevo que el último notificado
             if recent_order.id > last_notified_id:
                 # Actualizar el setting para no notificar de nuevo
                 last_notified_setting.value = str(recent_order.id)
