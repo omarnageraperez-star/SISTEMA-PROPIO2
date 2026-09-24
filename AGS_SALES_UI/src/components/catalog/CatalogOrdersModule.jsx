@@ -1010,18 +1010,19 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
                                         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delivery_fee: parsedFee }) },
                                         token
                                       );
-                                    if (res.ok) {
-                                      fetchOrders();
-                                      setShowDetailModal(false);
-                                    } else {
-                                      const err = await res.json();
-                                      Swal.fire('Error', err.error || 'No se pudo actualizar', 'error');
+                                      if (res.ok) {
+                                        fetchOrders();
+                                        setShowDetailModal(false);
+                                      } else {
+                                        const err = await res.json();
+                                        Swal.fire('Error', err.error || 'No se pudo actualizar', 'error');
+                                      }
+                                    } catch (e) {
+                                      Swal.fire('Error', 'Error de conexión', 'error');
                                     }
-                                  } catch (e) {
-                                    Swal.fire('Error', 'Error de conexión', 'error');
+                                  } else {
+                                    Swal.fire('Error', 'Por favor ingresa solo números', 'error');
                                   }
-                                } else if (fee !== undefined) {
-                                  Swal.fire('Error', 'Por favor ingresa solo números', 'error');
                                 }
                               }}
                               className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg px-2 py-1 transition-colors"
