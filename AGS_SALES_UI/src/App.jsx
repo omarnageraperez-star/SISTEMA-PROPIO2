@@ -596,7 +596,7 @@ function App() {
 
   const fetchTaxes = async () => {
     try {
-      const response = await fetch(`${config.apiUrl}/api/configuracion/facturacion/taxes/`, {
+      const response = await fetch(`${config.apiUrl}configuracion/facturacion/taxes/`, {
         headers: {
           'Authorization': `Token ${token}`
         }
@@ -612,7 +612,7 @@ function App() {
 
   const toggleTaxStatus = async (id, currentStatus) => {
     try {
-      const response = await fetch(`${config.apiUrl}/api/configuracion/facturacion/taxes/${id}/`, {
+      const response = await fetch(`${config.apiUrl}configuracion/facturacion/taxes/${id}/`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Token ${token}`,

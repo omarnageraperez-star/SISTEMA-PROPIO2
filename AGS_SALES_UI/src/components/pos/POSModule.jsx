@@ -139,7 +139,7 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
 
   const fetchActiveTaxes = async () => {
     try {
-      const response = await fetch(`${config.apiUrl}/api/configuracion/facturacion/taxes/`, {
+      const response = await fetch(`${config.apiUrl}configuracion/facturacion/taxes/`, {
         headers: { 'Authorization': `Token ${token}` }
       });
       if (response.ok) {
