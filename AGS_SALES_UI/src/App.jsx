@@ -373,6 +373,7 @@ function App() {
   // Custom 14 System Settings State (Synced with Django + Local config)
   const [activeSettingTab, setActiveSettingTab] = useState(null);
   const activeSettingTabRef = useRef(null);
+  const [taxesList, setTaxesList] = useState([]);
   useEffect(() => {
     activeSettingTabRef.current = activeSettingTab;
   }, [activeSettingTab]);
@@ -588,7 +589,44 @@ function App() {
       setShowNewRegisterForm(false);
       setNewRegisterName('');
     }
+    if (activeSettingTab === 'taxes' && token) {
+      fetchTaxes();
+    }
   }, [activeSettingTab]);
+
+  const fetchTaxes = async () => {
+    try {
+      const response = await fetch(`${config.apiUrl}/api/configuracion/facturacion/taxes/`, {
+        headers: {
+          'Authorization': `Token ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setTaxesList(data);
+      }
+    } catch (e) {
+      console.error("Error fetching taxes", e);
+    }
+  };
+
+  const toggleTaxStatus = async (id, currentStatus) => {
+    try {
+      const response = await fetch(`${config.apiUrl}/api/configuracion/facturacion/taxes/${id}/`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ is_active: !currentStatus })
+      });
+      if (response.ok) {
+        fetchTaxes();
+      }
+    } catch (e) {
+      console.error("Error toggling tax", e);
+    }
+  };
 
   useEffect(() => {
     const handleGlobalKeyDown = (e) => {
@@ -5635,19 +5673,40 @@ function App() {
               )}
 
               {activeSettingTab === 'taxes' && (
-                <div className="glass-panel p-8 max-w-2xl mx-auto rounded-2xl shadow-sm text-left">
-                  <h3 className="text-lg font-bold text-gray-800 flex items-center mb-6"><Percent className="mr-2 text-cyan-500"/> Impuestos y Cargos</h3>
-                  <form onSubmit={(e) => { e.preventDefault(); handleSaveSystemSettings('Impuestos'); }} className="flex flex-col gap-4">
-                    <div>
-                      <label className="text-sm font-semibold text-gray-700 ml-1">Nombre del Impuesto Predeterminado</label>
-                      <input type="text" className="glass-input mt-1" value={systemSettings.tax_name} onChange={e => setSystemSettings({...systemSettings, tax_name: e.target.value})} required />
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold text-gray-700 ml-1">Tasa de Impuesto (%)</label>
-                      <input type="number" step="0.01" className="glass-input mt-1" value={systemSettings.tax_rate} onChange={e => setSystemSettings({...systemSettings, tax_rate: e.target.value})} required />
-                    </div>
-                    <button type="submit" className="btn-premium mt-2"><Save size={18}/> Guardar y Sincronizar</button>
-                  </form>
+                <div className="glass-panel p-8 max-w-4xl mx-auto rounded-2xl shadow-sm text-left">
+                  <h3 className="text-lg font-bold text-gray-800 flex items-center mb-6"><Percent className="mr-2 text-cyan-500"/> Impuestos y Retenciones (Colombia)</h3>
+                  <div className="text-sm text-gray-500 mb-4">Activa o desactiva los impuestos que aplican para tu negocio. Estos aparecerán en los tickets de venta.</div>
+                  
+                  <div className="space-y-4">
+                    {taxesList && taxesList.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {taxesList.map(tax => (
+                          <div key={tax.id} className={`p-4 border rounded-xl flex flex-col gap-2 transition-colors ${tax.is_active ? 'bg-cyan-50/50 border-cyan-200' : 'bg-gray-50 border-gray-200'}`}>
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h4 className={`font-bold ${tax.is_active ? 'text-cyan-800' : 'text-gray-500'}`}>{tax.name}</h4>
+                                <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full border shadow-sm">
+                                  {tax.category === 'TAX' ? 'Impuesto Facturado' : 'Retención B2B'}
+                                </span>
+                              </div>
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" className="sr-only peer" checked={tax.is_active} onChange={() => toggleTaxStatus(tax.id, tax.is_active)} />
+                                <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+                              </label>
+                            </div>
+                            <div className="text-sm text-gray-600 mt-2">
+                              Tarifa: <span className="font-semibold text-gray-800">{tax.tax_type === 'PERCENTAGE' ? `${tax.rate}%` : `$${tax.rate}`}</span>
+                            </div>
+                            {tax.description && <div className="text-xs text-gray-400">{tax.description}</div>}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center p-8 text-gray-500">
+                        Cargando impuestos...
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 

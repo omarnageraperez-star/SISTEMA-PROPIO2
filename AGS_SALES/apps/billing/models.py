@@ -74,3 +74,34 @@ class DIANCertificate(models.Model):
 
     def __str__(self):
         return f"Certificado: {self.name} (Expira: {self.expiration_date})"
+
+class Tax(models.Model):
+    TAX_CATEGORY_CHOICES = [
+        ('TAX', 'Impuesto (Facturado al Cliente)'),
+        ('WITHHOLDING', 'Retención (Aplicada por el Cliente)'),
+    ]
+
+    TAX_TYPE_CHOICES = [
+        ('PERCENTAGE', 'Porcentaje (%)'),
+        ('FIXED_AMOUNT', 'Monto Fijo ($)'),
+    ]
+
+    name = models.CharField("Nombre del Impuesto", max_length=100)
+    category = models.CharField("Categoría", max_length=20, choices=TAX_CATEGORY_CHOICES, default='TAX')
+    tax_type = models.CharField("Tipo de Cobro", max_length=20, choices=TAX_TYPE_CHOICES, default='PERCENTAGE')
+    rate = models.DecimalField("Tarifa / Monto", max_digits=12, decimal_places=2)
+    description = models.TextField("Descripción", blank=True, null=True)
+    is_active = models.BooleanField("Activo", default=True)
+    is_default = models.BooleanField("Aplicar por Defecto", default=False)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Impuesto / Retención"
+        verbose_name_plural = "Impuestos y Retenciones"
+
+    def __str__(self):
+        if self.tax_type == 'PERCENTAGE':
+            return f"{self.name} ({self.rate}%)"
+        return f"{self.name} (${self.rate})"

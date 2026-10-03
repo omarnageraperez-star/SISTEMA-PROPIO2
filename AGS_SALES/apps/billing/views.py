@@ -24,3 +24,12 @@ class BillingConfigurationView(APIView):
             "facturacion_electronica_habilitada": config.allow_electronic,
             "pos_habilitado": config.allow_pos
         })
+
+from rest_framework.viewsets import ModelViewSet
+from .models import Tax
+from .serializers import TaxSerializer
+
+class TaxViewSet(ModelViewSet):
+    queryset = Tax.objects.all().order_by('category', 'id')
+    serializer_class = TaxSerializer
+    permission_classes = [IsAuthenticated]

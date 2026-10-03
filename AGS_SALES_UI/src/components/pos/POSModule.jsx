@@ -64,6 +64,9 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
   const [globalDiscountPercent, setGlobalDiscountPercent] = useState(0);
   const [diceResult, setDiceResult] = useState(null);
 
+  // Dynamic Taxes State
+  const [activeTaxes, setActiveTaxes] = useState([]);
+
   // Payment Selection States
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
@@ -72,21 +75,36 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
   const [changeDue, setChangeDue] = useState(0);
   const [interestPercent, setInterestPercent] = useState('');
 
-  // Calculations (moved to prevent Temporal Dead Zone ReferenceError)
+  // Calculations
   const calcTotals = () => {
     let subtotal = 0;
-    let tax = 0;
     
     cart.forEach(item => {
       const itemSub = (item.quantity * item.unit_price) - item.discount;
-      const taxRate = parseFloat(item.product.tax_percent || 0);
-      const itemTax = (itemSub * taxRate) / 100;
-      
       subtotal += itemSub;
-      tax += itemTax;
     });
     
-    let total = subtotal + tax;
+    let tax = 0;
+    let withholdings = 0;
+    let appliedTaxes = [];
+
+    activeTaxes.forEach(t => {
+      let amount = 0;
+      if (t.tax_type === 'PERCENTAGE') {
+         amount = subtotal * (parseFloat(t.rate) / 100);
+      } else {
+         amount = parseFloat(t.rate);
+      }
+
+      if (t.category === 'TAX') {
+        tax += amount;
+      } else {
+        withholdings += amount;
+      }
+      appliedTaxes.push({ name: t.name, amount, category: t.category });
+    });
+    
+    let total = subtotal + tax - withholdings;
     let globalDiscount = 0;
     
     if (globalDiscountPercent > 0) {
@@ -94,7 +112,7 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
       total -= globalDiscount;
     }
     
-    return { subtotal, tax, globalDiscount, total };
+    return { subtotal, tax, withholdings, globalDiscount, total, appliedTaxes };
   };
 
   const totals = calcTotals();
@@ -119,6 +137,20 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
     };
   }, []);
 
+  const fetchActiveTaxes = async () => {
+    try {
+      const response = await fetch(`${config.apiUrl}/api/configuracion/facturacion/taxes/`, {
+        headers: { 'Authorization': `Token ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setActiveTaxes(data.filter(t => t.is_active));
+      }
+    } catch (e) {
+      console.error("Error fetching taxes", e);
+    }
+  };
+
   useEffect(() => {
     if (appState === 'DASHBOARD') {
       fetchProducts();
@@ -126,6 +158,7 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
       fetchCustomers();
       fetchWarehouse();
       fetchPaymentMethods();
+      fetchActiveTaxes();
     }
   }, [appState]);
 
@@ -709,6 +742,9 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
 
       if (res.ok) {
         const createdSale = await res.json();
+        // Capture active dynamic taxes for the ticket
+        createdSale.applied_taxes = totals.appliedTaxes;
+        
         window.lastLocalSaleId = createdSale.id; // Mark as local to avoid auto-print duplicate
         Toast.fire({ icon: 'success', title: 'Venta procesada exitosamente' });
         
