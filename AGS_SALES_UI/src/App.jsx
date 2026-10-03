@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
-import { Settings, Server, Database, CheckCircle, ChevronRight, Activity, User, Lock, Mail, Phone, LogIn, DollarSign, Printer, Save, Image as ImageIcon, Package, Plus, X, QrCode, Users, Building, Sliders, Hash, Coins, Percent, Cpu, Globe, ShoppingBag, ShoppingCart, CreditCard, FileText, ArrowLeft, ArrowDownRight, Shield, Edit3, Trash2, BarChart3, Monitor, Menu, ChevronLeft, LogOut, ChevronDown, Check, Sun, Moon, Maximize, Minimize, Bell, Search, Tag, Briefcase, Download, TrendingUp } from 'lucide-react';
+import { Settings, Server, Database, CheckCircle, ChevronRight, Activity, User, Lock, Mail, Phone, LogIn, DollarSign, Printer, Save, Image as ImageIcon, Package, Plus, X, QrCode, Users, Building, Sliders, Hash, Coins, Percent, Cpu, Globe, ShoppingBag, ShoppingCart, CreditCard, FileText, ArrowLeft, ArrowDownRight, Shield, Edit3, Trash2, BarChart3, Monitor, Menu, ChevronLeft, LogOut, ChevronDown, Check, Sun, Moon, Maximize, Minimize, Bell, Search, Tag, Briefcase, Download, TrendingUp, RotateCcw, RefreshCw } from 'lucide-react';
 import { Toaster, sileo } from 'sileo';
 import Barcode from 'react-barcode';
 import QRCode from 'react-qr-code';
@@ -594,37 +594,51 @@ function App() {
     }
   }, [activeSettingTab]);
 
+  const [taxesLoading, setTaxesLoading] = useState(false);
+
   const fetchTaxes = async () => {
+    setTaxesLoading(true);
     try {
       const response = await fetch(`${config.apiUrl}configuracion/facturacion/taxes/`, {
         headers: {
-          'Authorization': `Token ${token}`
+          'Authorization': `Bearer ${token}`
         }
       });
       if (response.ok) {
         const data = await response.json();
-        setTaxesList(data);
+        const list = Array.isArray(data) ? data : (data?.results || []);
+        setTaxesList(list);
+      } else {
+        console.error("Error fetching taxes, status:", response.status);
       }
     } catch (e) {
       console.error("Error fetching taxes", e);
+    } finally {
+      setTaxesLoading(false);
     }
   };
 
   const toggleTaxStatus = async (id, currentStatus) => {
+    // Optimistic UI update for instant feedback
+    setTaxesList(prev => prev.map(t => t.id === id ? { ...t, is_active: !currentStatus } : t));
     try {
       const response = await fetch(`${config.apiUrl}configuracion/facturacion/taxes/${id}/`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `Token ${token}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ is_active: !currentStatus })
       });
       if (response.ok) {
+        const updated = await response.json();
+        setTaxesList(prev => prev.map(t => t.id === id ? updated : t));
+      } else {
         fetchTaxes();
       }
     } catch (e) {
       console.error("Error toggling tax", e);
+      fetchTaxes();
     }
   };
 
@@ -5678,14 +5692,19 @@ function App() {
                   <div className="text-sm text-gray-500 mb-4">Activa o desactiva los impuestos que aplican para tu negocio. Estos aparecerán en los tickets de venta.</div>
                   
                   <div className="space-y-4">
-                    {taxesList && taxesList.length > 0 ? (
+                    {taxesLoading ? (
+                      <div className="text-center p-12 text-gray-500 flex flex-col items-center justify-center gap-3">
+                        <div className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span className="font-medium text-gray-600">Cargando impuestos desde el servidor...</span>
+                      </div>
+                    ) : taxesList && taxesList.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {taxesList.map(tax => (
-                          <div key={tax.id} className={`p-4 border rounded-xl flex flex-col gap-2 transition-colors ${tax.is_active ? 'bg-cyan-50/50 border-cyan-200' : 'bg-gray-50 border-gray-200'}`}>
+                          <div key={tax.id} className={`p-4 border rounded-xl flex flex-col gap-2 transition-colors ${tax.is_active ? 'bg-cyan-50/50 border-cyan-200 shadow-sm' : 'bg-gray-50 border-gray-200 opacity-75'}`}>
                             <div className="flex justify-between items-start">
                               <div>
                                 <h4 className={`font-bold ${tax.is_active ? 'text-cyan-800' : 'text-gray-500'}`}>{tax.name}</h4>
-                                <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full border shadow-sm">
+                                <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full border shadow-sm mt-1 inline-block">
                                   {tax.category === 'TAX' ? 'Impuesto Facturado' : 'Retención B2B'}
                                 </span>
                               </div>
@@ -5702,8 +5721,11 @@ function App() {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center p-8 text-gray-500">
-                        Cargando impuestos...
+                      <div className="text-center p-8 bg-gray-50 border border-gray-200 rounded-xl flex flex-col items-center gap-3">
+                        <span className="text-gray-500">No se pudieron cargar los impuestos o la lista está vacía.</span>
+                        <button onClick={fetchTaxes} className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5">
+                          <RotateCcw size={14} /> Reintentar sincronización
+                        </button>
                       </div>
                     )}
                   </div>

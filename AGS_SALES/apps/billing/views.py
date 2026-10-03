@@ -33,3 +33,4 @@ class TaxViewSet(ModelViewSet):
     queryset = Tax.objects.all().order_by('category', 'id')
     serializer_class = TaxSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = None

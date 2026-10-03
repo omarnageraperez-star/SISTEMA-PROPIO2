@@ -140,11 +140,12 @@ export default function POSModule({ config, token, currentBillingMode, warehouse
   const fetchActiveTaxes = async () => {
     try {
       const response = await fetch(`${config.apiUrl}configuracion/facturacion/taxes/`, {
-        headers: { 'Authorization': `Token ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
         const data = await response.json();
-        setActiveTaxes(data.filter(t => t.is_active));
+        const list = Array.isArray(data) ? data : (data?.results || []);
+        setActiveTaxes(list.filter(t => t.is_active));
       }
     } catch (e) {
       console.error("Error fetching taxes", e);
