@@ -55,6 +55,7 @@ class CatalogOrder(models.Model):
         ('DINE_IN', 'Consumo en Sitio'),
         ('TAKEOUT', 'Para Llevar'),
         ('DELIVERY', 'Domicilio'),
+        ('PICKUP', 'Recoger'),
     ]
 
     # Identificación del pedido

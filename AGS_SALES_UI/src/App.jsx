@@ -1181,7 +1181,7 @@ function App() {
             // Play differentiated sound based on order type
             if (data.order.order_type === 'DELIVERY') {
               playOrderDelivery();
-            } else if (data.order.order_type === 'TAKEOUT') {
+            } else if (data.order.order_type === 'TAKEOUT' || data.order.order_type === 'PICKUP') {
               playOrderTakeout();
             } else {
               playOrderDineIn();
@@ -5336,6 +5336,28 @@ function App() {
                       <div>
                         <label className="text-sm font-semibold text-gray-700 ml-1">Tiempo Estimado Local/Llevar (min)</label>
                         <input type="number" className="glass-input mt-1" placeholder="Ej: 15" value={systemSettings.pickup_eta_mins || '15'} onChange={e => setSystemSettings({...systemSettings, pickup_eta_mins: e.target.value})} />
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-200 mt-4">
+                      <h4 className="text-sm font-bold text-gray-700 mb-2">Opciones de Entrega Activas (Catálogo Web)</h4>
+                      <div className="flex flex-wrap gap-4">
+                        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                          <input type="checkbox" checked={systemSettings.enable_dine_in !== 'false'} onChange={e => setSystemSettings({...systemSettings, enable_dine_in: e.target.checked ? 'true' : 'false'})} className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4" />
+                          Mesa
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                          <input type="checkbox" checked={systemSettings.enable_takeout !== 'false'} onChange={e => setSystemSettings({...systemSettings, enable_takeout: e.target.checked ? 'true' : 'false'})} className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4" />
+                          Llevar
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                          <input type="checkbox" checked={systemSettings.enable_delivery !== 'false'} onChange={e => setSystemSettings({...systemSettings, enable_delivery: e.target.checked ? 'true' : 'false'})} className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4" />
+                          Domicilio
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                          <input type="checkbox" checked={systemSettings.enable_pickup !== 'false'} onChange={e => setSystemSettings({...systemSettings, enable_pickup: e.target.checked ? 'true' : 'false'})} className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4" />
+                          Recoger
+                        </label>
                       </div>
                     </div>
 

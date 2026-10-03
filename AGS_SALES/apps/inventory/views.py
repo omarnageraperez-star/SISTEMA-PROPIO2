@@ -232,6 +232,11 @@ def catalog_view(request):
     delivery_eta_mins = settings.get('delivery_eta_mins', '40')
     pickup_eta_mins = settings.get('pickup_eta_mins', '15')
     
+    enable_dine_in = settings.get('enable_dine_in', 'true') != 'false'
+    enable_takeout = settings.get('enable_takeout', 'true') != 'false'
+    enable_delivery = settings.get('enable_delivery', 'true') != 'false'
+    enable_pickup = settings.get('enable_pickup', 'true') != 'false'
+    
     # Process table QR parameter
     tables = []
     selected_table = None
@@ -260,5 +265,9 @@ def catalog_view(request):
         'delivery_eta_mins': delivery_eta_mins,
         'pickup_eta_mins': pickup_eta_mins,
         'selected_table': selected_table,
+        'enable_dine_in': enable_dine_in,
+        'enable_takeout': enable_takeout,
+        'enable_delivery': enable_delivery,
+        'enable_pickup': enable_pickup,
     }
     return render(request, 'inventory/catalog.html', context)

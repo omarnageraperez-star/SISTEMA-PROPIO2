@@ -61,6 +61,7 @@ const ORDER_TYPE_CONFIG = {
   'DINE_IN': { label: 'Mesa', icon: '🍽️', color: 'bg-sky-50 text-sky-700 border-sky-200' },
   'TAKEOUT': { label: 'Para Llevar', icon: '🥡', color: 'bg-amber-50 text-amber-700 border-amber-200' },
   'DELIVERY': { label: 'Domicilio', icon: '🚗', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  'PICKUP': { label: 'Recoger', icon: '🛍️', color: 'bg-purple-50 text-purple-700 border-purple-200' },
 };
 
 export default function CatalogOrdersModule({ config, token, systemSettings }) {
@@ -149,7 +150,7 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
           // Play differentiated sound based on order type
           if (data.order.order_type === 'DELIVERY') {
             playOrderDelivery();
-          } else if (data.order.order_type === 'TAKEOUT') {
+          } else if (data.order.order_type === 'TAKEOUT' || data.order.order_type === 'PICKUP') {
             playOrderTakeout();
           } else {
             playOrderDineIn();
@@ -448,7 +449,7 @@ export default function CatalogOrdersModule({ config, token, systemSettings }) {
     } else if (currentStatus === 'PREPARING') {
       actions.push({ status: 'READY', label: 'Marcar Listo ✨', color: 'bg-emerald-600 hover:bg-emerald-700' });
     } else if (currentStatus === 'READY') {
-      actions.push({ status: 'DELIVERED', label: 'Entregar / Finalizar 🚀', color: 'bg-slate-700 hover:bg-slate-800' });
+      actions.push({ status: 'DELIVERED', label: order.order_type === 'PICKUP' ? 'Marcar Recogido 🛍️' : 'Entregar / Finalizar 🚀', color: 'bg-slate-700 hover:bg-slate-800' });
       
       // Agregar botón de asignar domiciliario para pedidos DELIVERY
       if (order.order_type === 'DELIVERY' && !order.assigned_driver) {
