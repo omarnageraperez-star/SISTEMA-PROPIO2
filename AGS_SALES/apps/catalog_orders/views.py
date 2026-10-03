@@ -649,7 +649,7 @@ def customer_login_view(request):
         settings = {s.key: s.value for s in SystemSetting.objects.all().only('key', 'value')}
         cache.set(settings_cache_key, settings, timeout=300)
     
-    store_name = settings.get('store_name', 'Mi Tienda')
+    store_name = settings.get('store_name', 'Mi Catálogo Digital')
     store_logo = settings.get('company_logo', '')
     
     context = {
@@ -668,7 +668,7 @@ def customer_register_view(request):
         settings = {s.key: s.value for s in SystemSetting.objects.all().only('key', 'value')}
         cache.set(settings_cache_key, settings, timeout=300)
     
-    store_name = settings.get('store_name', 'Mi Tienda')
+    store_name = settings.get('store_name', 'Mi Catálogo Digital')
     store_logo = settings.get('company_logo', '')
     
     context = {
@@ -693,7 +693,7 @@ def customer_dashboard_view(request):
         settings = {s.key: s.value for s in SystemSetting.objects.all().only('key', 'value')}
         cache.set(settings_cache_key, settings, timeout=300)
     
-    store_name = settings.get('store_name', 'Mi Tienda')
+    store_name = settings.get('store_name', 'Mi Catálogo Digital')
     store_logo = settings.get('company_logo', '')
     
     context = {

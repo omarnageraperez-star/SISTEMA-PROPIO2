@@ -223,7 +223,7 @@ def catalog_view(request):
         settings = {s.key: s.value for s in SystemSettingModel.objects.all().only('key', 'value')}
         cache.set(settings_cache_key, settings, timeout=300)  # Cache for 5 minutes
     
-    store_name = settings.get('store_name', 'Mi Tienda')
+    store_name = settings.get('store_name', 'Mi Catálogo Digital')
     store_logo = settings.get('company_logo', '')
     currency_code = settings.get('currency_code', 'COP')
     currency_symbol = settings.get('currency_symbol', '$')
