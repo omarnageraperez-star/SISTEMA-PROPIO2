@@ -19,6 +19,7 @@ AGS_SALES/.env
 AGS_SALES/.env.*
 AGS_SALES/db.sqlite3
 AGS_SALES/media/
+AGS_SALES/backup_*.json
 *.log
 
 # ──────────────────────────────────────────
