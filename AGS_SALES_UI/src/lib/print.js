@@ -189,9 +189,9 @@ export const generateTicketHTML = (sale, settings, ticketLogo, options = {}) => 
           <div style="font-size: ${config.totalsSize}px; margin-bottom: 8px; display: flex; flex-direction: column; align-items: flex-end;">
             ${config.totSub ? `<div style="display: flex; justify-content: space-between; width: 48mm;"><span>${config.totSubLabel}</span><span>${format(sale.subtotal)}</span></div>` : ''}
             ${sale.discount > 0 ? `<div style="display: flex; justify-content: space-between; width: 48mm;"><span>Descuento${sale.promo_percent > 0 ? ` (${sale.promo_percent}%)` : ''}</span><span>-${format(sale.discount)}</span></div>` : ''}
-            ${sale.applied_taxes && sale.applied_taxes.length > 0 ? sale.applied_taxes.map(t => 
+            ${config.totTax ? (sale.applied_taxes && sale.applied_taxes.length > 0 ? sale.applied_taxes.map(t => 
               `<div style="display: flex; justify-content: space-between; width: 48mm;"><span>${t.name}</span><span>${t.category === 'WITHHOLDING' ? '-' : ''}${format(t.amount)}</span></div>`
-            ).join('') : config.totTax ? `<div style="display: flex; justify-content: space-between; width: 48mm;"><span>${config.totTaxLabel}</span><span>${format(sale.tax)}</span></div>` : ''}
+            ).join('') : `<div style="display: flex; justify-content: space-between; width: 48mm;"><span>${config.totTaxLabel}</span><span>${format(sale.tax)}</span></div>`) : ''}
             ${config.totTotal ? `<div class="bold" style="display: flex; justify-content: space-between; width: 48mm;"><span>${config.totTotalLabel}</span><span>${format(sale.total)}</span></div>` : ''}
             ${config.totCurrency ? `<div style="display: flex; justify-content: space-between; width: 48mm;"><span>${config.totCurrencyLabel}</span><span>${settings.currency_code || 'USD'}</span></div>` : ''}
             ${config.totExchange ? `<div style="display: flex; justify-content: space-between; width: 48mm;"><span>${config.totExchangeLabel}</span><span>1.0000</span></div>` : ''}
@@ -241,6 +241,15 @@ const printSunmiTicket = async (sale, settings) => {
   const symbol = settings?.currency_symbol || '$';
   const format = (val) => `${symbol}${Math.round(parseFloat(val || 0)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
   
+  let config = { totTax: true };
+  if (settings?.ticket_config_json) {
+    try {
+      config = { ...config, ...JSON.parse(settings.ticket_config_json) };
+    } catch(e) {}
+  } else if (settings?.ticket_config) {
+    config = { ...config, ...settings.ticket_config };
+  }
+
   try {
     await printer.printerInit();
     await printer.setAlignment(1);
@@ -283,12 +292,14 @@ const printSunmiTicket = async (sale, settings) => {
       await printer.printOriginalText(`Descuento: -${format(sale.discount)}\n`);
     }
     
-    if (sale.applied_taxes && sale.applied_taxes.length > 0) {
-      for (const t of sale.applied_taxes) {
-        await printer.printOriginalText(`${t.name}: ${t.category === 'WITHHOLDING' ? '-' : ''}${format(t.amount)}\n`);
+    if (config.totTax) {
+      if (sale.applied_taxes && sale.applied_taxes.length > 0) {
+        for (const t of sale.applied_taxes) {
+          await printer.printOriginalText(`${t.name}: ${t.category === 'WITHHOLDING' ? '-' : ''}${format(t.amount)}\n`);
+        }
+      } else if (sale.tax > 0) {
+        await printer.printOriginalText(`Impuestos: ${format(sale.tax)}\n`);
       }
-    } else if (sale.tax > 0) {
-      await printer.printOriginalText(`Impuestos: ${format(sale.tax)}\n`);
     }
 
     await printer.printOriginalText(`TOTAL: ${format(sale.total)}\n`);
