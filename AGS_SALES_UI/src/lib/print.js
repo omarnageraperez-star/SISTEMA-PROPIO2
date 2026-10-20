@@ -55,7 +55,7 @@ export const generateTicketHTML = (sale, settings, ticketLogo, options = {}) => 
 
   const resolveImageUrl = (url, opts) => {
     if (!url) return '';
-    if (url.startsWith('http')) return url;
+    if (url.startsWith('http') || url.startsWith('data:image')) return url;
     if (url.startsWith('/')) {
       const api = opts?.apiUrl || 'http://127.0.0.1:8000';
       const base = api.endsWith('/') ? api.slice(0, -1) : api;
@@ -467,7 +467,7 @@ export const generateCashCutHTML = (shift, totals, settings, ticketLogo, options
 
   const resolveImageUrl = (url, opts) => {
     if (!url) return '';
-    if (url.startsWith('http')) return url;
+    if (url.startsWith('http') || url.startsWith('data:image')) return url;
     if (url.startsWith('/')) {
       const api = opts?.apiUrl || 'http://127.0.0.1:8000';
       const base = api.endsWith('/') ? api.slice(0, -1) : api;

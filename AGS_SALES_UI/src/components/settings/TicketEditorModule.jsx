@@ -1,37 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Save, Printer, Image as ImageIcon, ChevronRight, Check, RotateCcw } from 'lucide-react';
 import { printTicket } from '../../lib/print';
+import { isImageUrl, fileToDataUrl, localPathToDataUrl } from '../../lib/imageUtils';
 
 const ipcRenderer = window.require ? window.require('electron').ipcRenderer : null;
-
-const uploadLocalFileToImgBB = async (localPath) => {
-  try {
-    const fs = window.require ? window.require('fs') : null;
-    if (!fs) throw new Error("Acceso al sistema de archivos no disponible");
-    
-    const fileBuffer = fs.readFileSync(localPath);
-    const base64Image = fileBuffer.toString('base64');
-    
-    const body = new FormData();
-    body.append('image', base64Image);
-    
-    const res = await fetch('https://api.imgbb.com/1/upload?key=e15b92a922e0938b38eeea0b567cea75', {
-      method: 'POST',
-      body: body
-    });
-    
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(`Error en ImgBB: ${res.statusText} - ${errorText}`);
-    }
-    
-    const json = await res.json();
-    return json.data.url;
-  } catch (error) {
-    console.error("Error al subir archivo local a ImgBB:", error);
-    throw error;
-  }
-};
 
 const TICKET_DEFAULTS = {
   fontTitle: 'HELVETICA_BOLD', fontContent: 'HELVETICA',
@@ -53,7 +25,7 @@ const TICKET_DEFAULTS = {
   footerText: '¡Muchas gracias por su compra!'
 };
 
-export default function TicketEditorModule({ config: globalConfig, systemSettings, setSystemSettings, handleSaveSettings, uploadLocalFileToImgBB }) {
+export default function TicketEditorModule({ config: globalConfig, systemSettings, setSystemSettings, handleSaveSettings }) {
   const [config, setConfig] = useState(TICKET_DEFAULTS);
 
   useEffect(() => {
@@ -67,20 +39,34 @@ export default function TicketEditorModule({ config: globalConfig, systemSetting
     }
   }, [systemSettings]);
 
+  const fileInputRef = useRef(null);
+
   const handleSelectTicketLogo = async () => {
     try {
-      if (!ipcRenderer) {
-        alert("¡Modo Desarrollo web detectado! Esta función de abrir los archivos locales solo sirve dentro de la aplicación de escritorio instalada (.exe).");
-        return;
-      }
-      const path = await ipcRenderer.invoke('select-image');
-      if (path) {
-        const url = await uploadLocalFileToImgBB(path);
-        setSystemSettings(prev => ({ ...prev, ticket_logo: url }));
+      if (ipcRenderer) {
+        const path = await ipcRenderer.invoke('select-image');
+        if (path) {
+          const url = await localPathToDataUrl(path);
+          setSystemSettings(prev => ({ ...prev, ticket_logo: url }));
+        }
+      } else {
+        fileInputRef.current?.click();
       }
     } catch (e) {
       console.error(e);
-      alert("Error al subir la imagen del ticket a ImgBB. Revisa tu conexión a internet.");
+      alert("Error al procesar la imagen del ticket: " + (e.message || e));
+    }
+  };
+
+  const handleFileInputChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const url = await fileToDataUrl(file);
+        setSystemSettings(prev => ({ ...prev, ticket_logo: url }));
+      } catch (err) {
+        alert("Error al cargar la imagen: " + (err.message || err));
+      }
     }
   };
 
@@ -141,7 +127,7 @@ export default function TicketEditorModule({ config: globalConfig, systemSetting
               <div className="flex justify-center mb-4">
                 {config.logoType === 'BUSINESS' ? (
                   <div className="w-24 h-24 bg-slate-100 flex items-center justify-center border border-slate-300 overflow-hidden">
-                    {(systemSettings?.app_logo?.startsWith('http') || globalConfig?.app_logo?.startsWith('http')) ? (
+                    {isImageUrl(systemSettings?.app_logo || globalConfig?.app_logo) ? (
                       <img src={systemSettings?.app_logo || globalConfig?.app_logo} alt="Logo" className="max-w-full max-h-full object-contain" />
                     ) : (
                       <ImageIcon className="text-slate-400" size={32} />
@@ -149,7 +135,7 @@ export default function TicketEditorModule({ config: globalConfig, systemSetting
                   </div>
                 ) : (
                   <div className="w-24 h-24 bg-slate-100 flex items-center justify-center border border-slate-300 overflow-hidden">
-                    {(systemSettings?.ticket_logo?.startsWith('http') || globalConfig?.ticket_logo?.startsWith('http')) ? (
+                    {isImageUrl(systemSettings?.ticket_logo || globalConfig?.ticket_logo) ? (
                       <img src={systemSettings?.ticket_logo || globalConfig?.ticket_logo} alt="Logo" className="max-w-full max-h-full object-contain" />
                     ) : (
                       <div className="text-xs text-slate-400">Custom Image</div>
@@ -393,6 +379,13 @@ export default function TicketEditorModule({ config: globalConfig, systemSetting
                     <ImageIcon size={10}/> Ruta de imagen local
                   </label>
                   <div className="flex items-center gap-2">
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      onChange={handleFileInputChange} 
+                      accept="image/png,image/jpeg,image/webp,image/jpg" 
+                      className="hidden" 
+                    />
                     <input type="text" readOnly placeholder="No se ha seleccionado ninguna imagen..." className="glass-input flex-1 !py-1.5 !px-2 text-xs" value={systemSettings?.ticket_logo || ''} />
                     <button type="button" className="bg-indigo-50 border border-indigo-200 text-indigo-600 px-3 py-1.5 rounded-lg shadow-sm hover:shadow-md transition-all hover:bg-indigo-100 flex items-center gap-1 text-xs font-bold" onClick={handleSelectTicketLogo}>
                       Examinar

@@ -32,6 +32,13 @@ function createWindow() {
     console.log(`[RENDERER CONSOLE] ${message} (at ${sourceId}:${line})`);
   });
 
+  // Prevent navigation when dragging/dropping files onto the window
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (!url.startsWith('http://localhost') && !url.includes('index.html')) {
+      event.preventDefault();
+    }
+  });
+
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();

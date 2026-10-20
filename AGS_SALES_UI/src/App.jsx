@@ -23,6 +23,7 @@ import { apiRequest } from './lib/api';
 import { printCashCut, generateCashCutHTML, printTicket } from './lib/print';
 import { playOrderDineIn, playOrderTakeout, playOrderDelivery } from './lib/sound';
 import { useToast } from './context/ToastContext';
+import { isImageUrl, fileToDataUrl, localPathToDataUrl, initGlobalDragDropProtection } from './lib/imageUtils';
 
 const normalizeText = (text) => text ? text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
 
@@ -39,60 +40,15 @@ const isNewerVersion = (oldVer, newVer) => {
   return false;
 };
 
+// Local image processors (replaces external ImgBB with offline Base64 compression)
 const uploadLocalFileToImgBB = async (localPath) => {
-  try {
-    const fs = window.require ? window.require('fs') : null;
-    if (!fs) throw new Error("Acceso al sistema de archivos no disponible");
-    
-    const fileBuffer = fs.readFileSync(localPath);
-    const base64Image = fileBuffer.toString('base64');
-    
-    const body = new URLSearchParams();
-    body.append('image', base64Image);
-    
-    const res = await fetch('https://api.imgbb.com/1/upload?key=e15b92a922e0938b38eeea0b567cea75', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: body
-    });
-    
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(`Error en ImgBB: ${res.statusText} - ${errorText}`);
-    }
-    
-    const json = await res.json();
-    return json.data.url;
-  } catch (error) {
-    console.error("Error al subir archivo local a ImgBB:", error);
-    throw error;
-  }
+  return await localPathToDataUrl(localPath);
 };
 
 const uploadFileToImgBB = async (file) => {
-  try {
-    const body = new FormData();
-    body.append('image', file);
-    
-    const res = await fetch('https://api.imgbb.com/1/upload?key=e15b92a922e0938b38eeea0b567cea75', {
-      method: 'POST',
-      body: body
-    });
-    
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(`Error en ImgBB: ${res.statusText} - ${errorText}`);
-    }
-    
-    const json = await res.json();
-    return json.data.url;
-  } catch (error) {
-    console.error("Error al subir archivo a ImgBB:", error);
-    throw error;
-  }
+  return await fileToDataUrl(file);
 };
+
 
 let isAuthenticating = false;
 
@@ -188,11 +144,18 @@ function App() {
   const [userProfile, setUserProfile] = useState(null);
   const [catalogOrdersPendingCount, setCatalogOrdersPendingCount] = useState(0);
   
+  // Ref for onboarding logo file input (web fallback)
+  const onboardingLogoInputRef = useRef(null);
+
+  // Initialize global drag-drop protection to prevent white-screen on file drop
+  initGlobalDragDropProtection();
+  
   // API Config State
   const [apiUrl, setApiUrl] = useState('');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     return typeof window !== 'undefined' ? window.innerWidth < 1200 : false;
   });
+
 
   useEffect(() => {
     const handleResize = () => {
@@ -882,12 +845,31 @@ function App() {
         try {
           const url = await uploadLocalFileToImgBB(path);
           setOnboardingForm(prev => ({ ...prev, logo_path: url }));
-          Toast.fire({ icon: 'success', title: 'Logo subido a la nube correctamente' });
+          Toast.fire({ icon: 'success', title: 'Logo cargado correctamente' });
         } catch (e) {
-          premiumAlert('Error', 'No se pudo subir la imagen a ImgBB. Revisa tu conexión a internet.', 'error');
+          premiumAlert('Error', 'No se pudo procesar la imagen. Verifica que el archivo sea JPG o PNG válido.', 'error');
         } finally {
           setLoading(false);
         }
+      }
+    } else {
+      // Fallback: file input for web mode
+      onboardingLogoInputRef.current?.click();
+    }
+  };
+
+  const handleOnboardingLogoFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setLoading(true);
+      try {
+        const url = await uploadFileToImgBB(file);
+        setOnboardingForm(prev => ({ ...prev, logo_path: url }));
+        Toast.fire({ icon: 'success', title: 'Logo cargado correctamente' });
+      } catch (err) {
+        premiumAlert('Error', 'No se pudo procesar la imagen: ' + (err.message || err), 'error');
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -2458,9 +2440,9 @@ function App() {
         try {
           const url = await uploadLocalFileToImgBB(path);
           setSettingsForm({...settingsForm, ticket_logo: url});
-          Toast.fire({ icon: 'success', title: 'Logo del ticket subido a la nube correctamente' });
+          Toast.fire({ icon: 'success', title: 'Logo del ticket cargado correctamente' });
         } catch (e) {
-          premiumAlert('Error', 'No se pudo subir la imagen a ImgBB. Revisa tu conexión a internet.', 'error');
+          premiumAlert('Error', 'No se pudo procesar la imagen.', 'error');
         } finally {
           setLoading(false);
         }
@@ -2777,8 +2759,16 @@ function App() {
                     {/* Logo upload (spans 2 columns) */}
                     <div className="md:col-span-2 flex flex-col gap-2">
                       <label className="text-xs font-semibold text-gray-600">Logo De Empresa (Recomendado: 590x350 px)</label>
+                      {/* Hidden file input for web fallback */}
+                      <input
+                        ref={onboardingLogoInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/jpg"
+                        className="hidden"
+                        onChange={handleOnboardingLogoFileChange}
+                      />
                       <div className="h-40 border-2 border-dashed border-indigo-200 hover:border-indigo-400 rounded-xl bg-white/60 flex flex-col items-center justify-center relative overflow-hidden group transition-all">
-                        {onboardingForm.logo_path && typeof onboardingForm.logo_path === 'string' && onboardingForm.logo_path.startsWith('http') ? (
+                        {isImageUrl(onboardingForm.logo_path) ? (
                           <>
                             <img src={onboardingForm.logo_path} alt="Logo empresa" className="w-full h-full object-contain p-2" />
                             <button type="button" onClick={() => setOnboardingForm(prev => ({ ...prev, logo_path: '' }))} className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full shadow hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"><X size={14}/></button>
@@ -2792,6 +2782,7 @@ function App() {
                         )}
                       </div>
                     </div>
+
                     
                     {/* Country & Currencies side fields */}
                     <div className="flex flex-col gap-3">
@@ -2979,7 +2970,7 @@ function App() {
           </button>
           {(config?.app_logo || config?.ticket_logo) ? (
             <img 
-              src={(config.app_logo || config.ticket_logo)?.startsWith('http') 
+              src={isImageUrl(config.app_logo || config.ticket_logo) 
                 ? (config.app_logo || config.ticket_logo) 
                 : "./icon.png"} 
               alt="Logo" 
@@ -3184,7 +3175,7 @@ function App() {
       <nav className={`glass-panel m-4 flex flex-col rounded-3xl border-white/60 shadow-lg shrink-0 transition-all duration-300 ${sidebarCollapsed ? 'w-20 p-2 items-center' : 'w-64 p-4'}`}>
         <div className={`flex items-center justify-between mb-8 px-2 mt-2 relative w-full ${sidebarCollapsed ? 'flex-col gap-3' : ''}`}>
           <div className="flex items-center gap-3 overflow-hidden">
-            <img src={systemSettings?.app_logo?.startsWith('http') ? systemSettings.app_logo : "./icon.png"} alt="Logo" className="w-10 drop-shadow-md max-h-10 object-contain shrink-0" />
+            <img src={isImageUrl(systemSettings?.app_logo) ? systemSettings.app_logo : "./icon.png"} alt="Logo" className="w-10 drop-shadow-md max-h-10 object-contain shrink-0" />
             {!sidebarCollapsed && (
               <h2 className="text-xl font-bold text-slate-800 truncate max-w-[120px]" title={systemSettings?.business_name || 'AGS ERP'}>{systemSettings?.business_name || 'AGS ERP'}</h2>
             )}
@@ -5311,33 +5302,54 @@ function App() {
                       <label className="text-sm font-semibold text-gray-700 ml-1 mb-1 block">Logo del Sistema (Barra lateral)</label>
                       <div className="flex items-center gap-3">
                         <div className="w-16 h-16 bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-center overflow-hidden shrink-0">
-                          {systemSettings?.app_logo && typeof systemSettings.app_logo === 'string' && systemSettings.app_logo.startsWith('http') ? (
+                          {systemSettings?.app_logo && isImageUrl(systemSettings.app_logo) ? (
                             <img src={systemSettings.app_logo} alt="Logo" className="max-w-full max-h-full object-contain" />
                           ) : (
                             <ImageIcon className="text-slate-400" size={24} />
                           )}
                         </div>
                         <div className="flex-1">
-                          <input type="text" readOnly placeholder="Ninguna imagen seleccionada..." className="glass-input w-full !py-2 text-xs mb-2" value={systemSettings?.app_logo || ''} />
+                          <input type="text" readOnly placeholder="Ninguna imagen seleccionada..." className="glass-input w-full !py-2 text-xs mb-2" value={systemSettings?.app_logo ? (systemSettings.app_logo.startsWith('data:') ? '[Imagen local cargada]' : systemSettings.app_logo) : ''} />
                           <div className="flex gap-2">
-                            <button type="button" className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-1.5 rounded-lg text-xs transition-colors flex items-center gap-2" onClick={async () => {
-                              try {
-                                if (!ipcRenderer) {
-                                  Toast.fire({ icon: 'warning', title: "Solo en app de escritorio" });
-                                  return;
-                                }
-                                const path = await ipcRenderer.invoke('select-image');
-                                if (path) {
+                            <input 
+                              id="settings-app-logo-input"
+                              type="file" 
+                              accept="image/png,image/jpeg,image/webp,image/jpg" 
+                              className="hidden"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
                                   setLoading(true);
                                   try {
-                                    const url = await uploadLocalFileToImgBB(path);
+                                    const url = await uploadFileToImgBB(file);
                                     setSystemSettings(prev => ({ ...prev, app_logo: url }));
-                                    Toast.fire({ icon: 'success', title: 'Logo subido a la nube correctamente' });
-                                  } catch (e) {
-                                    premiumAlert('Error', 'No se pudo subir la imagen a ImgBB. Revisa tu conexión a internet.', 'error');
+                                    Toast.fire({ icon: 'success', title: 'Logo cargado correctamente' });
+                                  } catch (err) {
+                                    premiumAlert('Error', 'No se pudo procesar la imagen.', 'error');
                                   } finally {
                                     setLoading(false);
                                   }
+                                }
+                              }}
+                            />
+                            <button type="button" className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-1.5 rounded-lg text-xs transition-colors flex items-center gap-2" onClick={async () => {
+                              try {
+                                if (ipcRenderer) {
+                                  const path = await ipcRenderer.invoke('select-image');
+                                  if (path) {
+                                    setLoading(true);
+                                    try {
+                                      const url = await uploadLocalFileToImgBB(path);
+                                      setSystemSettings(prev => ({ ...prev, app_logo: url }));
+                                      Toast.fire({ icon: 'success', title: 'Logo cargado correctamente' });
+                                    } catch (e) {
+                                      premiumAlert('Error', 'No se pudo procesar la imagen.', 'error');
+                                    } finally {
+                                      setLoading(false);
+                                    }
+                                  }
+                                } else {
+                                  document.getElementById('settings-app-logo-input')?.click();
                                 }
                               } catch(e) {}
                             }}>
@@ -5350,6 +5362,7 @@ function App() {
                             )}
                           </div>
                         </div>
+
                       </div>
                     </div>
                     <div>
