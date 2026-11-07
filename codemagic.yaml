@@ -1,0 +1,42 @@
+workflows:
+  ios-development:
+    name: AGS SALES iOS (Desarrollo)
+    max_build_duration: 60
+    environment:
+      node: 20
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Instalar dependencias Node
+        working_directory: AGS_SALES_MOBILE
+        script: npm install
+
+      - name: Build web (Vite)
+        working_directory: AGS_SALES_MOBILE
+        script: npm run build
+
+      - name: Sincronizar Capacitor iOS
+        working_directory: AGS_SALES_MOBILE
+        script: npx cap sync ios
+
+      - name: Instalar CocoaPods
+        working_directory: AGS_SALES_MOBILE/ios/App
+        script: pod install
+
+      - name: Compilar app iOS
+        working_directory: AGS_SALES_MOBILE
+        script: |
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphoneos \
+            -derivedDataPath ios/DerivedData \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+    artifacts:
+      - AGS_SALES_MOBILE/ios/DerivedData/**/*.app
+      - AGS_SALES_MOBILE/ios/DerivedData/**/*.ipa
+

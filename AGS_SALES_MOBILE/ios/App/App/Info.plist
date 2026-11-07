@@ -45,5 +45,24 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+
+	<!-- Permisos requeridos por AGS SALES -->
+	<key>NSCameraUsageDescription</key>
+	<string>AGS SALES necesita acceso a la cámara para escanear códigos de barras</string>
+
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>AGS SALES necesita acceso a tus fotos para agregar imágenes a los productos</string>
+
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>AGS SALES necesita guardar imágenes en tu galería</string>
+
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>AGS SALES usa tu ubicación para el seguimiento de pedidos y domicilios</string>
+
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>AGS SALES usa tu ubicación para el seguimiento de domicilios</string>
+
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>AGS SALES te enviará notificaciones de nuevos pedidos y alertas de inventario</string>
 </dict>
 </plist>
