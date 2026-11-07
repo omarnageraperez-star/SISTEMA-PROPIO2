@@ -9,7 +9,7 @@ workflows:
     scripts:
       - name: Instalar dependencias Node
         working_directory: AGS_SALES_MOBILE
-        script: npm install
+        script: npm install --legacy-peer-deps
 
       - name: Build web (Vite)
         working_directory: AGS_SALES_MOBILE
