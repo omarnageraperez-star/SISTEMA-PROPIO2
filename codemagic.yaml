@@ -23,7 +23,7 @@ workflows:
         working_directory: AGS_SALES_MOBILE/ios/App
         script: pod install
 
-      - name: Compilar app iOS
+      - name: Compilar y empaquetar IPA para iPhone real
         working_directory: AGS_SALES_MOBILE
         script: |
           xcodebuild \
@@ -31,12 +31,17 @@ workflows:
             -scheme App \
             -configuration Debug \
             -sdk iphoneos \
-            -derivedDataPath ios/DerivedData \
+            -archivePath ios/build/App.xcarchive \
+            archive \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
 
-    artifacts:
-      - AGS_SALES_MOBILE/ios/DerivedData/**/*.app
-      - AGS_SALES_MOBILE/ios/DerivedData/**/*.ipa
+          mkdir -p ios/build/Payload
+          cp -r ios/build/App.xcarchive/Products/Applications/App.app ios/build/Payload/
+          cd ios/build
+          zip -r AGS_SALES.ipa Payload
+          rm -rf Payload
 
+    artifacts:
+      - AGS_SALES_MOBILE/ios/build/AGS_SALES.ipa
