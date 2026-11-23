@@ -97,6 +97,18 @@ export const PERMISSION_MODULES = [
     ]
   },
   {
+    id: 'quotations',
+    title: 'Cotizaciones',
+    badge: 'Cotizaciones',
+    permissions: [
+      { key: 'quotations.access', label: 'Acceso a Módulo de Cotizaciones', desc: 'Ver listado y estados de cotizaciones' },
+      { key: 'quotations.create_edit', label: 'Crear y Modificar Cotizaciones', desc: 'Elaborar presupuestos y cotizaciones' },
+      { key: 'quotations.approve', label: 'Aprobar Cotizaciones', desc: 'Autorizar cotizaciones para envío o venta' },
+      { key: 'quotations.convert', label: 'Convertir a Venta POS', desc: 'Generar factura y descontar inventario' },
+      { key: 'quotations.view_margins', label: 'Ver Costos y Márgenes de Ganancia', desc: 'Consultar margen estimado en cotización' },
+    ]
+  },
+  {
     id: 'assets',
     title: 'Activos de Empresa',
     badge: 'Activos Fijos',
@@ -161,6 +173,11 @@ export const ROLE_PRESETS = {
     'sales.view_details': true,
     'sales.credits': true,
     'sales.manage_customers': true,
+    'quotations.access': true,
+    'quotations.create_edit': true,
+    'quotations.approve': false,
+    'quotations.convert': true,
+    'quotations.view_margins': false,
     'purchases.access': false,
     'reports.access': false,
     'assets.access': false,
@@ -190,6 +207,11 @@ export const ROLE_PRESETS = {
     'sales.view_details': true,
     'sales.credits': false,
     'sales.manage_customers': true,
+    'quotations.access': true,
+    'quotations.create_edit': true,
+    'quotations.approve': false,
+    'quotations.convert': false,
+    'quotations.view_margins': false,
     'purchases.access': false,
     'reports.access': false,
     'assets.access': false,

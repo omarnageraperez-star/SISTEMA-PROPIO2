@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
-import { Settings, Server, Database, CheckCircle, ChevronRight, Activity, User, Lock, Mail, Phone, LogIn, DollarSign, Printer, Save, Image as ImageIcon, Package, Plus, X, QrCode, Users, Building, Sliders, Hash, Coins, Percent, Cpu, Globe, ShoppingBag, ShoppingCart, CreditCard, FileText, ArrowLeft, ArrowDownRight, Shield, Edit3, Trash2, BarChart3, Monitor, Menu, ChevronLeft, LogOut, ChevronDown, Check, Sun, Moon, Maximize, Minimize, Bell, Search, Tag, Briefcase, Download, TrendingUp, RotateCcw, RefreshCw } from 'lucide-react';
+import { Settings, Server, Database, CheckCircle, ChevronRight, Activity, User, Lock, Mail, Phone, LogIn, DollarSign, Printer, Save, Image as ImageIcon, Package, Plus, X, QrCode, Users, Building, Sliders, Hash, Coins, Percent, Cpu, Globe, ShoppingBag, ShoppingCart, CreditCard, FileText, FileSpreadsheet, ArrowLeft, ArrowDownRight, Shield, Edit3, Trash2, BarChart3, Monitor, Menu, ChevronLeft, LogOut, ChevronDown, Check, Sun, Moon, Maximize, Minimize, Bell, Search, Tag, Briefcase, Download, TrendingUp, RotateCcw, RefreshCw } from 'lucide-react';
 import { Toaster, sileo } from 'sileo';
 import Barcode from 'react-barcode';
 import QRCode from 'react-qr-code';
@@ -18,6 +18,7 @@ import UsersManagementModule from './components/settings/UsersManagementModule';
 import TicketEditorModule from './components/settings/TicketEditorModule';
 import CreditModule from './components/credits/CreditModule';
 import CatalogOrdersModule from './components/catalog/CatalogOrdersModule';
+import QuotationsModule from './components/quotations/QuotationsModule';
 import { hasPermission } from './lib/permissionsConfig';
 import { apiRequest } from './lib/api';
 import { printCashCut, generateCashCutHTML, printTicket } from './lib/print';
@@ -3348,6 +3349,9 @@ function App() {
           {hasPermission(userProfile, 'sales.credits') && (
             <li className={`sidebar-item ${appState === 'CREDITS' ? 'active' : ''} ${sidebarCollapsed ? 'justify-center w-12 h-12 p-0' : 'w-full'}`} onClick={() => setAppState('CREDITS')} title={sidebarCollapsed ? "Cuentas por Cobrar" : ""}><CreditCard size={18} className="shrink-0" /> {!sidebarCollapsed && <span className="truncate">Cuentas por Cobrar</span>}</li>
           )}
+          {hasPermission(userProfile, 'quotations.access') && (
+            <li className={`sidebar-item ${appState === 'QUOTATIONS' ? 'active' : ''} ${sidebarCollapsed ? 'justify-center w-12 h-12 p-0' : 'w-full'}`} onClick={() => setAppState('QUOTATIONS')} title={sidebarCollapsed ? "Cotizaciones" : ""}><FileSpreadsheet size={18} className="shrink-0" /> {!sidebarCollapsed && <span className="truncate">Cotizaciones</span>}</li>
+          )}
           <li className={`sidebar-item relative ${appState === 'CATALOG_ORDERS' ? 'active' : ''} ${sidebarCollapsed ? 'justify-center w-12 h-12 p-0' : 'w-full'}`} onClick={() => setAppState('CATALOG_ORDERS')} title={sidebarCollapsed ? "Pedidos del Catálogo" : ""}>
             <ShoppingBag size={18} className="shrink-0" />
             {!sidebarCollapsed && <span className="truncate">Pedidos del Catálogo</span>}
@@ -5998,6 +6002,20 @@ function App() {
               config={config} 
               token={token} 
               systemSettings={systemSettings} 
+            />
+          </div>
+        )}
+
+        {appState === 'QUOTATIONS' && (
+          <div className="flex-1 flex flex-col p-2 sm:p-4 overflow-hidden h-full">
+            <QuotationsModule 
+              config={config} 
+              token={token} 
+              userProfile={userProfile} 
+              systemSettings={systemSettings} 
+              onNavigateToPOS={(saleData) => {
+                setAppState('DASHBOARD');
+              }}
             />
           </div>
         )}

@@ -3,6 +3,7 @@ Django settings for AGS_SALES project.
 """
 
 import os
+import sys
 from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
@@ -51,6 +52,7 @@ INSTALLED_APPS = [
     'apps.reports',
     'apps.billing',
     'apps.catalog_orders',
+    'apps.quotations',
 ]
 
 MIDDLEWARE = [
@@ -94,8 +96,8 @@ DB_USER = os.environ.get('DB_USER', 'root')
 DB_PASSWORD = os.environ.get('DB_PASSWORD', 'root')
 DB_PORT = os.environ.get('DB_PORT', '3306')
 
-# Database configuration - Fallback to SQLite if MySQL host is local or not defined
-USE_SQLITE = DB_HOST in ('127.0.0.1', 'localhost', 'db', '')
+# Database configuration - Fallback to SQLite if MySQL host is local, not defined or running automated tests
+USE_SQLITE = DB_HOST in ('127.0.0.1', 'localhost', 'db', '') or 'test' in sys.argv
 
 
 if USE_SQLITE:
